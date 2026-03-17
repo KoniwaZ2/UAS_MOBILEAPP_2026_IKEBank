@@ -4,7 +4,7 @@ from django.contrib.auth.hashers import make_password
 from django.conf import settings
 import hashlib
 
-
+#hashing functions with pepper for sensitive data like NIK, biometric data, mother name, and PIN
 def _hash_with_pepper(value, namespace):
     normalized_value = str(value).strip().lower()
     raw = f"{namespace}:{normalized_value}:{settings.SECRET_KEY}"
@@ -26,7 +26,7 @@ def hash_mother_name(mother_name):
 def hash_pin(pin):
     return make_password(str(pin).strip())
 
-
+# User manager
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         if not phone_number:
@@ -56,6 +56,7 @@ class UserManager(BaseUserManager):
 
         return self.create_user(phone_number, password, **extra_fields)
 
+# User model
 class User(AbstractBaseUser, PermissionsMixin):
     GENDER_CHOICES = [
         ('Male', 'Male'),
@@ -70,8 +71,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('Buddhism', 'Buddhism'),
         ('Other', 'Other'),
     ]
-
-    phone_number = models.CharField(max_length=15, unique=True)
+    
+    id = models.AutoField
+    phone_number = models.CharField(max_length=15, unique=True, primary_key=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     name = models.CharField(max_length=255)
