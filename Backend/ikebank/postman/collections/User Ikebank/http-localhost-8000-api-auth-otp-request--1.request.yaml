@@ -1,0 +1,16 @@
+$kind: http-request
+name: http://localhost:8000/api/auth/otp/request/
+url: http://localhost:8000/api/auth/otp/verify/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \"reference\": \"0bac0cc6-8618-4a60-a952-08ce9aa23dcd\",\r
+
+    \"otp_code\": \"261041\",\r
+
+    \"purpose\": \"registration\"\r
+
+    }"
+order: 1362288807394238
