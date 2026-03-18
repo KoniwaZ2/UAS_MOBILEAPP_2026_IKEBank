@@ -1,0 +1,16 @@
+$kind: http-request
+name: http://localhost:8000/api/auth/otp/request/
+url: http://localhost:8000/api/auth/otp/request/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \"phone_number\": \"081234567899\",\r
+
+    \"email\": \"testing123@example.com\",\r
+
+    \"purpose\": \"registration\"\r
+
+    }"
+order: 1773818374967

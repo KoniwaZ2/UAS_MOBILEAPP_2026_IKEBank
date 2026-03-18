@@ -45,3 +45,26 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.category_id} - {self.amount} - {self.timestamp}"
+    
+class CashFlow(models.Model):
+    STATUS_CHOICES = [
+        ('sangat_optimal', 'Sangat Optimal'),
+        ('optimal', 'Optimal'),
+        ('cukup_optimal', 'Cukup Optimal'),
+        ('belum_optimal', 'Belum Optimal'),
+    ]
+
+    account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='cash_flows')
+    total_income = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_expense = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    month = models.IntegerField()
+    year = models.IntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+
+
+class Qris(models.Model):
+    qris_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
+    merchant_name = models.CharField(max_length=255, null=False, blank=False)
+
+    def __str__(self):
+        return f"{self.merchant_name} - {self.qris_number}"
