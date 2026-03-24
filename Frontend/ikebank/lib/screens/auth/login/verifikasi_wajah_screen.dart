@@ -3,7 +3,11 @@ import '../../../core/colors.dart';
 import 'face_recog_screen.dart';
 
 class VerifikasiWajahScreen extends StatelessWidget {
-  const VerifikasiWajahScreen({super.key});
+  // 1. Tangkap sinyal dari Isi Data
+  final bool isFromRegister;
+
+  // 2. Beri nilai default false agar fitur Login yang lama tidak error
+  const VerifikasiWajahScreen({super.key, this.isFromRegister = false});
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +118,14 @@ class VerifikasiWajahScreen extends StatelessWidget {
                               ),
                             ),
                             onPressed: () {
+                              // 3. Oper sinyalnya ke Face Recog Screen!
                               Navigator.push(
                                 context, 
-                                MaterialPageRoute(builder: (context) => const FaceRecogScreen())
+                                MaterialPageRoute(
+                                  builder: (context) => FaceRecogScreen(
+                                    isFromRegister: isFromRegister, // Oper ke sini
+                                  ),
+                                ),
                               );
                             },
                             child: Text(
@@ -167,7 +176,6 @@ class VerifikasiWajahScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12), 
-        
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(top: 4.0), 

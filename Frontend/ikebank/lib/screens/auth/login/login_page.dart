@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     "Selamat Datang Kembali",
                     style: alumniSansBold.copyWith(
-                      fontSize: 32,
+                      fontSize: 40,
                       color: AppColors.primaryOrange,
                     ),
                   ),
@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
                     "Ikuti langkah dibawah ini untuk masuk kembali ke akunmu",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 17,
                       color: AppColors.primaryOrange.withValues(alpha: 0.9), 
                       height: 1.4,
                     ),
