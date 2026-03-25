@@ -12,14 +12,19 @@ from .serializers import (
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+import re
+import pytesseract
+from PIL import Image
 
 User = get_user_model()
 
 
-def _mask_phone_number(phone_number):
-    if not phone_number or len(phone_number) < 4:
-        return phone_number
-    return f"{phone_number[:4]}{'*' * max(len(phone_number) - 6, 1)}{phone_number[-2:]}"
+# def _mask_phone_number(phone_number):
+#     if not phone_number or len(phone_number) < 4:
+#         return phone_number
+#     return f"{phone_number[:4]}{'*' * max(len(phone_number) - 6, 1)}{phone_number[-2:]}"
 
 
 def _mask_email(email):
@@ -33,17 +38,82 @@ def _mask_email(email):
 
 
 def _extract_identity_from_ktp_image(_ktp_image):
-    # Placeholder extractor: replace this with OCR service integration.
-    return {
-        'name': '',
-        'nik': '',
-        'born_place': '',
-        'born_date': '',
-        'gender': '',
-        'address': '',
-        'religion': '',
+    def _extract_field_from_lines(lines, labels):
+        for line in lines:
+            normalized_line = re.sub(r'\s+', ' ', line).strip()
+            upper_line = normalized_line.upper()
+            for label in labels:
+                if upper_line.startswith(label):
+                    value = re.sub(r'^.*?:', '', normalized_line, count=1).strip()
+                    if not value and ':' not in normalized_line:
+                        value = normalized_line[len(label):].strip(' .:-')
+                    return value
+        return ''
+
+    def _extract_nik(text):
+        match = re.search(r'\b\d{16}\b', text)
+        if match:
+            return match.group(0)
+
+        # Fallback for OCR output that inserts spaces between digits.
+        compact_digits = re.sub(r'\D', '', text)
+        fallback_match = re.search(r'\d{16}', compact_digits)
+        return fallback_match.group(0) if fallback_match else ''
+
+    try:
+        _ktp_image.seek(0)
+        image = Image.open(_ktp_image)
+        raw_text = pytesseract.image_to_string(image, lang='ind')
+    except Exception:
+        return {
+            'name': '',
+            'nik': '',
+            'born_place': '',
+            'born_date': '',
+            'gender': '',
+            'address': '',
+            'religion': '',
+            'mother_name': '',
+        }
+
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+    name = _extract_field_from_lines(lines, ['NAMA'])
+    address = _extract_field_from_lines(lines, ['ALAMAT'])
+    religion = _extract_field_from_lines(lines, ['AGAMA'])
+    gender = _extract_field_from_lines(lines, ['JENIS KELAMIN'])
+
+    born_place = ''
+    born_date = ''
+    birth_line = _extract_field_from_lines(lines, ['TEMPAT/TGL LAHIR', 'TEMPAT, TGL LAHIR'])
+    if birth_line:
+        # Common format: "KOTA, DD-MM-YYYY".
+        parts = [item.strip() for item in birth_line.split(',') if item.strip()]
+        if len(parts) >= 2:
+            born_place = parts[0]
+            born_date = parts[1]
+        else:
+            date_match = re.search(r'(\d{2}[-/]\d{2}[-/]\d{4})', birth_line)
+            if date_match:
+                born_date = date_match.group(1)
+                born_place = birth_line.replace(born_date, '').strip(' ,.-')
+            else:
+                born_place = birth_line
+
+    extracted = {
+        'name': name,
+        'nik': _extract_nik(raw_text),
+        'born_place': born_place,
+        'born_date': born_date,
+        'gender': gender,
+        'address': address,
+        'religion': religion,
+        # Not available on Indonesian KTP, kept for registration payload compatibility.
         'mother_name': '',
     }
+    if settings.DEBUG:
+        extracted['raw_text'] = raw_text
+
+    return extracted
 
 
 def _get_verified_registration_otp(reference, purpose):
@@ -85,6 +155,22 @@ class OtpRequestView(generics.GenericAPIView):
                 otp_code_hash=hash_otp_code(otp_code),
                 expires_at=OtpVerification.get_default_expiry(minutes=5),
             )
+            
+            html_content = render_to_string('email/otp.html', {
+                'otp': otp_code,
+                'purpose': purpose,
+            })
+            
+            message = EmailMultiAlternatives(
+                subject='Kode OTP Kamu',
+                body='Gunakan kode OTP kamu',
+                from_email='noreply@ikebank.com',
+                to=[validated_data['email']],
+            )
+
+            message.attach_alternative(html_content, "text/html")
+            message.send()
+
             item = {
                 'reference': str(otp.reference),
                 'channel': otp.channel,
@@ -123,7 +209,10 @@ class OtpVerifyView(generics.GenericAPIView):
             return Response({'detail': 'OTP reference not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if otp.is_verified:
-            return Response({'message': 'OTP already verified.', 'verified': True}, status=status.HTTP_200_OK)
+            return Response(
+                {'detail': 'OTP already verified. Please request a new OTP code.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if otp.is_expired():
             return Response({'detail': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)

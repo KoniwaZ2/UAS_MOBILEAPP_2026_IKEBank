@@ -91,9 +91,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     name = models.CharField(max_length=255)
-    biometric_data = models.TextField(blank=True, null=True)
-    ktp = models.ImageField(upload_to='ktp_images/', blank=False, null=False)
-    nik = models.CharField(max_length=64, unique=True, blank=False, null=False)
+    face_embedding = models.CharField(max_length=512, blank=False, null=False, default='')  # Store face embedding as a string (e.g., JSON or comma-separated)
+    face_image = models.ImageField(upload_to='face_images/', blank=False, null=False, default='face_images/default_face.png')  # Default face image
+    ktp = models.ImageField(upload_to='ktp_images/', blank=True, null=True)
+    nik = models.CharField(max_length=64, unique=True, blank=True, null=True)
     born_place = models.CharField(max_length=255, blank=False, null=False)
     born_date = models.DateField(blank=False, null=False)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False, null=False)

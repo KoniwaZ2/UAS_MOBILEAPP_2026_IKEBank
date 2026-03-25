@@ -36,13 +36,11 @@ class CheckPhoneEmailSerializer(serializers.Serializer):
 
 
 class OtpRequestSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
     purpose = serializers.ChoiceField(choices=['registration'], default='registration', required=False)
 
     def validate(self, data):
         check_serializer = CheckPhoneEmailSerializer(data={
-            'phone_number': data.get('phone_number'),
             'email': data.get('email'),
         })
         check_serializer.is_valid(raise_exception=True)
@@ -62,6 +60,10 @@ class KtpUploadSerializer(serializers.Serializer):
     reference = serializers.UUIDField(required=True)
     ktp = serializers.ImageField(required=True)
     purpose = serializers.ChoiceField(choices=['registration'], default='registration', required=False)
+
+
+class FaceUploadSerializer(serializers.Serializer):
+    face = serializers.ImageField(required=True)
 
 class RegisterSerializer(serializers.ModelSerializer):
     otp_reference = serializers.UUIDField(write_only=True, required=True)
