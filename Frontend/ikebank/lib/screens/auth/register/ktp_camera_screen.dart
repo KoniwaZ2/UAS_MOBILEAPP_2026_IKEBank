@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart'; // Untuk mengambil gambar dari kamera
 import '../../../core/colors.dart';
 import 'review_foto_ktp_screen.dart'; // Import halaman review foto KTP
 
 class KtpCameraScreen extends StatelessWidget {
-  const KtpCameraScreen({super.key});
+  final String? reference;
+
+  const KtpCameraScreen({super.key, required this.reference});
 
   @override
   Widget build(BuildContext context) {
@@ -53,13 +57,14 @@ class KtpCameraScreen extends StatelessWidget {
             children: [
               Text(
                 "Pastikan KTP berada di dalam bingkai",
-                style: alumniSansBold.copyWith(fontSize: 22, color: AppColors.textBlack),
+                style: alumniSansBold.copyWith(
+                  fontSize: 22,
+                  color: AppColors.textBlack,
+                ),
               ),
               const SizedBox(height: 20),
 
-              // ==========================================================
-              // AREA KAMERA DUMMY
-              // ==========================================================
+              // AREA KAMERA
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
@@ -70,15 +75,23 @@ class KtpCameraScreen extends StatelessWidget {
                       Container(
                         color: Colors.grey.shade400,
                         child: const Center(
-                          child: Icon(Icons.camera_alt, size: 60, color: Colors.white54),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 60,
+                            color: Colors.white54,
+                          ),
                         ),
                       ),
 
                       // 2. BINGKAI KTP (4 Sudut Putih)
                       Center(
                         child: SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.75, // Lebar bingkai KTP
-                          height: MediaQuery.of(context).size.height * 0.25, // Tinggi bingkai KTP
+                          width:
+                              MediaQuery.of(context).size.width *
+                              0.75, // Lebar bingkai KTP
+                          height:
+                              MediaQuery.of(context).size.height *
+                              0.25, // Tinggi bingkai KTP
                           child: Stack(
                             children: [
                               _buildCorner(isTop: true, isLeft: true),
@@ -96,12 +109,28 @@ class KtpCameraScreen extends StatelessWidget {
                         left: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: () {
-                            // Meluncur ke halaman Review Foto
-                            Navigator.push(
-                              context, 
-                              MaterialPageRoute(builder: (context) => const ReviewFotoKtpScreen())
+                          onTap: () async {
+                            final picker = ImagePicker();
+
+                            final pickedFile = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 80,
                             );
+
+                            if (pickedFile != null) {
+                              File imageFile = File(pickedFile.path);
+
+                              // 🔥 kirim foto ke halaman review
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReviewFotoKtpScreen(
+                                    imageFile: imageFile,
+                                    reference: reference,
+                                  ),
+                                ),
+                              );
+                            }
                           },
                           child: Container(
                             width: 70,
@@ -136,16 +165,32 @@ class KtpCameraScreen extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
-            topLeft: (isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
-            topRight: (isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
-            bottomLeft: (!isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
-            bottomRight: (!isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
+            topLeft: (isTop && isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            topRight: (isTop && !isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            bottomLeft: (!isTop && isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            bottomRight: (!isTop && !isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
           ),
           border: Border(
-            top: isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            bottom: !isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            left: isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            right: !isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
+            top: isTop
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            bottom: !isTop
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            left: isLeft
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            right: !isLeft
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
           ),
         ),
       ),
@@ -158,21 +203,24 @@ class KtpCameraScreen extends StatelessWidget {
     return Expanded(
       child: Container(
         height: 6, // Ketebalan kotak disesuaikan dengan Figma
-        margin: const EdgeInsets.symmetric(horizontal: 4.0), // Jarak antar kotak
+        margin: const EdgeInsets.symmetric(
+          horizontal: 4.0,
+        ), // Jarak antar kotak
         decoration: BoxDecoration(
           // Jika AKTIF (sudah dilewati), beri warna gradasi
-          gradient: isActive 
+          gradient: isActive
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], // Gradasi Biru Tua ke Biru Muda
+                  colors: [
+                    Color(0xFF0000FF),
+                    Color(0xFF9999FF),
+                  ], // Gradasi Biru Tua ke Biru Muda
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-              
+
           // Jika MATI (belum dilewati), beri warna putih keabu-abuan
-          color: isActive 
-              ? null 
-              : Colors.white.withValues(alpha: 0.6), 
+          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
         ),
       ),
     );
