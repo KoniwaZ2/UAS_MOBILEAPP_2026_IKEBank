@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/colors.dart';
 import 'riplay.dart';
 import 'login/masuk_screen.dart';
+import 'register/buat_akun_screen.dart';
 
 class SignIn extends StatelessWidget {
   const SignIn({super.key});
@@ -166,7 +167,9 @@ class SignIn extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const BuatAkunScreen()));
+                          },
                           child: Text(
                             'Buat Akun',
                             style: alumniSansBold.copyWith(

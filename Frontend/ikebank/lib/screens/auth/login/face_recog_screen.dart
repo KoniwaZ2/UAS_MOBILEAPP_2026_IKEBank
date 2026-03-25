@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'login_page.dart';
+import '../register/buat_pass_screen.dart';
 
 class FaceRecogScreen extends StatelessWidget {
-  const FaceRecogScreen({super.key});
+  // 1. Tangkap sinyal dari Verifikasi Wajah
+  final bool isFromRegister;
+
+  // 2. Beri default false
+  const FaceRecogScreen({super.key, this.isFromRegister = false});
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +44,23 @@ class FaceRecogScreen extends StatelessWidget {
             // WADAH KAMERA (DUMMY FACE)
             GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(builder: (context) => const LoginPage())
-                );
+                // LOGIKA PERCABANGAN (JALAN TOL)
+                if (isFromRegister) {
+                  // JIKA DARI REGISTER: Lari ke Buat Password!
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      // Pastikan nama class di file buat_pass_screen.dart adalah BuatPassScreen
+                      builder: (context) => const BuatPassScreen() 
+                    )
+                  );
+                } else {
+                  // JIKA DARI LOGIN: Lari ke halaman Login
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const LoginPage())
+                  );
+                }
               },
               child: Stack(
                 alignment: Alignment.center,
