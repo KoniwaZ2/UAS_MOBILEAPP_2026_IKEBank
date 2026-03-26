@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
+import '../../home/home_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -134,6 +135,11 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                              (Route<dynamic> route) => false, 
+                            );
                           },
                           child: Text(
                             "Masuk",
@@ -156,7 +162,11 @@ class _LoginPageState extends State<LoginPage> {
                         child: IconButton(
                           icon: const Icon(Icons.fingerprint, color: Colors.white, size: 32),
                           onPressed: () {
-                            // TODO: Trigger Biometric Login
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                              (Route<dynamic> route) => false, 
+                            );
                           },
                         ),
                       ),
