@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart'; // Untuk mengambil gambar dari kamera
 import '../../../core/colors.dart';
 import 'review_foto_ktp_screen.dart'; 
 
 class KtpCameraScreen extends StatelessWidget {
-  const KtpCameraScreen({super.key});
+  final String? reference;
+
+  const KtpCameraScreen({super.key, required this.reference});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +56,10 @@ class KtpCameraScreen extends StatelessWidget {
             children: [
               Text(
                 "Pastikan KTP berada di dalam bingkai",
-                style: alumniSansBold.copyWith(fontSize: 22, color: AppColors.textBlack),
+                style: alumniSansBold.copyWith(
+                  fontSize: 22,
+                  color: AppColors.textBlack,
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -66,7 +73,11 @@ class KtpCameraScreen extends StatelessWidget {
                       Container(
                         color: Colors.grey.shade400,
                         child: const Center(
-                          child: Icon(Icons.camera_alt, size: 60, color: Colors.white54),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 60,
+                            color: Colors.white54,
+                          ),
                         ),
                       ),
 
@@ -95,6 +106,21 @@ class KtpCameraScreen extends StatelessWidget {
                               context, 
                               MaterialPageRoute(builder: (context) => const ReviewFotoKtpScreen())
                             );
+
+                            if (pickedFile != null) {
+                              File imageFile = File(pickedFile.path);
+
+                              // 🔥 kirim foto ke halaman review
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReviewFotoKtpScreen(
+                                    imageFile: imageFile,
+                                    reference: reference,
+                                  ),
+                                ),
+                              );
+                            }
                           },
                           child: Container(
                             width: 70,
@@ -129,16 +155,32 @@ class KtpCameraScreen extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
-            topLeft: (isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
-            topRight: (isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
-            bottomLeft: (!isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
-            bottomRight: (!isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
+            topLeft: (isTop && isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            topRight: (isTop && !isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            bottomLeft: (!isTop && isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
+            bottomRight: (!isTop && !isLeft)
+                ? const Radius.circular(12)
+                : Radius.zero,
           ),
           border: Border(
-            top: isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            bottom: !isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            left: isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
-            right: !isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
+            top: isTop
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            bottom: !isTop
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            left: isLeft
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
+            right: !isLeft
+                ? const BorderSide(color: Colors.white, width: 6)
+                : BorderSide.none,
           ),
         ),
       ),
