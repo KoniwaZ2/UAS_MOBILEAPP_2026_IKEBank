@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
-import '../../home/home_screen.dart';
+import '../../bottomnav/main_tab_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -137,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             Navigator.pushAndRemoveUntil(
                               context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                              MaterialPageRoute(builder: (context) => const MainTabScreen()),
                               (Route<dynamic> route) => false, 
                             );
                           },
@@ -150,7 +151,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      // Fingerprint 
                       const SizedBox(width: 16),
                       Container(
                         height: 60, 
@@ -164,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             Navigator.pushAndRemoveUntil(
                               context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                              MaterialPageRoute(builder: (context) => const MainTabScreen()),
                               (Route<dynamic> route) => false, 
                             );
                           },

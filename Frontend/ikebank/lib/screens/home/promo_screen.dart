@@ -14,7 +14,7 @@ class PromoScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, 
       appBar: AppBar(
         toolbarHeight: 80, 
         backgroundColor: Colors.white,
@@ -34,7 +34,7 @@ class PromoScreen extends StatelessWidget {
             const SizedBox(width: 0.5),
             Image.asset(
               'assets/images/IKEHome.png',
-              height: 45,
+              height: 50,
               fit: BoxFit.contain,
             ),
           ],
@@ -61,92 +61,88 @@ class PromoScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 0.5),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
-                      );
-                    },
-                    child: Image.asset(
-                      'assets/images/promo.png',
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 180,
-                        color: Colors.grey.shade300,
-                      ),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
+                  );
+                },
+                child: ClipRRect(
+                  child: Image.asset(
+                    'assets/images/promo.png',
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 150,
+                      color: Colors.grey.shade300,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 15), 
 
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300, width: 1.0),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Ikutan Deposito dadakan dan dapatkan bunga hingga 8.8% p.a",
-                            style: alumniSansBold.copyWith(fontSize: 22, color: Colors.black, height: 1.1),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            "Nikmati Bunga hingga 8.8% hanya di IKE Bank!!!!",
-                            style: TextStyle(fontSize: 13, color: Colors.black87),
-                          ),
-                          const SizedBox(height: 16),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
-                              );
-                            },
-                            child: const Text(
-                              "Lihat Detail",
-                              style: TextStyle(
-                                color: AppColors.primaryOrange,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24.0), 
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)), 
+                border: Border.all(color: Colors.grey.shade400, width: 1.0), 
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4), 
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 32),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
+                      );
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Ikutan Deposito dadakan dan dapatkan bunga hingga 8.8% p.a",
+                          style: alumniSansBold.copyWith(fontSize: 20, color: Colors.black, height: 1.1),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Nikmati Bunga hingga 8.8% hanya di IKE Bank!!!!",
+                          style: TextStyle(fontSize: 15, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Lihat Detail",
+                          style: TextStyle(
+                            color: AppColors.primaryOrange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
                   Text("Pencarian & Filter", style: alumniSansBold.copyWith(fontSize: 22, color: Colors.black)),
                   const SizedBox(height: 12),
                   TextField(
@@ -171,52 +167,52 @@ class PromoScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 32),
+
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(), 
+                    padding: EdgeInsets.zero, 
+                    itemCount: 2, 
+                    itemBuilder: (context, index) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 24.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("IKE Bank", style: alumniSansBold.copyWith(fontSize: 16, color: Colors.black)),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                height: 180,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade200), 
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Image.asset(
+                                  'assets/images/promo.png',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 40), // Jarak ekstra di bagian paling bawah
                 ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(), 
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              itemCount: 2, 
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PromoDetailScreen()),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("IKE Bank", style: alumniSansBold.copyWith(fontSize: 16, color: Colors.black)),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Image.asset(
-                            'assets/images/promo.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 40), 
           ],
         ),
       ),

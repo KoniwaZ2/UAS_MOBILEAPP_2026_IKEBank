@@ -22,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   bool _isBalanceVisible = true;
-  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,58 +68,58 @@ class _HomeScreenState extends State<HomeScreen> {
                               fit: BoxFit.contain,
                             ),
                             const SizedBox(width: 12),
-                                Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              "Jacob Sins",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18  , 
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'AlumniSans',
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Clipboard.setData(const ClipboardData(text: "10095653346")).then((_) {
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xCCD9D9D9),
-                                  borderRadius: BorderRadius.circular(20),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  "Jacob Sins",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18  , 
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'AlumniSans',
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      "10095653346",
-                                      style: TextStyle(
-                                        color: Colors.white, 
-                                        fontSize: 12, 
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'AlumniSans', 
-                                      ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(const ClipboardData(text: "10095653346")).then((_) {
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xCCD9D9D9),
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-                                    const SizedBox(width: 12), 
-                                    SvgPicture.asset(
-                                      'assets/images/copy.svg',
-                                      height: 14, 
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcIn,
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          "10095653346",
+                                          style: TextStyle(
+                                            color: Colors.white, 
+                                            fontSize: 12, 
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'AlumniSans', 
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12), 
+                                        SvgPicture.asset(
+                                          'assets/images/copy.svg',
+                                          height: 14, 
+                                          colorFilter: const ColorFilter.mode(
+                                            Colors.white,
+                                            BlendMode.srcIn,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
                           ],
                         ),
                         Row(
@@ -343,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           child: const Text(
                             "Lihat Semua", 
-                            style: TextStyle(color: AppColors.primaryOrange, fontSize: 12)
+                            style: TextStyle(color: AppColors.primaryOrange, fontSize: 18)
                           ),
                         ),
 
@@ -379,101 +378,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ],
-        ),
-      ),
-
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade300, width: 1.0),
-          ),
-        ),
-        child: SafeArea(
-          child: Container(
-            height: 75, 
-            padding: const EdgeInsets.symmetric(horizontal: 20.0), 
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                _buildNavItem(svgPath: 'assets/images/beranda.svg', label: "Beranda", index: 0),
-                _buildNavItem(svgPath: 'assets/images/saku.svg', label: "Saku", index: 1),
-                _buildQrisNavItem(), 
-                _buildNavItem(svgPath: 'assets/images/kartu.svg', label: "Kartu", index: 2),
-                _buildNavItem(svgPath: 'assets/images/lainnya.svg', label: "Lainnya", index: 3),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // HELPER WIDGETS
-
-  Widget _buildNavItem({required String svgPath, required String label, required int index}) {
-    bool isSelected = _selectedIndex == index;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      child: Container(
-        width: 60, 
-        color: Colors.transparent, 
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              svgPath,
-              height: 26, 
-              colorFilter: ColorFilter.mode(
-                isSelected ? Colors.black : Colors.black87, 
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label, 
-              style: TextStyle(
-                fontSize: 14, 
-                color: isSelected ? Colors.black : Colors.black87, 
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-              )
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQrisNavItem() {
-    return GestureDetector(
-      onTap: () {
-        // TODO: Navigasi ke Scanner QRIS
-      },
-      child: Container(
-        width: 60, 
-        height: 60, 
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.bottomLeft, 
-            end: Alignment.topRight,     
-            colors: [
-              Color(0xFFFF7F00), 
-              Color(0xFFFFCA96), 
-            ],
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Image.asset(
-          'assets/images/Qris.png',
-          height: 20, 
-          fit: BoxFit.contain,
         ),
       ),
     );
