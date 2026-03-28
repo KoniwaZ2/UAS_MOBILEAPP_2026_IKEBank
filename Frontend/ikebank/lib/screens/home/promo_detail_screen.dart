@@ -32,7 +32,7 @@ class PromoDetailScreen extends StatelessWidget {
             const SizedBox(width: 0.5),
             Image.asset(
               'assets/images/IKEHome.png',
-              height: 45,
+              height: 50,
               fit: BoxFit.contain,
             ),
           ],
@@ -83,8 +83,8 @@ class PromoDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), 
-                border: Border.all(color: Colors.grey.shade300, width: 1.0), 
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)), 
+                border: Border.all(color: Colors.grey.shade400, width: 1.0), 
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
