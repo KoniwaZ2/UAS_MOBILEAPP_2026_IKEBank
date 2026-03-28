@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart'; // Untuk mengambil gambar dari kamera
 import '../../../core/colors.dart';
-import 'review_foto_ktp_screen.dart'; // Import halaman review foto KTP
+import 'review_foto_ktp_screen.dart'; 
 
 class KtpCameraScreen extends StatelessWidget {
   final String? reference;
@@ -28,7 +28,6 @@ class KtpCameraScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                // Progress Bar: 3 Nyala (Gradasi Biru), 3 Mati (Putih Transparan)
                 _buildProgressSegment(isActive: true),
                 _buildProgressSegment(isActive: true),
                 _buildProgressSegment(isActive: true),
@@ -64,14 +63,13 @@ class KtpCameraScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // AREA KAMERA
+              // AREA KAMERA DUMMY
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // 1. BACKGROUND KAMERA
                       Container(
                         color: Colors.grey.shade400,
                         child: const Center(
@@ -83,15 +81,10 @@ class KtpCameraScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 2. BINGKAI KTP (4 Sudut Putih)
                       Center(
                         child: SizedBox(
-                          width:
-                              MediaQuery.of(context).size.width *
-                              0.75, // Lebar bingkai KTP
-                          height:
-                              MediaQuery.of(context).size.height *
-                              0.25, // Tinggi bingkai KTP
+                          width: MediaQuery.of(context).size.width * 0.75, 
+                          height: MediaQuery.of(context).size.height * 0.25, 
                           child: Stack(
                             children: [
                               _buildCorner(isTop: true, isLeft: true),
@@ -103,18 +96,15 @@ class KtpCameraScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 3. TOMBOL CAPTURE (Jepret)
                       Positioned(
                         bottom: 30,
                         left: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: () async {
-                            final picker = ImagePicker();
-
-                            final pickedFile = await picker.pickImage(
-                              source: ImageSource.gallery,
-                              imageQuality: 80,
+                          onTap: () {
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (context) => const ReviewFotoKtpScreen())
                             );
 
                             if (pickedFile != null) {
@@ -161,7 +151,7 @@ class KtpCameraScreen extends StatelessWidget {
       left: isLeft ? 0 : null,
       right: isLeft ? null : 0,
       child: Container(
-        width: 40, // Panjang garis siku
+        width: 40, 
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
@@ -197,30 +187,24 @@ class KtpCameraScreen extends StatelessWidget {
     );
   }
 
-  // --- HELPER UNTUK MEMBANGUN KOTAK PROGRESS BAR FIGMA ---
   // --- FUNGSI HELPER UNTUK PROGRESS BAR (Disamakan dengan Register Screen) ---
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6, // Ketebalan kotak disesuaikan dengan Figma
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4.0,
-        ), // Jarak antar kotak
+        height: 6, 
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
         decoration: BoxDecoration(
-          // Jika AKTIF (sudah dilewati), beri warna gradasi
-          gradient: isActive
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [
-                    Color(0xFF0000FF),
-                    Color(0xFF9999FF),
-                  ], // Gradasi Biru Tua ke Biru Muda
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-
-          // Jika MATI (belum dilewati), beri warna putih keabu-abuan
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+              
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );
