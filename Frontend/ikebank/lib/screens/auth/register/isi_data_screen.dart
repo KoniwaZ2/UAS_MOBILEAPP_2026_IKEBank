@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import '../../../models/register_flow_data.dart';
 import '../login/verifikasi_wajah_screen.dart';
 
 class IsiDataScreen extends StatefulWidget {
+  final String phone;
+  final String email;
+  final File? ktpImageFile;
   final Map<String, dynamic> prefillIdentity;
   final String? reference;
 
   const IsiDataScreen({
     super.key,
+    required this.phone,
+    required this.email,
+    this.ktpImageFile,
     this.prefillIdentity = const <String, dynamic>{},
     this.reference,
   });
@@ -232,6 +240,31 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                     builder: (context) => VerifikasiWajahScreen(
                                       isFromRegister: true,
                                       reference: widget.reference,
+                                      flowData: RegisterFlowData(
+                                        phoneNumber: widget.phone,
+                                        email: widget.email,
+                                        otpReference: widget.reference ?? '',
+                                        ktpFile: widget.ktpImageFile,
+                                        name: _namaController.text.trim(),
+                                        nik: _nikController.text.trim(),
+                                        bornPlace:
+                                            (widget.prefillIdentity['born_place']
+                                                        ?.toString()
+                                                        .trim()
+                                                        .isNotEmpty ??
+                                                    false)
+                                            ? widget.prefillIdentity['born_place']
+                                                  .toString()
+                                                  .trim()
+                                            : '-',
+                                        bornDate: _toApiDate(
+                                          _ttlController.text.trim(),
+                                        ),
+                                        gender: _toApiGender(_jenisKelamin),
+                                        address: _alamatController.text.trim(),
+                                        religion: _agamaController.text.trim(),
+                                        motherName: _ibuController.text.trim(),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -378,5 +411,21 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
         ),
       ),
     );
+  }
+
+  String _toApiDate(String value) {
+    try {
+      final parsed = DateFormat('dd-MM-yyyy').parseStrict(value);
+      return DateFormat('yyyy-MM-dd').format(parsed);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  String _toApiGender(String? value) {
+    final normalized = (value ?? '').toLowerCase();
+    if (normalized.contains('laki')) return 'Male';
+    if (normalized.contains('perempuan')) return 'Female';
+    return 'Other';
   }
 }

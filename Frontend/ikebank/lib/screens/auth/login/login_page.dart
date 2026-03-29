@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
 import '../../home/home_screen.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String? prefilledEmail;
+
+  const LoginPage({super.key, this.prefilledEmail});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -12,6 +15,75 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
+  bool _isSubmitting = false;
+  late final TextEditingController _emailController;
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.prefilledEmail ?? '');
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email wajib diisi.')),
+      );
+      return;
+    }
+
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password wajib diisi.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await AuthService.login(email: email, password: password);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,12 +140,56 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 110), 
 
+                  if ((widget.prefilledEmail ?? '').isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        widget.prefilledEmail!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(fontSize: 18),
+                        decoration: const InputDecoration(
+                          hintText: "Email",
+                          hintStyle: TextStyle(color: Colors.black, fontSize: 16),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9).withValues(alpha: 0.5), 
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
+                      controller: _passwordController,
                       obscureText: !_isPasswordVisible, 
                       style: const TextStyle(fontSize: 18),
                       decoration: InputDecoration(
@@ -135,14 +251,13 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           onPressed: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
-                              (Route<dynamic> route) => false, 
-                            );
+                            if (_isSubmitting) {
+                              return;
+                            }
+                            _submitLogin();
                           },
                           child: Text(
-                            "Masuk",
+                            _isSubmitting ? "Memproses..." : "Masuk",
                             style: alumniSansBold.copyWith(
                               fontSize: 20,
                               color: Colors.white, 

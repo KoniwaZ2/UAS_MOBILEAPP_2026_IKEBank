@@ -310,6 +310,8 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               FotoKtpScreen(
+                                                phone: widget.phone,
+                                                email: widget.email,
                                                 reference: _reference,
                                               ),
                                         ),

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
+import '../../../models/register_flow_data.dart';
 import 'face_recog_screen.dart';
 
 class VerifikasiWajahScreen extends StatelessWidget {
   final bool isFromRegister;
   final String? reference;
+  final RegisterFlowData? flowData;
 
   const VerifikasiWajahScreen({
     super.key,
     this.isFromRegister = false,
     this.reference,
+    this.flowData,
   });
 
   @override
@@ -131,6 +134,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
                                   builder: (context) => FaceRecogScreen(
                                     isFromRegister: isFromRegister,
                                     reference: reference,
+                                    flowData: flowData,
                                   ),
                                 ),
                               );

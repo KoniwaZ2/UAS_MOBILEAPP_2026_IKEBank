@@ -5,9 +5,16 @@ import '../../../core/colors.dart';
 import 'review_foto_ktp_screen.dart';
 
 class KtpCameraScreen extends StatelessWidget {
+  final String phone;
+  final String email;
   final String? reference;
 
-  const KtpCameraScreen({super.key, required this.reference});
+  const KtpCameraScreen({
+    super.key,
+    required this.phone,
+    required this.email,
+    required this.reference,
+  });
 
   Future<void> _captureKtpAndNavigate(BuildContext context) async {
     final XFile? pickedFile = await ImagePicker().pickImage(
@@ -23,8 +30,12 @@ class KtpCameraScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ReviewFotoKtpScreen(imageFile: imageFile, reference: reference),
+        builder: (context) => ReviewFotoKtpScreen(
+          imageFile: imageFile,
+          phone: phone,
+          email: email,
+          reference: reference,
+        ),
       ),
     );
   }

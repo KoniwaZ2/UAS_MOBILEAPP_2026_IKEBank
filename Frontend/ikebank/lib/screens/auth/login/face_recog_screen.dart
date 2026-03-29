@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
+import '../../../models/register_flow_data.dart';
 import 'login_page.dart';
 import '../register/buat_pass_screen.dart';
 
-enum LivenessStep { lookLeft, lookRight, openMouth, blink, done }
+enum LivenessStep { lookLeft, lookRight, smile, blink, done }
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
   final String? reference;
+  final RegisterFlowData? flowData;
 
   const FaceRecogScreen({
     super.key,
     this.isFromRegister = false,
     this.reference,
+    this.flowData,
   });
 
   @override
@@ -31,7 +36,10 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   String? _errorMessage;
   LivenessStep _currentStep = LivenessStep.lookLeft;
   DateTime? _lastStepChangedAt;
-  int? _leftTurnSign;
+  bool _hasNavigated = false;
+  bool _isUploadingFace = false;
+
+  static const double _yawThreshold = 12.0;
 
   @override
   void initState() {
@@ -122,19 +130,14 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     bool passed = false;
     switch (_currentStep) {
       case LivenessStep.lookLeft:
-        if (headY.abs() > 10) {
-          // On some front cameras, Euler Y sign can be mirrored.
-          _leftTurnSign = headY >= 0 ? 1 : -1;
-          passed = true;
-        }
+        // Strict left check: negative yaw only.
+        passed = headY < -_yawThreshold;
         break;
       case LivenessStep.lookRight:
-        if (_leftTurnSign != null && headY.abs() > 10) {
-          final currentSign = headY >= 0 ? 1 : -1;
-          passed = currentSign == -_leftTurnSign!;
-        }
+        // Strict right check: positive yaw only.
+        passed = headY > _yawThreshold;
         break;
-      case LivenessStep.openMouth:
+      case LivenessStep.smile:
         // ML Kit does not expose mouth-open probability directly, so we use
         // smile probability as a practical proxy for this step.
         passed = smileProbability > 0.55;
@@ -163,9 +166,9 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           _currentStep = LivenessStep.lookRight;
           break;
         case LivenessStep.lookRight:
-          _currentStep = LivenessStep.openMouth;
+          _currentStep = LivenessStep.smile;
           break;
-        case LivenessStep.openMouth:
+        case LivenessStep.smile:
           _currentStep = LivenessStep.blink;
           break;
         case LivenessStep.blink:
@@ -175,6 +178,10 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           break;
       }
     });
+
+    if (_currentStep == LivenessStep.done) {
+      _navigateToNextPage();
+    }
   }
 
   String _instructionText() {
@@ -183,8 +190,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         return 'Hadap Kiri';
       case LivenessStep.lookRight:
         return 'Hadap Kanan';
-      case LivenessStep.openMouth:
-        return 'Buka Mulutmu';
+      case LivenessStep.smile:
+        return 'Senyum';
       case LivenessStep.blink:
         return 'Kedipkan Mata';
       case LivenessStep.done:
@@ -232,11 +239,82 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    await _navigateToNextPage();
+  }
+
+  Future<void> _navigateToNextPage() async {
+    if (!mounted || _hasNavigated || _isUploadingFace) return;
+    _hasNavigated = true;
+
+    final controller = _controller;
+    if (controller != null && controller.value.isStreamingImages) {
+      await controller.stopImageStream();
+    }
+
     if (!mounted) return;
     if (widget.isFromRegister) {
+      final reference = widget.reference?.trim() ?? '';
+      if (reference.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Reference registrasi tidak ditemukan. Ulangi proses.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        _hasNavigated = false;
+        if (controller != null && !controller.value.isStreamingImages) {
+          _startFaceDetectionStream();
+        }
+        return;
+      }
+
+      setState(() {
+        _isUploadingFace = true;
+      });
+
+      try {
+        if (controller == null || !controller.value.isInitialized) {
+          throw Exception('Kamera belum siap untuk mengambil selfie.');
+        }
+
+        final image = await controller.takePicture();
+        await AuthService.uploadFaceImage(
+          File(image.path),
+          reference: reference,
+          purpose: 'registration',
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isUploadingFace = false;
+          });
+        }
+        _hasNavigated = false;
+        if (controller != null && !controller.value.isStreamingImages) {
+          _startFaceDetectionStream();
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isUploadingFace = false;
+        });
+      }
+
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const BuatPassScreen()),
+        MaterialPageRoute(
+          builder: (context) => BuatPassScreen(flowData: widget.flowData),
+        ),
       );
       return;
     }
@@ -285,7 +363,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           children: [
             // TEKS INSTRUKSI
             Text(
-              _instructionText(),
+              _isUploadingFace ? 'Mengunggah selfie...' : _instructionText(),
               style: alumniSansBold.copyWith(
                 fontSize: 32,
                 color: AppColors.textBlack,
