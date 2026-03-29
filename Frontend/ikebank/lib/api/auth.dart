@@ -1,9 +1,79 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
   static String baseUrl = 'http://192.168.1.12:8000/api/auth';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  static const String _accessTokenKey = 'auth_access_token';
+  static const String _refreshTokenKey = 'auth_refresh_token';
+
+  static Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    await _secureStorage.write(key: _accessTokenKey, value: accessToken);
+    await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
+  }
+
+  static Future<String?> getAccessToken() async {
+    return _secureStorage.read(key: _accessTokenKey);
+  }
+
+  static Future<String?> getRefreshToken() async {
+    return _secureStorage.read(key: _refreshTokenKey);
+  }
+
+  static Future<bool> hasAccessToken() async {
+    final accessToken = await getAccessToken();
+    return accessToken != null && accessToken.isNotEmpty;
+  }
+
+  static Future<void> clearTokens() async {
+    await _secureStorage.delete(key: _accessTokenKey);
+    await _secureStorage.delete(key: _refreshTokenKey);
+  }
+
+  static Future<Map<String, String>> buildAuthHeaders({
+    bool includeJsonContentType = true,
+  }) async {
+    final headers = <String, String>{
+      if (includeJsonContentType) 'Content-Type': 'application/json',
+    };
+
+    final accessToken = await getAccessToken();
+    if (accessToken != null && accessToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $accessToken';
+    }
+
+    return headers;
+  }
+
+  static Map<String, String>? _extractTokens(Map<String, dynamic> decoded) {
+    String? access;
+    String? refresh;
+
+    final nestedToken = decoded['token'];
+    if (nestedToken is Map<String, dynamic>) {
+      access = nestedToken['access']?.toString();
+      refresh = nestedToken['refresh']?.toString();
+    }
+
+    access ??= decoded['access']?.toString();
+    refresh ??= decoded['refresh']?.toString();
+    access ??= decoded['access_token']?.toString();
+    refresh ??= decoded['refresh_token']?.toString();
+
+    if (access == null ||
+        access.isEmpty ||
+        refresh == null ||
+        refresh.isEmpty) {
+      return null;
+    }
+
+    return <String, String>{'access': access, 'refresh': refresh};
+  }
 
   static Future<Map<String, dynamic>> check({
     required String phone,
@@ -229,9 +299,39 @@ class AuthService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw Exception('Invalid login response format');
+      }
+
+      final tokens = _extractTokens(decoded);
+      if (tokens != null) {
+        await saveTokens(
+          accessToken: tokens['access']!,
+          refreshToken: tokens['refresh']!,
+        );
+      }
+
+      return decoded;
     } else {
       throw Exception(_extractErrorMessage(response, 'Login failed'));
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkLogin({
+    required String email,
+  }) async {
+    final url = Uri.parse("$baseUrl/login-check/");
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(_extractErrorMessage(response, 'Failed to check data'));
     }
   }
 }

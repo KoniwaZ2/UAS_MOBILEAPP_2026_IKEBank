@@ -56,7 +56,6 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService.login(email: email, password: password);
-      print('Login berhasil');
 
       if (!mounted) {
         return;
