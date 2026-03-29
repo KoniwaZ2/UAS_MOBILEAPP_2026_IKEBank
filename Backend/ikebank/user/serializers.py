@@ -251,7 +251,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['phone_number'] = user.phone_number
         token['email'] = user.email
         token['name'] = user.name
-        token['biometric_data'] = user.biometric_data
         return token
     
     def validate(self, attrs):
@@ -266,7 +265,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "phone_number": self.user.phone_number,
             "email": self.user.email,
             "name": self.user.name,
-            "biometric_data": self.user.biometric_data,
             "token": token_data,
         })
         return data
