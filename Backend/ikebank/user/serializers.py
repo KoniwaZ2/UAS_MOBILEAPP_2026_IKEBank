@@ -168,21 +168,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate_gender(self, value):
         normalized = str(value).strip().lower()
         if normalized in {'male', 'laki-laki', 'laki', 'pria'}:
-            return 'Male'
+            return 'MALE'
         if normalized in {'female', 'perempuan', 'wanita'}:
-            return 'Female'
-        return 'Other'
+            return 'FEMALE'
+        return 'OTHER'
 
     def validate_religion(self, value):
         normalized = str(value).strip().lower()
         if normalized in {'islam'}:
-            return 'Islam'
+            return 'ISLAM'
         if normalized in {'christianity', 'christian', 'kristen', 'katolik', 'catholic'}:
-            return 'Christianity'
+            return 'CHRISTIANITY'
         if normalized in {'hinduism', 'hindu'}:
-            return 'Hinduism'
+            return 'HINDUISM'
         if normalized in {'buddhism', 'buddha', 'buddhist'}:
-            return 'Buddhism'
+            return 'BUDDHISM'
         return 'Other'
     
     def validate_nik(self, value):

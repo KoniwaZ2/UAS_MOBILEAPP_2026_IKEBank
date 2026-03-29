@@ -37,16 +37,16 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email wajib diisi.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Email wajib diisi.')));
       return;
     }
 
     if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password wajib diisi.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password wajib diisi.')));
       return;
     }
 
@@ -56,6 +56,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService.login(email: email, password: password);
+      print('Login berhasil');
 
       if (!mounted) {
         return;
@@ -106,7 +107,10 @@ class _LoginPageState extends State<LoginPage> {
             Container(
               width: double.infinity,
               transform: Matrix4.translationValues(0.0, -30.0, 0.0),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 24.0,
+              ),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -115,10 +119,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center, 
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  
-                  const SizedBox(height: 70), 
+                  const SizedBox(height: 70),
 
                   Text(
                     "Selamat Datang Kembali",
@@ -133,12 +136,12 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 17,
-                      color: AppColors.primaryOrange.withValues(alpha: 0.9), 
+                      color: AppColors.primaryOrange.withValues(alpha: 0.9),
                       height: 1.4,
                     ),
                   ),
-                  
-                  const SizedBox(height: 110), 
+
+                  const SizedBox(height: 110),
 
                   if ((widget.prefilledEmail ?? '').isNotEmpty)
                     Container(
@@ -173,7 +176,10 @@ class _LoginPageState extends State<LoginPage> {
                         style: const TextStyle(fontSize: 18),
                         decoration: const InputDecoration(
                           hintText: "Email",
-                          hintStyle: TextStyle(color: Colors.black, fontSize: 16),
+                          hintStyle: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                          ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 20,
@@ -185,21 +191,29 @@ class _LoginPageState extends State<LoginPage> {
 
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD9D9D9).withValues(alpha: 0.5), 
+                      color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
                       controller: _passwordController,
-                      obscureText: !_isPasswordVisible, 
+                      obscureText: !_isPasswordVisible,
                       style: const TextStyle(fontSize: 18),
                       decoration: InputDecoration(
                         hintText: "Password",
-                        hintStyle: const TextStyle(color: Colors.black, fontSize: 16),
+                        hintStyle: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                        ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            _isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.black54,
                           ),
                           onPressed: () {
@@ -211,14 +225,19 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
 
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const LupaPasswordScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LupaPasswordScreen(),
+                          ),
+                        );
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -235,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 16), 
+                  const SizedBox(height: 16),
 
                   // TOMBOL MASUK & FINGERPRINT
                   Row(
@@ -243,11 +262,11 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFCDCDCD), 
+                            backgroundColor: const Color(0xFFCDCDCD),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12), 
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           onPressed: () {
@@ -260,27 +279,33 @@ class _LoginPageState extends State<LoginPage> {
                             _isSubmitting ? "Memproses..." : "Masuk",
                             style: alumniSansBold.copyWith(
                               fontSize: 20,
-                              color: Colors.white, 
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
-                      // Fingerprint 
+                      // Fingerprint
                       const SizedBox(width: 16),
                       Container(
-                        height: 60, 
+                        height: 60,
                         width: 60,
                         decoration: BoxDecoration(
                           color: AppColors.primaryOrange,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.fingerprint, color: Colors.white, size: 32),
+                          icon: const Icon(
+                            Icons.fingerprint,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                           onPressed: () {
                             Navigator.pushAndRemoveUntil(
                               context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
-                              (Route<dynamic> route) => false, 
+                              MaterialPageRoute(
+                                builder: (context) => const HomeScreen(),
+                              ),
+                              (Route<dynamic> route) => false,
                             );
                           },
                         ),

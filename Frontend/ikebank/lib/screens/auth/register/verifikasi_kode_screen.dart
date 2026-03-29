@@ -308,12 +308,11 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              FotoKtpScreen(
-                                                phone: widget.phone,
-                                                email: widget.email,
-                                                reference: _reference,
-                                              ),
+                                          builder: (context) => FotoKtpScreen(
+                                            phone: widget.phone,
+                                            email: widget.email,
+                                            reference: _reference,
+                                          ),
                                         ),
                                       );
                                     } catch (e) {

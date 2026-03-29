@@ -114,7 +114,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     ]
 
     RELOGION_CHOICES = [
-        ('`ISLAM`', 'ISLAM'),
+        ('ISLAM', 'ISLAM'),
         ('CHRISTIANITY', 'CHRISTIANITY'),
         ('HINDUISM', 'HINDUISM'),
         ('BUDDHISM', 'BUDDHISM'),
@@ -144,8 +144,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = ['email', 'name', 'ktp', 'nik', 'born_place', 'born_date', 'gender', 'address', 'religion', 'mother_name', 'pin']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['phone_number', 'name', 'ktp', 'nik', 'born_place', 'born_date', 'gender', 'address', 'religion', 'mother_name', 'pin']
     
     def __str__(self):
         return self.name

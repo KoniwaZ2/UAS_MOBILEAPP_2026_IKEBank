@@ -95,12 +95,11 @@ class FotoKtpScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          KtpCameraScreen(
-                            phone: phone,
-                            email: email,
-                            reference: reference,
-                          ),
+                      builder: (context) => KtpCameraScreen(
+                        phone: phone,
+                        email: email,
+                        reference: reference,
+                      ),
                     ),
                   );
                 },

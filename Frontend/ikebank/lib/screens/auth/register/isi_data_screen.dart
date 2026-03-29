@@ -249,11 +249,12 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                         nik: _nikController.text.trim(),
                                         bornPlace:
                                             (widget.prefillIdentity['born_place']
-                                                        ?.toString()
-                                                        .trim()
-                                                        .isNotEmpty ??
-                                                    false)
-                                            ? widget.prefillIdentity['born_place']
+                                                    ?.toString()
+                                                    .trim()
+                                                    .isNotEmpty ??
+                                                false)
+                                            ? widget
+                                                  .prefillIdentity['born_place']
                                                   .toString()
                                                   .trim()
                                             : '-',
@@ -424,8 +425,8 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
 
   String _toApiGender(String? value) {
     final normalized = (value ?? '').toLowerCase();
-    if (normalized.contains('laki')) return 'Male';
-    if (normalized.contains('perempuan')) return 'Female';
-    return 'Other';
+    if (normalized.contains('laki')) return 'MALE';
+    if (normalized.contains('perempuan')) return 'FEMALE';
+    return 'OTHER';
   }
 }

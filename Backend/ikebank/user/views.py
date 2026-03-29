@@ -406,7 +406,7 @@ class OtpLoginView(generics.GenericAPIView):
                 'phone_number': user.phone_number,
                 'email': user.email,
                 'name': user.name,
-                'biometric_data': user.biometric_data,
+                'biometric_data': getattr(user, 'biometric_data', None),
             }
         }, status=status.HTTP_200_OK)
 
