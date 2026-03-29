@@ -5,10 +5,12 @@ import '../login/verifikasi_wajah_screen.dart';
 
 class IsiDataScreen extends StatefulWidget {
   final Map<String, dynamic> prefillIdentity;
+  final String? reference;
 
   const IsiDataScreen({
     super.key,
     this.prefillIdentity = const <String, dynamic>{},
+    this.reference,
   });
 
   @override
@@ -227,10 +229,10 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const VerifikasiWajahScreen(
-                                          isFromRegister: true,
-                                        ),
+                                    builder: (context) => VerifikasiWajahScreen(
+                                      isFromRegister: true,
+                                      reference: widget.reference,
+                                    ),
                                   ),
                                 );
                               }
@@ -326,7 +328,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
           ),
           DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _jenisKelamin,
+              initialValue: _jenisKelamin,
               icon: Icon(
                 Icons.keyboard_arrow_down,
                 color: Colors.grey.shade700,

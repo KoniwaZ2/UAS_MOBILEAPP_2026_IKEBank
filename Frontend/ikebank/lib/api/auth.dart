@@ -111,11 +111,20 @@ class AuthService {
     }
   }
 
-  static Future<void> uploadFaceImage(File imageFile) async {
+  static Future<void> uploadFaceImage(
+    File imageFile, {
+    String? reference,
+    String purpose = 'registration',
+  }) async {
     var request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/upload-face/'),
     );
+
+    request.fields['purpose'] = purpose;
+    if (reference != null && reference.isNotEmpty) {
+      request.fields['reference'] = reference;
+    }
 
     request.files.add(
       await http.MultipartFile.fromPath('face', imageFile.path),

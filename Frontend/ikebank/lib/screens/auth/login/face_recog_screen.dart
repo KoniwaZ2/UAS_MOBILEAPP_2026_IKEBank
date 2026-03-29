@@ -1,186 +1,263 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import 'login_page.dart';
-import '../register/buat_pass_screen.dart';
-import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import '../../../api/auth.dart';
+import '../../../core/colors.dart';
+import 'login_page.dart';
+import '../register/buat_pass_screen.dart';
+
+enum LivenessStep { lookLeft, lookRight, openMouth, blink, done }
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
+  final String? reference;
 
-  const FaceRecogScreen({super.key, this.isFromRegister = false});
+  const FaceRecogScreen({
+    super.key,
+    this.isFromRegister = false,
+    this.reference,
+  });
 
   @override
   State<FaceRecogScreen> createState() => _FaceRecogScreenState();
 }
 
-enum LivenessStep { lookStraight, lookLeft, lookRight, blink, done }
-
 class _FaceRecogScreenState extends State<FaceRecogScreen> {
-  late CameraController _controller;
-  bool isCameraReady = false;
-  bool isProcessing = false;
-
-  LivenessStep currentStep = LivenessStep.lookStraight;
-
-  final faceDetector = FaceDetector(
-    options: FaceDetectorOptions(
-      enableClassification: true,
-      enableTracking: true,
-    ),
-  );
+  CameraController? _controller;
+  late FaceDetector _faceDetector;
+  bool _isCameraReady = false;
+  bool _isProcessing = false;
+  bool _faceDetected = false;
+  String? _errorMessage;
+  LivenessStep _currentStep = LivenessStep.lookLeft;
+  DateTime? _lastStepChangedAt;
+  int? _leftTurnSign;
 
   @override
   void initState() {
     super.initState();
-    initCamera();
+    _faceDetector = FaceDetector(
+      options: FaceDetectorOptions(
+        enableClassification: true,
+        enableTracking: true,
+      ),
+    );
+    _initCamera();
   }
 
-  Future<void> initCamera() async {
-    final cameras = await availableCameras();
-    final frontCamera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.front,
-    );
+  Future<void> _initCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        if (!mounted) return;
+        setState(() => _errorMessage = 'Kamera tidak tersedia');
+        return;
+      }
 
-    _controller = CameraController(
-      frontCamera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
 
-    await _controller.initialize();
+      final controller = CameraController(
+        frontCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
 
-    setState(() => isCameraReady = true);
+      await controller.initialize();
 
-    startImageStream();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      _controller = controller;
+      setState(() => _isCameraReady = true);
+      _startFaceDetectionStream();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Gagal membuka kamera: $e');
+    }
   }
 
-  void startImageStream() {
-    _controller.startImageStream((image) async {
-      if (isProcessing) return;
+  void _startFaceDetectionStream() {
+    final controller = _controller;
+    if (controller == null) return;
 
-      isProcessing = true;
+    controller.startImageStream((image) async {
+      if (_isProcessing) return;
+      _isProcessing = true;
 
       try {
         final inputImage = _inputImageFromCameraImage(image);
+        final faces = await _faceDetector.processImage(inputImage);
+        final detected = faces.isNotEmpty;
 
-        final faces = await faceDetector.processImage(inputImage);
+        if (mounted && detected != _faceDetected) {
+          setState(() => _faceDetected = detected);
+        }
 
         if (faces.isNotEmpty) {
-          processFace(faces.first);
+          _processLiveness(faces.first);
         }
-      } catch (e) {
-        print(e);
+      } catch (_) {
+        // Keep UI responsive even if a frame fails to process.
       }
 
-      isProcessing = false;
+      _isProcessing = false;
     });
   }
 
-  void processFace(Face face) {
+  void _processLiveness(Face face) {
+    if (_currentStep == LivenessStep.done) {
+      return;
+    }
+
     final headY = face.headEulerAngleY ?? 0;
-    final leftEye = face.leftEyeOpenProbability ?? 1;
-    final rightEye = face.rightEyeOpenProbability ?? 1;
+    final leftEyeOpen = face.leftEyeOpenProbability ?? 1;
+    final rightEyeOpen = face.rightEyeOpenProbability ?? 1;
+    final smileProbability = face.smilingProbability ?? 0;
 
-    switch (currentStep) {
-      case LivenessStep.lookStraight:
-        if (headY.abs() < 10) {
-          setState(() => currentStep = LivenessStep.lookLeft);
-        }
-        break;
-
+    bool passed = false;
+    switch (_currentStep) {
       case LivenessStep.lookLeft:
-        if (headY < -15) {
-          setState(() => currentStep = LivenessStep.lookRight);
+        if (headY.abs() > 10) {
+          // On some front cameras, Euler Y sign can be mirrored.
+          _leftTurnSign = headY >= 0 ? 1 : -1;
+          passed = true;
         }
         break;
-
       case LivenessStep.lookRight:
-        if (headY > 15) {
-          setState(() => currentStep = LivenessStep.blink);
+        if (_leftTurnSign != null && headY.abs() > 10) {
+          final currentSign = headY >= 0 ? 1 : -1;
+          passed = currentSign == -_leftTurnSign!;
         }
         break;
-
+      case LivenessStep.openMouth:
+        // ML Kit does not expose mouth-open probability directly, so we use
+        // smile probability as a practical proxy for this step.
+        passed = smileProbability > 0.55;
+        break;
       case LivenessStep.blink:
-        if (leftEye < 0.3 && rightEye < 0.3) {
-          setState(() => currentStep = LivenessStep.done);
-          captureImage();
-        }
+        passed = leftEyeOpen < 0.4 && rightEyeOpen < 0.4;
         break;
-
       case LivenessStep.done:
+        passed = false;
         break;
     }
-  }
 
-  Future<void> captureImage() async {
-    final file = await _controller.takePicture();
-    File imageFile = File(file.path);
+    if (!passed) return;
 
-    try {
-      await AuthService.uploadFaceImage(imageFile);
-
-      if (widget.isFromRegister) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const BuatPassScreen()),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Gagal upload wajah: $e")));
+    final now = DateTime.now();
+    if (_lastStepChangedAt != null &&
+        now.difference(_lastStepChangedAt!).inMilliseconds < 900) {
+      return;
     }
+    _lastStepChangedAt = now;
+
+    if (!mounted) return;
+    setState(() {
+      switch (_currentStep) {
+        case LivenessStep.lookLeft:
+          _currentStep = LivenessStep.lookRight;
+          break;
+        case LivenessStep.lookRight:
+          _currentStep = LivenessStep.openMouth;
+          break;
+        case LivenessStep.openMouth:
+          _currentStep = LivenessStep.blink;
+          break;
+        case LivenessStep.blink:
+          _currentStep = LivenessStep.done;
+          break;
+        case LivenessStep.done:
+          break;
+      }
+    });
   }
 
-  String getInstruction() {
-    switch (currentStep) {
-      case LivenessStep.lookStraight:
-        return "Hadapkan wajah ke depan";
+  String _instructionText() {
+    switch (_currentStep) {
       case LivenessStep.lookLeft:
-        return "Hadap ke kiri";
+        return 'Hadap Kiri';
       case LivenessStep.lookRight:
-        return "Hadap ke kanan";
+        return 'Hadap Kanan';
+      case LivenessStep.openMouth:
+        return 'Buka Mulutmu';
       case LivenessStep.blink:
-        return "Kedipkan mata";
-      default:
-        return "Memproses...";
+        return 'Kedipkan Mata';
+      case LivenessStep.done:
+        return 'Verifikasi Selesai';
     }
   }
 
   InputImage _inputImageFromCameraImage(CameraImage image) {
     final allBytes = BytesBuilder(copy: false);
-
-    for (Plane plane in image.planes) {
+    for (final plane in image.planes) {
       allBytes.add(plane.bytes);
     }
 
     final bytes = allBytes.takeBytes();
-
-    final Size imageSize = Size(
-      image.width.toDouble(),
-      image.height.toDouble(),
-    );
-
     final inputImageFormat =
         InputImageFormatValue.fromRawValue(image.format.raw) ??
         InputImageFormat.nv21;
 
-    final inputImageData = InputImageMetadata(
-      size: imageSize,
+    final metadata = InputImageMetadata(
+      size: Size(image.width.toDouble(), image.height.toDouble()),
       rotation: InputImageRotation.rotation0deg,
       format: inputImageFormat,
       bytesPerRow: image.planes.first.bytesPerRow,
     );
 
-    return InputImage.fromBytes(bytes: bytes, metadata: inputImageData);
+    return InputImage.fromBytes(bytes: bytes, metadata: metadata);
+  }
+
+  Future<void> _onCaptureTap() async {
+    if (!_faceDetected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Wajah belum terdeteksi, coba posisikan wajah di tengah.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (_currentStep != LivenessStep.done) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ikuti instruksi dulu: ${_instructionText()}')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    if (widget.isFromRegister) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BuatPassScreen()),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  @override
+  void dispose() {
+    final controller = _controller;
+    if (controller != null) {
+      if (controller.value.isStreamingImages) {
+        controller.stopImageStream();
+      }
+      controller.dispose();
+    }
+    _faceDetector.close();
+    super.dispose();
   }
 
   @override
@@ -189,25 +266,101 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: isCameraReady
-          ? Stack(
-              alignment: Alignment.center,
-              children: [
-                CameraPreview(_controller),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.textBlack,
+            size: 28,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // TEKS INSTRUKSI
+            Text(
+              _instructionText(),
+              style: alumniSansBold.copyWith(
+                fontSize: 32,
+                color: AppColors.textBlack,
+              ),
+              textAlign: TextAlign.center,
+            ),
 
-                Positioned(
-                  top: 100,
-                  child: Text(
-                    getInstruction(),
-                    style: alumniSansBold.copyWith(
-                      fontSize: 22,
-                      color: Colors.white,
+            const SizedBox(height: 60),
+
+            // WADAH KAMERA (DUMMY FACE)
+            GestureDetector(
+              onTap: _onCaptureTap,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Lingkaran luar (Simulasi garis pinggir seperti di Figma)
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.85,
+                    height: MediaQuery.of(context).size.width * 0.85,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
                     ),
                   ),
-                ),
-              ],
-            )
-          : const Center(child: CircularProgressIndicator()),
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.75,
+                    height: MediaQuery.of(context).size.width * 0.75,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: _errorMessage != null
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.black54),
+                                ),
+                              ),
+                            )
+                          : !_isCameraReady || _controller == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.cover,
+                                  child: SizedBox(
+                                    width:
+                                        _controller!
+                                            .value
+                                            .previewSize
+                                            ?.height ??
+                                        1,
+                                    height:
+                                        _controller!.value.previewSize?.width ??
+                                        1,
+                                    child: CameraPreview(_controller!),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -192,6 +192,7 @@ class ReviewFotoKtpScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => IsiDataScreen(
+                            reference: reference,
                             prefillIdentity:
                                 (result['prefill_identity']
                                     as Map<String, dynamic>?) ??
