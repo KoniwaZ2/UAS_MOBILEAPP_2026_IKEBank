@@ -8,8 +8,13 @@ from .serializers import (
     OtpRequestSerializer,
     OtpVerifySerializer,
     KtpUploadSerializer,
+    FaceUploadSerializer,
+    CheckLoginSerializer,
+    OtpLoginSerializer,
 )
+from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -17,6 +22,7 @@ from django.core.mail import EmailMultiAlternatives
 import re
 import pytesseract
 from PIL import Image
+import user.models as user_models
 
 User = get_user_model()
 
@@ -146,6 +152,31 @@ class OtpRequestView(generics.GenericAPIView):
         otp_requests = []
         purpose = validated_data['purpose']
 
+        # Handle phone_number (SMS) - TODO: Integrate SMS provider
+        if validated_data.get('phone_number'):
+            otp_code = generate_otp_code()
+            otp = OtpVerification.objects.create(
+                channel=OtpVerification.CHANNEL_SMS,
+                destination=validated_data['phone_number'],
+                purpose=purpose,
+                otp_code_hash=hash_otp_code(otp_code),
+                expires_at=OtpVerification.get_default_expiry(minutes=5),
+            )
+            
+            # TODO: Send SMS to phone_number
+            # sms_service.send_otp(validated_data['phone_number'], otp_code)
+            
+            item = {
+                'reference': str(otp.reference),
+                'channel': otp.channel,
+                'destination': validated_data['phone_number'][-4:].rjust(len(validated_data['phone_number']), '*'),
+                'expires_at': otp.expires_at,
+            }
+            if settings.DEBUG:
+                item['debug_otp_code'] = otp_code
+            otp_requests.append(item)
+
+        # Handle email
         if validated_data.get('email'):
             otp_code = generate_otp_code()
             otp = OtpVerification.objects.create(
@@ -270,6 +301,114 @@ class KtpUploadView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class FaceUploadView(generics.GenericAPIView):
+    serializer_class = FaceUploadSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        purpose = validated_data.get('purpose', OtpVerification.PURPOSE_REGISTRATION)
+
+        if purpose == OtpVerification.PURPOSE_REGISTRATION:
+            reference = validated_data.get('reference')
+            if reference is None:
+                return Response(
+                    {'detail': 'reference is required for registration face upload.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            otp, error_response = _get_verified_registration_otp(
+                reference=reference,
+                purpose=OtpVerification.PURPOSE_REGISTRATION,
+            )
+            if error_response is not None:
+                return error_response
+
+            draft, _ = RegistrationDraft.objects.get_or_create(otp_reference=otp)
+            draft.face_image = validated_data['face']
+            draft.save(update_fields=['face_image', 'updated_at'])
+
+            return Response(
+                {
+                    'message': 'Face image uploaded successfully.',
+                    'reference': str(otp.reference),
+                    'purpose': purpose,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                'message': 'Face image uploaded successfully.',
+                'purpose': purpose,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class CheckLoginView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = CheckLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone_number = serializer.validated_data.get('phone_number')
+        email = serializer.validated_data.get('email')
+
+        if not phone_number and not email:
+            return Response({'detail': 'Either phone number or email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_exists = User.objects.filter(phone_number=phone_number).exists() if phone_number else User.objects.filter(email=email).exists()
+
+        if user_exists:
+            return Response({'exists': True, 'message': 'User with this phone number exists.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'exists': False, 'message': 'No user found with this phone number.'}, status=status.HTTP_200_OK)
+
+class OtpLoginView(generics.GenericAPIView):
+    """
+    Login using verified OTP + password
+    Flow: 
+    1. User checks login with /api/auth/login-check/
+    2. User requests OTP with /api/auth/otp/request/ (purpose='login')
+    3. User verifies OTP with /api/auth/otp/verify/ (purpose='login')
+    4. User does facial recognition [TODO]
+    5. User calls this endpoint with otp_reference + password
+    """
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = OtpLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = validated_data['user']
+
+        # Generate tokens
+        refresh = RefreshToken.from_user(user)
+        
+        # Add custom claims to refresh token
+        refresh['phone_number'] = user.phone_number
+        refresh['email'] = user.email
+        refresh['name'] = user.name
+        
+        return Response({
+            'message': 'Login successful.',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'phone_number': user.phone_number,
+                'email': user.email,
+                'name': user.name,
+                'biometric_data': user.biometric_data,
+            }
+        }, status=status.HTTP_200_OK)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
