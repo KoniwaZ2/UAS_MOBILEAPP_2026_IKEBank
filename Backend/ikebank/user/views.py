@@ -11,6 +11,7 @@ from .serializers import (
     FaceUploadSerializer,
     CheckLoginSerializer,
     OtpLoginSerializer,
+    ForgotPasswordSerializer,
 )
 from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -417,3 +418,39 @@ class RegisterView(generics.CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        email = validated_data.get('email')
+        password = validated_data.get('password')
+        password_confirm = validated_data.get('password_confirmation')
+        
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'detail': 'No user found with this email.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if password != password_confirm:
+            return Response({'detail': 'Password and password confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.save(update_fields=['password'])
+
+        return Response(
+            {
+                'message': 'Password berhasil direset.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+

@@ -310,3 +310,32 @@ class OtpLoginSerializer(serializers.Serializer):
         data['user'] = user
         data['otp'] = otp
         return data
+    
+class ForgotPasswordSerializer(serializers.Serializer):
+    # otp_reference = serializers.UUIDField(required=True)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    password_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate(self, data):
+        # otp_reference = data.get('otp_reference')
+        email = data.get('email')
+        password = data.get('password')
+        password_confirmation = data.get('password_confirmation')
+
+        # if otp_reference is None:
+        #     raise serializers.ValidationError({'otp_reference': 'OTP reference is required.'})
+
+        if password != password_confirmation:
+            raise serializers.ValidationError("Password and password confirmation do not match.")
+
+        if not email:
+            raise serializers.ValidationError("Email must be provided.")
+
+        if email:
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, email):
+                raise serializers.ValidationError("Invalid email format.")
+            if not User.objects.filter(email=email).exists():
+                raise PermissionDenied("Email is not registered.")
+        return data
