@@ -63,7 +63,7 @@ class UndangTemanScreen extends StatelessWidget {
                               ),
                               SvgPicture.asset(
                                 'assets/images/teman.svg', 
-                                height: 70,
+                                height: 90,
                               ), 
                             ],
                           ),

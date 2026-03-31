@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../home/home_screen.dart';
 import 'saku/saku_screen.dart';
 import 'qris/qris_screen.dart'; 
-
+import 'kartu/buat_kartu_screen.dart';
 import 'lainnya/lainnya_screen.dart';
 
 class MainTabScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
     const HomeScreen(),
     const SakuScreen(),
     const Scaffold(body: Center(child: Text("Halaman QRIS (Dalam Pengembangan)"))), 
-    const Scaffold(body: Center(child: Text("Halaman Kartu (Dalam Pengembangan)"))), 
+    const BuatKartuScreen(), 
     const LainnyaScreen(),
   ];
 
@@ -103,7 +103,6 @@ class _MainTabScreenState extends State<MainTabScreen> {
   Widget _buildQrisNavItem() {
     return GestureDetector(
       onTap: () {
-        // --- UBAH BAGIAN INI: Gunakan Navigator.push ---
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const QrisScreen()),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../auth/login/login_page.dart';
 import '../../auth/signin.dart';
+import 'laporan_keuangan_screen.dart ';
+import 'pengaturan_screen.dart';
 import 'undang_teman_screen.dart';
 import 'about_us_screen.dart';
 
@@ -32,11 +34,14 @@ class LainnyaScreen extends StatelessWidget {
 
             // 1. Laporan Keuangan
             _buildMenuItem(
-              icon: Icons.assessment, // Bisa diganti dengan custom SVG jika ada
+              icon: Icons.assessment, 
               title: "Laporan Keuangan",
               subtitle: "Klik disini untuk melihat",
               onTap: () {
-                // TODO: Navigasi ke Laporan Keuangan
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LaporanKeuanganScreen()),
+                );
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Menu Laporan Keuangan")));
               },
             ),
@@ -47,7 +52,10 @@ class LainnyaScreen extends StatelessWidget {
               title: "Pengaturan",
               subtitle: "Lihat lebih lanjut tentang pengaturan",
               onTap: () {
-                // TODO: Navigasi ke Pengaturan
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PengaturanScreen()),
+                );
               },
             ),
 

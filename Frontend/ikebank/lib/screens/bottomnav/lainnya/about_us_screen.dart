@@ -110,7 +110,7 @@ class AboutUsScreen extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0xFFFFEAD1), 
           borderRadius: BorderRadius.circular(12),
