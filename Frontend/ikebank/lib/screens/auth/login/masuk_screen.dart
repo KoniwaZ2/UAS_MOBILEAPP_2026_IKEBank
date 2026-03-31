@@ -15,6 +15,7 @@ class _MasukScreenState extends State<MasukScreen> {
 
   String? _errorMessage;
   bool _isCheckingLogin = false;
+  bool _isLoading = false;
 
   Future<void> _validasiDanLanjut() async {
     final email = _emailController.text.trim();
@@ -46,7 +47,7 @@ class _MasukScreenState extends State<MasukScreen> {
       final result = await AuthService.checkLogin(email: email);
       final exists = result['exists'] == true;
 
-      if (!mounted) {
+      if (!context.mounted) {
         return;
       }
 
@@ -62,14 +63,36 @@ class _MasukScreenState extends State<MasukScreen> {
         _isCheckingLogin = false;
       });
 
+      final otpRes = await AuthService.otpRequest(
+        email: email,
+        purpose: 'login',
+      );
+      final otpRequests = (otpRes['otp_requests'] as List?) ?? [];
+      if (otpRequests.isEmpty) {
+        throw Exception('OTP reference tidak ditemukan');
+      }
+      final reference =
+          (otpRequests.first as Map<String, dynamic>)['reference']
+              ?.toString() ??
+          '';
+
+      if (reference.isEmpty) {
+        throw Exception('OTP reference kosong');
+      }
+
+      if (!context.mounted) {
+        return;
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VerifikasiCodeScreen(email: email),
+          builder: (context) =>
+              VerifikasiCodeScreen(email: email, reference: reference),
         ),
       );
     } catch (e) {
-      if (!mounted) {
+      if (!context.mounted) {
         return;
       }
       setState(() {

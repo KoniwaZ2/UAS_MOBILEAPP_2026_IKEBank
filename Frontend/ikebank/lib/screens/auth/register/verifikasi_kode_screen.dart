@@ -300,6 +300,7 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       await AuthService.otpVerify(
                                         reference: _reference,
                                         otpcode: otpCodeTrimmed,
+                                        purpose: 'registration',
                                       );
 
                                       if (!context.mounted) {

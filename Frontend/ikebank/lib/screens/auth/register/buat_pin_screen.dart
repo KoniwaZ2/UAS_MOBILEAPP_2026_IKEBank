@@ -88,7 +88,10 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => LoginPage(prefilledEmail: flowData.email),
+          builder: (context) => LoginPage(
+            prefilledEmail: flowData.email,
+            isAfterRegister: true,
+          ),
         ),
         (Route<dynamic> route) => false,
       );

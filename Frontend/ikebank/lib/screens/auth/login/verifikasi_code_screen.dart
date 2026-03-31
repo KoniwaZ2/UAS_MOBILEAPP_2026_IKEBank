@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../api/auth.dart';
 import '../../../core/colors.dart';
-import 'verifikasi_wajah_screen.dart';
+import '../login/verifikasi_wajah_screen.dart';
 
 class VerifikasiCodeScreen extends StatefulWidget {
   final String email;
+  final String reference;
 
-  const VerifikasiCodeScreen({super.key, required this.email});
+  const VerifikasiCodeScreen({
+    super.key,
+    required this.email,
+    required this.reference,
+  });
 
   @override
   State<VerifikasiCodeScreen> createState() => _VerifikasiCodeScreenState();
@@ -23,6 +28,12 @@ class _VerifikasiCodeScreenState extends State<VerifikasiCodeScreen> {
   bool _isResending = false;
   bool _isSubmitting = false;
   String _reference = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _reference = widget.reference.trim();
+  }
 
   @override
   void dispose() {
@@ -259,6 +270,7 @@ class _VerifikasiCodeScreenState extends State<VerifikasiCodeScreen> {
                                       await AuthService.otpVerify(
                                         reference: _reference,
                                         otpcode: otpCodeTrimmed,
+                                        purpose: 'login',
                                       );
 
                                       if (!context.mounted) {
@@ -268,11 +280,12 @@ class _VerifikasiCodeScreenState extends State<VerifikasiCodeScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => FotoKtpScreen(
-                                            phone: widget.phone,
-                                            email: widget.email,
-                                            reference: _reference,
-                                          ),
+                                          builder: (context) =>
+                                              VerifikasiWajahScreen(
+                                                isFromRegister: false,
+                                                email: widget.email,
+                                                reference: _reference,
+                                              ),
                                         ),
                                       );
                                     } catch (e) {

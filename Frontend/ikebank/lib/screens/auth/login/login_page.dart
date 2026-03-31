@@ -6,8 +6,13 @@ import '../../home/home_screen.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
+  final bool isAfterRegister;
 
-  const LoginPage({super.key, this.prefilledEmail});
+  const LoginPage({
+    super.key,
+    this.prefilledEmail,
+    this.isAfterRegister = false,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -63,7 +68,13 @@ class _LoginPageState extends State<LoginPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            entrySource: widget.isAfterRegister
+                ? HomeEntrySource.register
+                : HomeEntrySource.login,
+          ),
+        ),
         (Route<dynamic> route) => false,
       );
     } catch (e) {
@@ -302,7 +313,9 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const HomeScreen(),
+                                builder: (context) => const HomeScreen(
+                                  entrySource: HomeEntrySource.login,
+                                ),
                               ),
                               (Route<dynamic> route) => false,
                             );

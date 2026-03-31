@@ -5,12 +5,14 @@ import 'face_recog_screen.dart';
 
 class VerifikasiWajahScreen extends StatelessWidget {
   final bool isFromRegister;
+  final String? email;
   final String? reference;
   final RegisterFlowData? flowData;
 
   const VerifikasiWajahScreen({
     super.key,
     this.isFromRegister = false,
+    this.email,
     this.reference,
     this.flowData,
   });
@@ -133,6 +135,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
                                 MaterialPageRoute(
                                   builder: (context) => FaceRecogScreen(
                                     isFromRegister: isFromRegister,
+                                    email: email,
                                     reference: reference,
                                     flowData: flowData,
                                   ),

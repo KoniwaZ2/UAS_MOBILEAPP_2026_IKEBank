@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static String baseUrl = 'http://192.168.1.12:8000/api/auth';
+  static String baseUrl = 'http://192.168.1.29:8000/api/auth';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
@@ -98,11 +98,15 @@ class AuthService {
     required String purpose,
   }) async {
     final url = Uri.parse("$baseUrl/otp/request/");
-
+    final String normalizedPurpose = purpose.toLowerCase() == 'registration'
+        ? 'registration'
+        : purpose.toLowerCase() == 'login'
+        ? 'login'
+        : purpose;
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'purpose': 'registration'}),
+      body: jsonEncode({'email': email, 'purpose': normalizedPurpose}),
     );
 
     if (response.statusCode == 200) {
@@ -115,6 +119,7 @@ class AuthService {
   static Future<Map<String, dynamic>> otpVerify({
     required String reference,
     required String otpcode,
+    required String purpose,
   }) async {
     final url = Uri.parse("$baseUrl/otp/verify/");
 
@@ -124,7 +129,7 @@ class AuthService {
       body: jsonEncode({
         'reference': reference,
         'otp_code': otpcode,
-        'purpose': 'registration',
+        'purpose': purpose,
       }),
     );
 
@@ -327,6 +332,58 @@ class AuthService {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(_extractErrorMessage(response, 'Failed to check data'));
+    }
+  }
+
+  static Future<void> checkFaceLogin(
+    File imageFile, {
+    String? reference,
+    String purpose = 'login',
+  }) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/face/login/'),
+    );
+
+    request.fields['purpose'] = purpose;
+    if (reference != null && reference.isNotEmpty) {
+      request.fields['reference'] = reference;
+    }
+
+    request.files.add(
+      await http.MultipartFile.fromPath('face', imageFile.path),
+    );
+
+    var response = await request.send();
+
+    if (response.statusCode != 200) {
+      final respStr = await response.stream.bytesToString();
+      throw Exception("Upload gagal: $respStr");
+    }
+  }
+
+  static Future<void> forgotPassword({
+    required String email,
+    required String purpose,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final url = Uri.parse('$baseUrl/forgot-password/');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'purpose': purpose,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      }),
     );
 
     if (response.statusCode == 200) {

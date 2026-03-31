@@ -13,12 +13,14 @@ enum LivenessStep { lookLeft, lookRight, smile, blink, done }
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
+  final String? email;
   final String? reference;
   final RegisterFlowData? flowData;
 
   const FaceRecogScreen({
     super.key,
     this.isFromRegister = false,
+    this.email,
     this.reference,
     this.flowData,
   });
@@ -319,9 +321,12 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    final prefilledEmail = widget.email?.trim();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
+      MaterialPageRoute(
+        builder: (context) => LoginPage(prefilledEmail: prefilledEmail),
+      ),
     );
   }
 
