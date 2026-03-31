@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from user.models import User, OtpVerification, generate_otp_code, hash_otp_code
 from .serializers import (
     CheckPhoneEmailSerializer,
+    FaceLoginSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
     OtpRequestSerializer,
@@ -21,6 +22,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 import re
+import math
 import pytesseract
 from PIL import Image
 import user.models as user_models
@@ -152,30 +154,6 @@ class OtpRequestView(generics.GenericAPIView):
 
         otp_requests = []
         purpose = validated_data['purpose']
-
-        # Handle phone_number (SMS) - TODO: Integrate SMS provider
-        if validated_data.get('phone_number'):
-            otp_code = generate_otp_code()
-            otp = OtpVerification.objects.create(
-                channel=OtpVerification.CHANNEL_SMS,
-                destination=validated_data['phone_number'],
-                purpose=purpose,
-                otp_code_hash=hash_otp_code(otp_code),
-                expires_at=OtpVerification.get_default_expiry(minutes=5),
-            )
-            
-            # TODO: Send SMS to phone_number
-            # sms_service.send_otp(validated_data['phone_number'], otp_code)
-            
-            item = {
-                'reference': str(otp.reference),
-                'channel': otp.channel,
-                'destination': validated_data['phone_number'][-4:].rjust(len(validated_data['phone_number']), '*'),
-                'expires_at': otp.expires_at,
-            }
-            if settings.DEBUG:
-                item['debug_otp_code'] = otp_code
-            otp_requests.append(item)
 
         # Handle email
         if validated_data.get('email'):
@@ -350,6 +328,81 @@ class FaceUploadView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class FaceLoginView(generics.GenericAPIView):
+    serializer_class = FaceLoginSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        otp = OtpVerification.objects.filter(
+            reference=validated_data['reference'],
+            purpose=OtpVerification.PURPOSE_LOGIN,
+            is_verified=True,
+        ).first()
+
+        if otp is None:
+            return Response({'detail': 'OTP reference not found or not verified.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if otp.is_expired():
+            return Response({'detail': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone_number=otp.destination).first() or User.objects.filter(email=otp.destination).first()
+        if user is None:
+            return Response({'detail': 'User not found for this OTP reference.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.face_encoding:
+            return Response(
+                {'detail': 'User has no registered face data. Please complete registration first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        probe_encoding = user_models.extract_face_encoding(validated_data['face'])
+        if not probe_encoding:
+            return Response({'detail': 'Failed to extract face features from uploaded image.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stored_encoding = user.face_encoding
+        if len(stored_encoding) != len(probe_encoding):
+            return Response({'detail': 'Stored face data is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Compare two normalized vectors using root-mean-square distance.
+        squared_sum = sum((float(a) - float(b)) ** 2 for a, b in zip(stored_encoding, probe_encoding))
+        rms_distance = math.sqrt(squared_sum / len(stored_encoding))
+
+        threshold = 0.20
+        is_match = rms_distance <= threshold
+
+        if not is_match:
+            return Response(
+                {
+                    'verified': False,
+                    'detail': 'Face does not match.',
+                    'distance': round(rms_distance, 6),
+                    'threshold': threshold,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(
+            {
+                'message': 'Face verified successfully.',
+                'verified': True,
+                'reference': str(otp.reference),
+                'user': {
+                    'phone_number': user.phone_number,
+                    'email': user.email,
+                    'name': user.name,
+                },
+                'distance': round(rms_distance, 6),
+                'threshold': threshold,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        
 
 class CheckLoginView(generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)

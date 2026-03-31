@@ -152,6 +152,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class OtpVerification(models.Model):
+    # ubah capslok smua
     CHANNEL_SMS = 'sms'
     CHANNEL_EMAIL = 'email'
     CHANNEL_CHOICES = [

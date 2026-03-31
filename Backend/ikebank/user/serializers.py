@@ -38,12 +38,12 @@ class CheckPhoneEmailSerializer(serializers.Serializer):
 class OtpRequestSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
-    purpose = serializers.ChoiceField(choices=['registration', 'login'], default='registration', required=False)
+    purpose = serializers.ChoiceField(choices=['registration', 'login'], required=True)
 
     def validate(self, data):
         phone_number = data.get('phone_number')
         email = data.get('email')
-        purpose = data.get('purpose', 'registration')
+        purpose = data.get('purpose')
 
         if not phone_number and not email:
             raise serializers.ValidationError("Either phone number or email must be provided.")
@@ -67,12 +67,12 @@ class OtpRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Invalid email format.")
             
             # For login, user must exist. For registration, user must not exist.
-            if purpose == 'login':
-                if not User.objects.filter(email=email).exists():
-                    raise PermissionDenied("Email is not registered.")
-            else:
+            if purpose == 'registration':
                 if User.objects.filter(email=email).exists():
-                    raise serializers.ValidationError("Email is already in use.")
+                    raise PermissionDenied("Email is registered.")
+            else:
+                if not User.objects.filter(email=email).exists():
+                    raise serializers.ValidationError("Email is not registered.")
         
         return {
             'phone_number': phone_number,
@@ -84,19 +84,24 @@ class OtpRequestSerializer(serializers.Serializer):
 class OtpVerifySerializer(serializers.Serializer):
     reference = serializers.UUIDField(required=True)
     otp_code = serializers.RegexField(regex=r'^\d{6}$', required=True)
-    purpose = serializers.ChoiceField(choices=['registration', 'login'], default='registration', required=False)
+    purpose = serializers.ChoiceField(choices=['registration', 'login'], required=True)
 
 
 class KtpUploadSerializer(serializers.Serializer):
     reference = serializers.UUIDField(required=True)
     ktp = serializers.ImageField(required=True)
-    purpose = serializers.ChoiceField(choices=['registration', 'login'], default='registration', required=False)
+    purpose = serializers.ChoiceField(choices=['registration', 'login'], required=True)
 
 
 class FaceUploadSerializer(serializers.Serializer):
     reference = serializers.UUIDField(required=False)
     face = serializers.ImageField(required=True)
-    purpose = serializers.ChoiceField(choices=['registration', 'login'], default='registration', required=False)
+    purpose = serializers.ChoiceField(choices=['registration'], default='registration', required=False)
+
+class FaceLoginSerializer(serializers.Serializer):
+    reference = serializers.UUIDField(required=True)
+    face = serializers.ImageField(required=True)
+    purpose = serializers.ChoiceField(choices=['login'], required=True)
 
 class CheckLoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False)
@@ -312,19 +317,19 @@ class OtpLoginSerializer(serializers.Serializer):
         return data
     
 class ForgotPasswordSerializer(serializers.Serializer):
-    # otp_reference = serializers.UUIDField(required=True)
+    otp_reference = serializers.UUIDField(required=True)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     def validate(self, data):
-        # otp_reference = data.get('otp_reference')
+        otp_reference = data.get('otp_reference')
         email = data.get('email')
         password = data.get('password')
         password_confirmation = data.get('password_confirmation')
 
-        # if otp_reference is None:
-        #     raise serializers.ValidationError({'otp_reference': 'OTP reference is required.'})
+        if otp_reference is None:
+            raise serializers.ValidationError({'otp_reference': 'OTP reference is required.'})
 
         if password != password_confirmation:
             raise serializers.ValidationError("Password and password confirmation do not match.")
