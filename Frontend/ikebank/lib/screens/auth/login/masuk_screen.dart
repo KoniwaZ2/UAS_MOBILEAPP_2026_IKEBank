@@ -65,7 +65,7 @@ class _MasukScreenState extends State<MasukScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VerifikasiCodeScreen(emailUser: email),
+          builder: (context) => VerifikasiCodeScreen(email: email),
         ),
       );
     } catch (e) {

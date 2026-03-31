@@ -95,6 +95,7 @@ class AuthService {
 
   static Future<Map<String, dynamic>> otpRequest({
     required String email,
+    required String purpose,
   }) async {
     final url = Uri.parse("$baseUrl/otp/request/");
 

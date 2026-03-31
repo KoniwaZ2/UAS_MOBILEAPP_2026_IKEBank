@@ -181,6 +181,7 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       final otpRes =
                                           await AuthService.otpRequest(
                                             email: widget.email,
+                                            purpose: 'registration',
                                           );
 
                                       final otpRequests =
