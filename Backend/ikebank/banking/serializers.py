@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import BankAccount, CashFlow
+from .models import BankAccount, CashFlow, Transaction
 
 
 class RegisterBankAccountSerializer(serializers.Serializer):
@@ -27,8 +27,8 @@ class CashFlowSerializer(serializers.ModelSerializer):
         ]
 
 class TransactionCreateSerializer(serializers.Serializer):
-    saku_id = serializers.IntegerField(required=True)
-    category_id = serializers.IntegerField(required=True)
+    saku_id = serializers.IntegerField(required=True) #saku tujuan
+    category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
     amount = serializers.IntegerField(required=True)
     description = serializers.CharField(required=False, allow_blank=True)
     source_funds = serializers.CharField(required=False, allow_blank=True)

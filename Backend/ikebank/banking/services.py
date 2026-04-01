@@ -25,11 +25,11 @@ def upsert_cashflow_for_account(account, month, year):
         timestamp__month=month,
     ).aggregate(
         total_income=Coalesce(
-            Sum('amount', filter=Q(category_id__direction='income')),
+            Sum('amount', filter=Q(category__in=Transaction.INCOME_CATEGORIES)),
             Value(0),
         ),
         total_expense=Coalesce(
-            Sum('amount', filter=Q(category_id__direction='expense')),
+            Sum('amount', filter=Q(category__in=Transaction.EXPENSE_CATEGORIES)),
             Value(0),
         ),
     )

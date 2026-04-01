@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import PermissionDenied
@@ -198,7 +199,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("NIK must be exactly 16 digits.")
 
         hashed_nik = user_models.hash_nik(nik)
-        if User.objects.filter(nik=hashed_nik).exists():
+        # Support legacy rows where NIK might still be stored in plain text.
+        if User.objects.filter(nik__in=[hashed_nik, nik]).exists():
             raise serializers.ValidationError("NIK is already in use.")
         
         return hashed_nik
@@ -243,7 +245,21 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data['pin'] = user_models.hash_pin(validated_data['pin'])
         user = User(**validated_data)
         user.set_password(password)
-        user.save()
+
+        try:
+            with transaction.atomic():
+                user.save()
+        except IntegrityError as exc:
+            # Convert database-level unique constraint errors into API-friendly validation errors.
+            message = str(exc).lower()
+            if 'user_user.nik' in message:
+                raise serializers.ValidationError({'nik': 'NIK is already in use.'}) from exc
+            if 'user_user.email' in message:
+                raise serializers.ValidationError({'email': 'Email is already in use.'}) from exc
+            if 'user_user.phone_number' in message:
+                raise serializers.ValidationError({'phone_number': 'Phone number is already in use.'}) from exc
+            raise serializers.ValidationError({'detail': 'Registration failed due to duplicate data.'}) from exc
+
         return user
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -12,9 +12,9 @@ class BankAccount(models.Model):
 
     def __str__(self):
         return f"{self.user.name} - {self.account_number}"
-    
 
-class TransactionCategory(models.Model):
+
+class Transaction(models.Model):
     CATEGORY_CHOICES = [
         ('transfer_in', 'Transfer In'),
         ('transfer_out', 'Transfer Out'),
@@ -25,21 +25,12 @@ class TransactionCategory(models.Model):
         ('other', 'Other'),
     ]
 
-    DIRECTION_CHOICES = [
-        ('income', 'Income'),
-        ('expense', 'Expense'),
-    ]
+    INCOME_CATEGORIES = ('transfer_in', 'deposit', 'interest')
+    EXPENSE_CATEGORIES = ('transfer_out', 'payment', 'withdrawal', 'other')
 
-    category_name = models.CharField(max_length=50, unique=True, null=False, blank=False, choices=CATEGORY_CHOICES)
-    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES, null=False, blank=False)
-
-    def __str__(self):
-        return self.category_name
-    
-class Transaction(models.Model):
     account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transactions')
     saku = models.ForeignKey('Saku', on_delete=models.CASCADE, null=True, blank=True, related_name='transactions')
-    category_id = models.ForeignKey(TransactionCategory, on_delete=models.SET_NULL, null=True, related_name='transactions')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=False, blank=False)
     amount = models.IntegerField(null=False, blank=False)
     balance_after = models.IntegerField(null=False, blank=False)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -47,7 +38,7 @@ class Transaction(models.Model):
     source_funds = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.saku.saku_name if self.saku else 'No Saku'} - {self.category_id} - {self.amount}"
+        return f"{self.saku.saku_name if self.saku else 'No Saku'} - {self.category} - {self.amount}"
     
 class CashFlow(models.Model):
     STATUS_CHOICES = [
@@ -93,7 +84,7 @@ class CardDetails(models.Model):
     expiry_date = models.DateField(null=False, blank=False)
 
     def __str__(self):
-        return f"{self.cardholder_name} - {self.card_number}"
+        return f"{self.cardholder_name} - {self.account_id.card_number}"
 
 class Saku(models.Model):
     CATEGORY_CHOICES = [

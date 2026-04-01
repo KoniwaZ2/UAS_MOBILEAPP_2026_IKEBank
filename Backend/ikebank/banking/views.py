@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Saku
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, RegisterBankAccountSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, RegisterBankAccountSerializer, TransactionCreateSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -103,4 +103,22 @@ class TransactionCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        pass
+        serializer = TransactionCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = BankAccount.objects.filter(
+            id=validated_data['account_id'],
+            user=request.user,
+        ).first()
+
+        if account is None:
+            return Response(
+                {'detail': 'Bank account not found or not owned by user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Logika untuk membuat transaksi baru
+        # ...
+
+        return Response({'detail': 'Transaction created successfully.'}, status=status.HTTP_201_CREATED)
