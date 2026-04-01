@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
-import '../../../models/register_flow_data.dart';
-import '../login/login_page.dart';
+import '../login/login_page.dart'; 
 
 class BuatPinScreen extends StatefulWidget {
-  final RegisterFlowData? flowData;
-
-  const BuatPinScreen({super.key, this.flowData});
+  const BuatPinScreen({super.key});
 
   @override
   State<BuatPinScreen> createState() => _BuatPinScreenState();
@@ -16,103 +12,12 @@ class BuatPinScreen extends StatefulWidget {
 class _BuatPinScreenState extends State<BuatPinScreen> {
   final TextStyle alumniSansBold = const TextStyle(
     fontWeight: FontWeight.w700,
-    fontFamily: 'AlumniSans',
+    fontFamily: 'AlumniSans', 
   );
 
   // Controller untuk menyimpan input PIN
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _confirmPinController = TextEditingController();
-  bool _isSubmitting = false;
-
-  Future<void> _submitRegistration() async {
-    String pin1 = _pinController.text;
-    String pin2 = _confirmPinController.text;
-
-    if (pin1.length < 6 || pin2.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
-      );
-      return;
-    }
-
-    if (pin1 != pin2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
-      );
-      return;
-    }
-
-    final flowData = widget.flowData;
-    if (flowData == null ||
-        flowData.ktpFile == null ||
-        (flowData.password ?? '').isEmpty ||
-        (flowData.otpReference).isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data registrasi belum lengkap. Ulangi dari awal.'),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      await AuthService.register(
-        otpReference: flowData.otpReference,
-        phoneNumber: flowData.phoneNumber,
-        email: flowData.email,
-        password: flowData.password!,
-        name: flowData.name ?? '',
-        nik: flowData.nik ?? '',
-        bornPlace: flowData.bornPlace ?? '-',
-        bornDate: flowData.bornDate ?? '',
-        gender: flowData.gender ?? 'Other',
-        address: flowData.address ?? '',
-        religion: flowData.religion ?? '',
-        motherName: flowData.motherName ?? '',
-        pin: pin1,
-        ktpFile: flowData.ktpFile!,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registrasi Berhasil! Silakan Login')),
-      );
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LoginPage(
-            prefilledEmail: flowData.email,
-            isAfterRegister: true,
-          ),
-        ),
-        (Route<dynamic> route) => false,
-      );
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -124,7 +29,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryOrange,
+      backgroundColor: AppColors.primaryOrange, 
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -135,17 +40,14 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
             child: Row(
               children: [
                 _buildProgressSegment(isActive: true),
                 _buildProgressSegment(isActive: true),
                 _buildProgressSegment(isActive: true),
                 _buildProgressSegment(isActive: true),
-                _buildProgressSegment(isActive: true),
+                _buildProgressSegment(isActive: true), 
                 _buildProgressSegment(isActive: true),
               ],
             ),
@@ -166,30 +68,29 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 32.0,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
                 child: CustomScrollView(
                   slivers: [
                     SliverFillRemaining(
                       hasScrollBody: false,
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.center, // Pusatkan isi
+                        crossAxisAlignment: CrossAxisAlignment.center, // Pusatkan isi
                         children: [
                           Text(
                             "Buat PIN Baru",
                             style: alumniSansBold.copyWith(
-                              fontSize: 32,
+                              fontSize: 32, 
                               color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 24),
-
+                          
                           const Text(
                             "Masukkan PIN keamananmu",
-                            style: TextStyle(fontSize: 22, color: Colors.black),
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: Colors.black,
+                            ),
                           ),
                           const SizedBox(height: 16),
 
@@ -206,18 +107,21 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                               height: 1.4,
                             ),
                           ),
-
+                          
                           const SizedBox(height: 32),
 
                           const Text(
                             "Konfirmasi PIN keamananmu",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
                           ),
                           const SizedBox(height: 16),
 
                           _buildPinInputBox(_confirmPinController),
 
-                          const Spacer(),
+                          const Spacer(), 
 
                           SizedBox(
                             width: double.infinity,
@@ -225,16 +129,42 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryOrange,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 18,
-                                ),
-                                shape: const StadiumBorder(),
+                                padding: const EdgeInsets.symmetric(vertical: 18),
+                                shape: const StadiumBorder(), 
                               ),
                               onPressed: () {
-                                _submitRegistration();
+                                // LOGIKA VALIDASI PIN
+                                String pin1 = _pinController.text;
+                                String pin2 = _confirmPinController.text;
+
+                                if (pin1.length < 6 || pin2.length < 6) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
+                                  );
+                                  return;
+                                }
+
+                                if (pin1 != pin2) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
+                                  );
+                                  return;
+                                }
+
+                                // JIKA SUKSES: Lari ke Halaman Login dan Hapus Rute Sebelumnya!
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Registrasi Berhasil! Silakan Login')),
+                                );
+
+                                // pushAndRemoveUntil agar user tidak bisa kembali ke halaman registrasi pakai tombol back HP
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                                  (Route<dynamic> route) => false,
+                                );
                               },
                               child: Text(
-                                _isSubmitting ? "Memproses..." : "Lanjut",
+                                "Lanjut",
                                 style: alumniSansBold.copyWith(
                                   fontSize: 20,
                                   color: Colors.white,
@@ -242,7 +172,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 20), 
                         ],
                       ),
                     ),
@@ -265,7 +195,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(6, (index) {
             return Container(
-              width: 48,
+              width: 48, 
               height: 52,
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
@@ -275,9 +205,9 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
               child: Text(
                 controller.text.length > index ? "•" : "",
                 style: const TextStyle(
-                  fontSize: 28,
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 28, 
+                  color: Colors.black, 
+                  fontWeight: FontWeight.bold
                 ),
               ),
             );
@@ -285,14 +215,14 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
         ),
         Positioned.fill(
           child: Opacity(
-            opacity: 0.0,
+            opacity: 0.0, 
             child: TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              maxLength: 6,
-              cursorColor: Colors.transparent,
+              maxLength: 6, 
+              cursorColor: Colors.transparent, 
               decoration: const InputDecoration(
-                counterText: "",
+                counterText: "", 
                 border: InputBorder.none,
               ),
               onChanged: (value) {
@@ -308,17 +238,19 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6,
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+        height: 6, 
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
         decoration: BoxDecoration(
-          gradient: isActive
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );

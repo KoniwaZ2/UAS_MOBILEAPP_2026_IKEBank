@@ -1,18 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-import 'ktp_camera_screen.dart';
+import 'ktp_camera_screen.dart'; 
 
 class FotoKtpScreen extends StatelessWidget {
-  final String phone;
-  final String email;
-  final String? reference;
-
-  const FotoKtpScreen({
-    super.key,
-    required this.phone,
-    required this.email,
-    required this.reference,
-  });
+  const FotoKtpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +35,7 @@ class FotoKtpScreen extends StatelessWidget {
           ),
         ),
       ),
-
+      
       body: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(top: 16.0),
@@ -62,69 +53,34 @@ class FotoKtpScreen extends StatelessWidget {
             children: [
               Text(
                 "Ambil foto KTP Kamu",
-                style: alumniSansBold.copyWith(
-                  fontSize: 32,
-                  color: AppColors.textBlack,
-                ),
+                style: alumniSansBold.copyWith(fontSize: 32, color: AppColors.textBlack),
               ),
               const SizedBox(height: 8),
               const Text(
                 "Pastikan foto tidak blur dan kamu berada di cahaya\nyang terang",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textBlack,
-                  height: 1.4,
-                ),
+                style: TextStyle(fontSize: 15, color: AppColors.textBlack, height: 1.4),
               ),
               const SizedBox(height: 32),
 
               GestureDetector(
                 onTap: () {
-                  if (reference == null || reference!.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Reference OTP tidak tersedia. Ulangi verifikasi OTP.',
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => KtpCameraScreen(
-                        phone: phone,
-                        email: email,
-                        reference: reference,
-                      ),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const KtpCameraScreen()));
                 },
                 child: Container(
                   height: 180,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: AppColors.inputGrey,
+                    color: AppColors.inputGrey, 
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.camera_alt_outlined,
-                        size: 48,
-                        color: Colors.black87,
-                      ),
+                      const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.black87),
                       const SizedBox(height: 12),
                       Text(
                         "Klik untuk mengambil gambar",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade800,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey.shade800),
                       ),
                     ],
                   ),
@@ -137,20 +93,18 @@ class FotoKtpScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade300,
+                    backgroundColor: Colors.grey.shade300, 
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                  },
                   child: Text(
                     "Lanjut",
-                    style: alumniSansBold.copyWith(
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
+                    style: alumniSansBold.copyWith(fontSize: 20, color: Colors.white),
                   ),
                 ),
               ),
@@ -166,18 +120,20 @@ class FotoKtpScreen extends StatelessWidget {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6,
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+        height: 6, 
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
         decoration: BoxDecoration(
-          gradient: isActive
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+              
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );

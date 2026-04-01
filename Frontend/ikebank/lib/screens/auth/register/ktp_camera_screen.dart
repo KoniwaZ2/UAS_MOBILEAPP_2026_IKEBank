@@ -1,44 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart'; // Untuk mengambil gambar dari kamera
 import '../../../core/colors.dart';
-import 'review_foto_ktp_screen.dart';
+import 'review_foto_ktp_screen.dart'; 
 
 class KtpCameraScreen extends StatelessWidget {
-  final String phone;
-  final String email;
-  final String? reference;
-
-  const KtpCameraScreen({
-    super.key,
-    required this.phone,
-    required this.email,
-    required this.reference,
-  });
-
-  Future<void> _captureKtpAndNavigate(BuildContext context) async {
-    final XFile? pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (pickedFile == null || !context.mounted) {
-      return;
-    }
-
-    final File imageFile = File(pickedFile.path);
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ReviewFotoKtpScreen(
-          imageFile: imageFile,
-          phone: phone,
-          email: email,
-          reference: reference,
-        ),
-      ),
-    );
-  }
+  const KtpCameraScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -87,10 +52,7 @@ class KtpCameraScreen extends StatelessWidget {
             children: [
               Text(
                 "Pastikan KTP berada di dalam bingkai",
-                style: alumniSansBold.copyWith(
-                  fontSize: 22,
-                  color: AppColors.textBlack,
-                ),
+                style: alumniSansBold.copyWith(fontSize: 22, color: AppColors.textBlack),
               ),
               const SizedBox(height: 20),
 
@@ -104,18 +66,14 @@ class KtpCameraScreen extends StatelessWidget {
                       Container(
                         color: Colors.grey.shade400,
                         child: const Center(
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 60,
-                            color: Colors.white54,
-                          ),
+                          child: Icon(Icons.camera_alt, size: 60, color: Colors.white54),
                         ),
                       ),
 
                       Center(
                         child: SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.75,
-                          height: MediaQuery.of(context).size.height * 0.25,
+                          width: MediaQuery.of(context).size.width * 0.75, 
+                          height: MediaQuery.of(context).size.height * 0.25, 
                           child: Stack(
                             children: [
                               _buildCorner(isTop: true, isLeft: true),
@@ -132,7 +90,12 @@ class KtpCameraScreen extends StatelessWidget {
                         left: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: () => _captureKtpAndNavigate(context),
+                          onTap: () {
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (context) => const ReviewFotoKtpScreen())
+                            );
+                          },
                           child: Container(
                             width: 70,
                             height: 70,
@@ -162,36 +125,20 @@ class KtpCameraScreen extends StatelessWidget {
       left: isLeft ? 0 : null,
       right: isLeft ? null : 0,
       child: Container(
-        width: 40,
+        width: 40, 
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.only(
-            topLeft: (isTop && isLeft)
-                ? const Radius.circular(12)
-                : Radius.zero,
-            topRight: (isTop && !isLeft)
-                ? const Radius.circular(12)
-                : Radius.zero,
-            bottomLeft: (!isTop && isLeft)
-                ? const Radius.circular(12)
-                : Radius.zero,
-            bottomRight: (!isTop && !isLeft)
-                ? const Radius.circular(12)
-                : Radius.zero,
+            topLeft: (isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
+            topRight: (isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
+            bottomLeft: (!isTop && isLeft) ? const Radius.circular(12) : Radius.zero,
+            bottomRight: (!isTop && !isLeft) ? const Radius.circular(12) : Radius.zero,
           ),
           border: Border(
-            top: isTop
-                ? const BorderSide(color: Colors.white, width: 6)
-                : BorderSide.none,
-            bottom: !isTop
-                ? const BorderSide(color: Colors.white, width: 6)
-                : BorderSide.none,
-            left: isLeft
-                ? const BorderSide(color: Colors.white, width: 6)
-                : BorderSide.none,
-            right: !isLeft
-                ? const BorderSide(color: Colors.white, width: 6)
-                : BorderSide.none,
+            top: isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
+            bottom: !isTop ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
+            left: isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
+            right: !isLeft ? const BorderSide(color: Colors.white, width: 6) : BorderSide.none,
           ),
         ),
       ),
@@ -202,18 +149,20 @@ class KtpCameraScreen extends StatelessWidget {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6,
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+        height: 6, 
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
         decoration: BoxDecoration(
-          gradient: isActive
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+              
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );

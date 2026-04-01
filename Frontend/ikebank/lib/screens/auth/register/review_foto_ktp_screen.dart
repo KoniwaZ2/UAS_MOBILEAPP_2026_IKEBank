@@ -1,30 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:ikebank/api/auth.dart';
-import 'dart:io';
 import '../../../core/colors.dart';
 import 'isi_data_screen.dart'; // Nanti kita buat file ini
 
 class ReviewFotoKtpScreen extends StatelessWidget {
-  final File? imageFile;
-  final String phone;
-  final String email;
-  final String? reference;
-
-  const ReviewFotoKtpScreen({
-    super.key,
-    this.imageFile,
-    required this.phone,
-    required this.email,
-    this.reference,
-  });
+  const ReviewFotoKtpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
 
     return Scaffold(
-      backgroundColor:
-          AppColors.primaryOrange, // Latar belakang oranye solid di atas
+      backgroundColor: AppColors.primaryOrange, // Latar belakang oranye solid di atas
       // ==========================================================
       // APP BAR & PROGRESS BAR
       // ==========================================================
@@ -36,14 +22,9 @@ class ReviewFotoKtpScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(
-            20.0,
-          ), // Beri padding sedikit vertikal
+          preferredSize: const Size.fromHeight(20.0), // Beri padding sedikit vertikal
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
             child: Row(
               children: [
                 // Progress Bar: 3 Nyala (Gradasi Biru), 3 Mati (Putih Transparan)
@@ -58,7 +39,7 @@ class ReviewFotoKtpScreen extends StatelessWidget {
           ),
         ),
       ),
-
+      
       // ==========================================================
       // KONTEN UTAMA (Lengkungan Putih)
       // ==========================================================
@@ -107,28 +88,20 @@ class ReviewFotoKtpScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 200, // Proporsi mirip kartu
                   color: Colors.grey.shade300,
-                  child: imageFile != null
-                      ? Image.file(
-                          imageFile!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.credit_card,
-                                size: 80,
-                                color: Colors.white70,
-                              ),
-                        )
-                      : const Center(
-                          child: Icon(
-                            Icons.credit_card,
-                            size: 80,
-                            color: Colors.white70,
-                          ),
-                        ),
+                  // Tampilan sementara sebelum ada foto jepretan asli
+                  child: Image.asset(
+                    'assets/images/ktp_dummy.png', // Sesuaikan jika ada gambar dummy
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.credit_card,
+                      size: 80,
+                      color: Colors.white70,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-
+              
               // ==========================================================
               // TOMBOL TEKS "AMBIL FOTO ULANG" (Kanan Bawah KTP)
               // ==========================================================
@@ -155,6 +128,7 @@ class ReviewFotoKtpScreen extends StatelessWidget {
               ),
 
               const Spacer(), // Dorong tombol "Lanjut" ke paling bawah layar
+
               // ==========================================================
               // TOMBOL LANJUT
               // ==========================================================
@@ -166,65 +140,17 @@ class ReviewFotoKtpScreen extends StatelessWidget {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        30,
-                      ), // Pill shape penuh
+                      borderRadius: BorderRadius.circular(30), // Pill shape penuh
                     ),
                   ),
-                  onPressed: () async {
-                    if (imageFile == null ||
-                        reference == null ||
-                        reference!.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Data foto atau reference OTP belum tersedia.',
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    try {
-                      final result = await AuthService.uploadKTP(
-                        imageFile: imageFile!,
-                        reference: reference!,
-                      );
-
-                      if (!context.mounted) {
-                        return;
-                      }
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => IsiDataScreen(
-                            phone: phone,
-                            email: email,
-                            ktpImageFile: imageFile,
-                            reference: reference,
-                            prefillIdentity:
-                                (result['prefill_identity']
-                                    as Map<String, dynamic>?) ??
-                                <String, dynamic>{},
-                          ),
-                        ),
-                      );
-                    } catch (e) {
-                      if (!context.mounted) {
-                        return;
-                      }
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceFirst('Exception: ', ''),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                  onPressed: () {
+                    // Navigasi pindah ke halaman Isi Data Diri
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IsiDataScreen(),
+                      ),
+                    );
                   },
                   child: Text(
                     "Lanjut",
@@ -249,24 +175,21 @@ class ReviewFotoKtpScreen extends StatelessWidget {
     return Expanded(
       child: Container(
         height: 6, // Ketebalan kotak disesuaikan dengan Figma
-        margin: const EdgeInsets.symmetric(
-          horizontal: 4.0,
-        ), // Jarak antar kotak
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), // Jarak antar kotak
         decoration: BoxDecoration(
           // Jika AKTIF (sudah dilewati), beri warna gradasi
-          gradient: isActive
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [
-                    Color(0xFF0000FF),
-                    Color(0xFF9999FF),
-                  ], // Gradasi Biru Tua ke Biru Muda
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], // Gradasi Biru Tua ke Biru Muda
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-
+              
           // Jika MATI (belum dilewati), beri warna putih keabu-abuan
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );

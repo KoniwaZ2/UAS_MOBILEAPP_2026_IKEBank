@@ -1,9 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-import 'kebijkan_privasi_screen.dart';
-import 'verifikasi_kode_screen.dart';
-import '../../../api/auth.dart';
+import 'kebijkan_privasi_screen.dart'; 
+import 'verifikasi_kode_screen.dart'; 
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,27 +15,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _referralController = TextEditingController();
-  bool isLoading = false;
-
-  String _normalizePhone(String value) {
-    var cleaned = value.trim();
-    // Keep digits and plus sign only to avoid hidden or pasted characters.
-    cleaned = cleaned.replaceAll(RegExp(r'[^0-9+]'), '');
-
-    if (cleaned.startsWith('8')) {
-      return '0$cleaned';
-    }
-
-    return cleaned;
-  }
-
-  bool _isValidEmail(String value) {
-    final emailPattern = RegExp(
-      r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
-    );
-    final match = emailPattern.firstMatch(value);
-    return match != null && match.group(0) == value;
-  }
 
   @override
   void dispose() {
@@ -78,7 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: Container(
         width: double.infinity,
-        margin: const EdgeInsets.only(top: 16.0),
+        margin: const EdgeInsets.only(top: 16.0), 
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -90,13 +68,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 32.0,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -124,21 +101,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 20),
-
+                        
                         _buildInputField(
                           hintText: "Email",
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 20),
-
+                        
                         _buildInputField(
                           hintText: "Kode referral (opsional)",
                           controller: _referralController,
                           keyboardType: TextInputType.text,
                         ),
 
-                        const Spacer(),
+                        const Spacer(), 
 
                         RichText(
                           text: TextSpan(
@@ -149,23 +126,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             children: [
                               const TextSpan(
-                                text:
-                                    "Dengan melanjutkan, saya setuju bahwa PT IKE Bank Indonesia dapat menggunakan data pribadi saya untuk kepentingan operasional bank sesuai dengan Kebijakan Privasi di bawah.\n\n",
+                                text: "Dengan melanjutkan, saya setuju bahwa PT IKE Bank Indonesia dapat menggunakan data pribadi saya untuk kepentingan operasional bank sesuai dengan Kebijakan Privasi di bawah.\n\n",
                               ),
                               TextSpan(
                                 text: "Kebijakan Privasi PT IKE Bank Indonesia",
                                 style: const TextStyle(
-                                  color: Color(0xFF0000FF),
+                                  color: Color(0xFF0000FF), 
                                   fontWeight: FontWeight.w700,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
                                     Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const KebijakanPrivasiScreen(),
-                                      ),
+                                      context, 
+                                      MaterialPageRoute(builder: (context) => const KebijakanPrivasiScreen())
                                     );
                                   },
                               ),
@@ -185,127 +158,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            onPressed: isLoading
-                                ? null
-                                : () async {
-                                    String inputPhone = _phoneController.text
-                                        .trim();
-                                    String inputEmail = _emailController.text
-                                        .trim()
-                                        .toLowerCase();
-                                    inputPhone = _normalizePhone(inputPhone);
+                            onPressed: () {
+                              String inputPhone = _phoneController.text.trim();
+                              String inputEmail = _emailController.text.trim();
 
-                                    if (inputPhone.isEmpty ||
-                                        inputEmail.isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Nomor ponsel dan email wajib diisi!",
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                      return;
-                                    }
+                              if (inputPhone.isEmpty || inputEmail.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Nomor ponsel dan email wajib diisi!"),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
 
-                                    if (!_isValidEmail(inputEmail)) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            "Format email tidak valid.",
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    setState(() {
-                                      isLoading = true;
-                                    });
-
-                                    try {
-                                      await AuthService.check(
-                                        email: inputEmail,
-                                        phone: inputPhone,
-                                      );
-                                      final otpRes =
-                                          await AuthService.otpRequest(
-                                            email: inputEmail,
-                                            purpose: 'registration',
-                                          );
-
-                                      final otpRequests =
-                                          (otpRes['otp_requests'] as List?) ??
-                                          [];
-                                      if (otpRequests.isEmpty) {
-                                        throw Exception(
-                                          'OTP reference tidak ditemukan',
-                                        );
-                                      }
-
-                                      final reference =
-                                          (otpRequests.first
-                                                  as Map<
-                                                    String,
-                                                    dynamic
-                                                  >)['reference']
-                                              ?.toString() ??
-                                          '';
-
-                                      if (reference.isEmpty) {
-                                        throw Exception('OTP reference kosong');
-                                      }
-
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              VerifikasiKodeScreen(
-                                                email: inputEmail,
-                                                phone: inputPhone,
-                                                reference: reference,
-                                              ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      if (!context.mounted) {
-                                        return;
-                                      }
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            e.toString().replaceFirst(
-                                              'Exception: ',
-                                              '',
-                                            ),
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    } finally {
-                                      if (context.mounted) {
-                                        setState(() {
-                                          isLoading = false;
-                                        });
-                                      }
-                                    }
-                                  },
+                              Navigator.push(
+                                context, 
+                                MaterialPageRoute(
+                                  builder: (context) => VerifikasiKodeScreen(email: inputEmail), // Kirim ke sini
+                                )
+                              );
+                            },
                             child: Text(
-                              isLoading ? "Memproses..." : "Lanjut",
+                              "Lanjut",
                               style: alumniSansBold.copyWith(
                                 fontSize: 20,
                                 color: Colors.white,
@@ -333,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inputGrey,
+        color: AppColors.inputGrey, 
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -344,12 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.black, fontSize: 16),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 12,
-            bottom: 24,
-          ),
+          contentPadding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 24),
         ),
       ),
     );
@@ -359,18 +230,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6,
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
+        height: 6, 
+        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
         decoration: BoxDecoration(
-          gradient: isActive
+          
+          gradient: isActive 
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-
-          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
+              
+          color: isActive 
+              ? null 
+              : Colors.white.withValues(alpha: 0.6), 
         ),
       ),
     );
