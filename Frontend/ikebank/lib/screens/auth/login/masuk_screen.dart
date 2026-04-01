@@ -15,7 +15,7 @@ class _MasukScreenState extends State<MasukScreen> {
 
   String? _errorMessage;
   bool _isCheckingLogin = false;
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   Future<void> _validasiDanLanjut() async {
     final email = _emailController.text.trim();

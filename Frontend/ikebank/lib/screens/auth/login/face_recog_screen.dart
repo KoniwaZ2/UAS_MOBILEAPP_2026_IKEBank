@@ -321,6 +321,46 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    setState(() {
+      _isUploadingFace = true;
+    });
+
+    try {
+      if (controller == null || !controller.value.isInitialized) {
+        throw Exception('Kamera belum siap untuk mengambil selfie.');
+      }
+
+      final image = await controller.takePicture();
+      await AuthService.checkFaceLogin(
+        File(image.path),
+        reference: widget.reference?.trim(),
+        purpose: 'login',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _isUploadingFace = false;
+        });
+      }
+      _hasNavigated = false;
+      if (controller != null && !controller.value.isStreamingImages) {
+        _startFaceDetectionStream();
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isUploadingFace = false;
+      });
+    }
+
     final prefilledEmail = widget.email?.trim();
     Navigator.push(
       context,

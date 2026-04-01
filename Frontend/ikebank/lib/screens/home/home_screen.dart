@@ -8,6 +8,7 @@ import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'promo_screen.dart';
 import '../../api/banking.dart';
+import '../../models/account_detail.dart';
 
 enum HomeEntrySource { register, login }
 
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isBalanceVisible = true;
   int _selectedIndex = 0;
+  AccountDetail? _primaryAccount;
 
   @override
   void initState() {
@@ -39,8 +41,36 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (widget.entrySource == HomeEntrySource.register) {
         await BankingService.registerAccount();
+      }
+
+      final accountDetails = await BankingService.fetchAccountDetails();
+
+      if (mounted) {
+        setState(() {
+          _primaryAccount = accountDetails.isNotEmpty ? accountDetails.first : null;
+        });
+      }
+
+      if (widget.entrySource == HomeEntrySource.register) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Akun berhasil dibuat!"),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
-        await BankingService.fetchHomeAfterLogin();
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Berhasil memuat data akun"),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) {
@@ -55,6 +85,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+  String _formatRupiah(String rawBalance) {
+    final clean = rawBalance.replaceAll(',', '.').trim();
+    final value = double.tryParse(clean) ?? 0;
+    final rounded = value.round();
+    final digits = rounded.toString();
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      final remaining = digits.length - i;
+      buffer.write(digits[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return 'Rp ${buffer.toString()}';
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,8 +154,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text(
-                                  "Jacob Sins",
+                                Text(
+                                  (_primaryAccount?.user_name.isNotEmpty ?? false)
+                                      ? _primaryAccount!.user_name
+                                      : 'Pengguna',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -119,7 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 GestureDetector(
                                   onTap: () {
                                     Clipboard.setData(
-                                      const ClipboardData(text: "10095653346"),
+                                      ClipboardData(
+                                        text: _primaryAccount?.account_number ?? '-',
+                                      ),
                                     ).then((_) {});
                                   },
                                   child: Container(
@@ -136,8 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
-                                        const Text(
-                                          "10095653346",
+                                        Text(
+                                          _primaryAccount?.account_number ?? '-',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
@@ -267,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     Text(
                                       _isBalanceVisible
-                                          ? "Rp 200.000.000"
+                                          ? _formatRupiah(_primaryAccount?.balance ?? '0')
                                           : "Rp •••••••••",
                                       style: alumniSansBold.copyWith(
                                         fontSize: 30,

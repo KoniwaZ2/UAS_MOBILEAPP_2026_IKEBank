@@ -3,6 +3,7 @@ import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
 import '../../../models/register_flow_data.dart';
 import '../login/login_page.dart';
+import '../../../api/banking.dart';
 
 class BuatPinScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
@@ -88,10 +89,8 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => LoginPage(
-            prefilledEmail: flowData.email,
-            isAfterRegister: true,
-          ),
+          builder: (context) =>
+              LoginPage(prefilledEmail: flowData.email, isAfterRegister: true),
         ),
         (Route<dynamic> route) => false,
       );
