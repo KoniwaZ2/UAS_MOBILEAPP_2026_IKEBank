@@ -82,6 +82,12 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
         return;
       }
 
+      await BankingService.registerAccount();
+
+      if (!mounted) {
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registrasi Berhasil! Silakan Login')),
       );

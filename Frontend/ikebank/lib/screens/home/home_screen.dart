@@ -39,15 +39,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _runInitialHomeApi() async {
     try {
-      if (widget.entrySource == HomeEntrySource.register) {
-        await BankingService.registerAccount();
-      }
+      // if (widget.entrySource == HomeEntrySource.register) {
+      //   await BankingService.registerAccount();
+      // }
 
       final accountDetails = await BankingService.fetchAccountDetails();
 
       if (mounted) {
         setState(() {
-          _primaryAccount = accountDetails.isNotEmpty ? accountDetails.first : null;
+          _primaryAccount = accountDetails.isNotEmpty
+              ? accountDetails.first
+              : null;
         });
       }
 
@@ -85,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   String _formatRupiah(String rawBalance) {
     final clean = rawBalance.replaceAll(',', '.').trim();
     final value = double.tryParse(clean) ?? 0;
@@ -102,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return 'Rp ${buffer.toString()}';
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,7 +157,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  (_primaryAccount?.user_name.isNotEmpty ?? false)
+                                  (_primaryAccount?.user_name.isNotEmpty ??
+                                          false)
                                       ? _primaryAccount!.user_name
                                       : 'Pengguna',
                                   style: TextStyle(
@@ -169,7 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   onTap: () {
                                     Clipboard.setData(
                                       ClipboardData(
-                                        text: _primaryAccount?.account_number ?? '-',
+                                        text:
+                                            _primaryAccount?.account_number ??
+                                            '-',
                                       ),
                                     ).then((_) {});
                                   },
@@ -188,7 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          _primaryAccount?.account_number ?? '-',
+                                          _primaryAccount?.account_number ??
+                                              '-',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
@@ -318,7 +324,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     Text(
                                       _isBalanceVisible
-                                          ? _formatRupiah(_primaryAccount?.balance ?? '0')
+                                          ? _formatRupiah(
+                                              _primaryAccount?.balance ?? '0',
+                                            )
                                           : "Rp •••••••••",
                                       style: alumniSansBold.copyWith(
                                         fontSize: 30,

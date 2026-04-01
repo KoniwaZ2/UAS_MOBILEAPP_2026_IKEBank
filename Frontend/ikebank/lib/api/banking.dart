@@ -4,7 +4,7 @@ import 'auth.dart';
 import '../models/account_detail.dart';
 
 class BankingService {
-  static String baseUrl = 'http://192.168.100.235:8000/api/banking';
+  static String baseUrl = 'http://192.168.1.29:8000/api/banking';
 
   static Future<Map<String, dynamic>> registerAccount() async {
     final url = Uri.parse('$baseUrl/register/');
