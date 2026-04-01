@@ -45,6 +45,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -139,6 +141,16 @@ REST_FRAMEWORK = {
     ),
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:61505",  # sesuaikan port flutter run
+]
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+]
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -146,3 +158,7 @@ EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'victormarlinosekolah@gmail.com'
 EMAIL_HOST_PASSWORD = 'dgid hfxt doud tjpa'
+
+# Face login thresholds (balanced to accept same face with lighting/angle variations).
+FACE_LOGIN_MAX_RMS_DISTANCE = 0.2
+FACE_LOGIN_MIN_COSINE_SIMILARITY = 0.95

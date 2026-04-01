@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BankAccount, Transaction, CashFlow, TransactionCategory
+from .models import BankAccount, Transaction, CashFlow, CardDetails, Saku, Qris
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
@@ -9,8 +9,8 @@ class BankAccountAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('account_id', 'category_id', 'amount', 'balance_after', 'timestamp')
-    search_fields = ('account_id__account_number', 'category_id__category_name')
+    list_display = ('account_id', 'category', 'amount', 'balance_after', 'timestamp')
+    search_fields = ('account_id__account_number', 'category')
     list_filter = ('timestamp',)
 
 @admin.register(CashFlow)
@@ -19,8 +19,14 @@ class CashFlowAdmin(admin.ModelAdmin):
     search_fields = ('account_id__account_number',)
     list_filter = ('month', 'year', 'status')
 
-@admin.register(TransactionCategory)
-class TransactionCategoryAdmin(admin.ModelAdmin):
-    list_display = ('category_name', 'direction')
-    search_fields = ('category_name',)
-    list_filter = ('direction',)
+@admin.register(CardDetails)
+class CardDetailsAdmin(admin.ModelAdmin):
+    list_display = ('account_id', 'cardholder_name', 'ccv', 'expiry_date', 'block_permanent', 'block_temporary')
+    search_fields = ('account_id__account_number', 'account_id__card_number', 'cardholder_name')
+    list_filter = ('block_permanent', 'block_temporary', 'expiry_date')
+
+@admin.register(Saku)
+class SakuAdmin(admin.ModelAdmin):
+    list_display = ('saku_name', 'account', 'category_name', 'balance', 'is_primary')
+    search_fields = ('saku_name', 'account__account_number', 'category_name')
+    list_filter = ('is_primary',)

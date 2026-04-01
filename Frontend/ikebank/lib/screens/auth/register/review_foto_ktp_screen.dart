@@ -6,9 +6,17 @@ import 'isi_data_screen.dart'; // Nanti kita buat file ini
 
 class ReviewFotoKtpScreen extends StatelessWidget {
   final File? imageFile;
+  final String phone;
+  final String email;
   final String? reference;
 
-  const ReviewFotoKtpScreen({super.key, this.imageFile, this.reference});
+  const ReviewFotoKtpScreen({
+    super.key,
+    this.imageFile,
+    required this.phone,
+    required this.email,
+    this.reference,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +200,10 @@ class ReviewFotoKtpScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => IsiDataScreen(
+                            phone: phone,
+                            email: email,
+                            ktpImageFile: imageFile,
+                            reference: reference,
                             prefillIdentity:
                                 (result['prefill_identity']
                                     as Map<String, dynamic>?) ??

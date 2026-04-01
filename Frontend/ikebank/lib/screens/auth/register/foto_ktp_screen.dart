@@ -3,9 +3,16 @@ import '../../../core/colors.dart';
 import 'ktp_camera_screen.dart';
 
 class FotoKtpScreen extends StatelessWidget {
+  final String phone;
+  final String email;
   final String? reference;
 
-  const FotoKtpScreen({super.key, required this.reference});
+  const FotoKtpScreen({
+    super.key,
+    required this.phone,
+    required this.email,
+    required this.reference,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -88,8 +95,11 @@ class FotoKtpScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          KtpCameraScreen(reference: reference),
+                      builder: (context) => KtpCameraScreen(
+                        phone: phone,
+                        email: email,
+                        reference: reference,
+                      ),
                     ),
                   );
                 },

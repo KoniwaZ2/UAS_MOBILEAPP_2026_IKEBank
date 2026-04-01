@@ -3,20 +3,29 @@ from rest_framework.response import Response
 from user.models import User, OtpVerification, generate_otp_code, hash_otp_code
 from .serializers import (
     CheckPhoneEmailSerializer,
+    FaceLoginSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
     KtpUploadSerializer,
+    FaceUploadSerializer,
+    CheckLoginSerializer,
+    OtpLoginSerializer,
+    ForgotPasswordSerializer,
 )
+from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 import re
+import math
 import pytesseract
 from PIL import Image
+import user.models as user_models
 
 User = get_user_model()
 
@@ -146,6 +155,7 @@ class OtpRequestView(generics.GenericAPIView):
         otp_requests = []
         purpose = validated_data['purpose']
 
+        # Handle email
         if validated_data.get('email'):
             otp_code = generate_otp_code()
             otp = OtpVerification.objects.create(
@@ -271,6 +281,219 @@ class KtpUploadView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+
+class FaceUploadView(generics.GenericAPIView):
+    serializer_class = FaceUploadSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        purpose = validated_data.get('purpose', OtpVerification.PURPOSE_REGISTRATION)
+
+        if purpose == OtpVerification.PURPOSE_REGISTRATION:
+            reference = validated_data.get('reference')
+            if reference is None:
+                return Response(
+                    {'detail': 'reference is required for registration face upload.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            otp, error_response = _get_verified_registration_otp(
+                reference=reference,
+                purpose=OtpVerification.PURPOSE_REGISTRATION,
+            )
+            if error_response is not None:
+                return error_response
+
+            draft, _ = RegistrationDraft.objects.get_or_create(otp_reference=otp)
+            draft.face_image = validated_data['face']
+            draft.save(update_fields=['face_image', 'updated_at'])
+
+            return Response(
+                {
+                    'message': 'Face image uploaded successfully.',
+                    'reference': str(otp.reference),
+                    'purpose': purpose,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                'message': 'Face image uploaded successfully.',
+                'purpose': purpose,
+            },
+            status=status.HTTP_200_OK,
+        )
+    
+class FaceLoginView(generics.GenericAPIView):
+    serializer_class = FaceLoginSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        otp = OtpVerification.objects.filter(
+            reference=validated_data['reference'],
+            purpose=OtpVerification.PURPOSE_LOGIN,
+            is_verified=True,
+        ).first()
+
+        if otp is None:
+            return Response({'detail': 'OTP reference not found or not verified.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if otp.is_expired():
+            return Response({'detail': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone_number=otp.destination).first() or User.objects.filter(email=otp.destination).first()
+        if user is None:
+            return Response({'detail': 'User not found for this OTP reference.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.face_encoding and not user.face_image:
+            return Response(
+                {'detail': 'User has no registered face data. Please complete registration first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        probe_encoding = user_models.extract_face_encoding(validated_data['face'])
+        if not probe_encoding:
+            return Response({'detail': 'Failed to extract face features from uploaded image.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Prefer recomputing encoding from persisted face image to avoid stale/legacy vectors.
+        stored_encoding = None
+        if user.face_image:
+            stored_encoding = user_models.extract_face_encoding(user.face_image)
+
+        if not stored_encoding:
+            stored_encoding = user.face_encoding
+
+        if not stored_encoding:
+            return Response(
+                {'detail': 'Stored face data is missing. Please re-register face data.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(stored_encoding) != len(probe_encoding):
+            return Response({'detail': 'Stored face data is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stored_vector = [float(v) for v in stored_encoding]
+        probe_vector = [float(v) for v in probe_encoding]
+
+        # RMS distance catches absolute per-dimension gaps.
+        squared_sum = sum((a - b) ** 2 for a, b in zip(stored_vector, probe_vector))
+        rms_distance = math.sqrt(squared_sum / len(stored_vector))
+
+        # Cosine similarity helps stabilize against brightness/contrast differences.
+        dot_product = sum(a * b for a, b in zip(stored_vector, probe_vector))
+        stored_norm = math.sqrt(sum(a * a for a in stored_vector))
+        probe_norm = math.sqrt(sum(b * b for b in probe_vector))
+        if stored_norm == 0 or probe_norm == 0:
+            return Response({'detail': 'Face vector is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cosine_similarity = dot_product / (stored_norm * probe_norm)
+
+        max_rms_distance = float(getattr(settings, 'FACE_LOGIN_MAX_RMS_DISTANCE', 0.08))
+        min_cosine_similarity = float(getattr(settings, 'FACE_LOGIN_MIN_COSINE_SIMILARITY', 0.985))
+        is_match = rms_distance <= max_rms_distance and cosine_similarity >= min_cosine_similarity
+
+        if not is_match:
+            return Response(
+                {
+                    'verified': False,
+                    'detail': 'Face does not match.',
+                    'distance': round(rms_distance, 6),
+                    'cosine_similarity': round(cosine_similarity, 6),
+                    'max_rms_distance': max_rms_distance,
+                    'min_cosine_similarity': min_cosine_similarity,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(
+            {
+                'message': 'Face verified successfully.',
+                'verified': True,
+                'reference': str(otp.reference),
+                'user': {
+                    'phone_number': user.phone_number,
+                    'email': user.email,
+                    'name': user.name,
+                },
+                'distance': round(rms_distance, 6),
+                'cosine_similarity': round(cosine_similarity, 6),
+                'max_rms_distance': max_rms_distance,
+                'min_cosine_similarity': min_cosine_similarity,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        
+
+class CheckLoginView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = CheckLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone_number = serializer.validated_data.get('phone_number')
+        email = serializer.validated_data.get('email')
+
+        if not phone_number and not email:
+            return Response({'detail': 'Either phone number or email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_exists = User.objects.filter(phone_number=phone_number).exists() if phone_number else User.objects.filter(email=email).exists()
+
+        if user_exists:
+            return Response({'exists': True, 'message': 'User with this phone number exists.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'exists': False, 'message': 'No user found with this phone number.'}, status=status.HTTP_200_OK)
+
+class OtpLoginView(generics.GenericAPIView):
+    """
+    Login using verified OTP + password
+    Flow: 
+    1. User checks login with /api/auth/login-check/
+    2. User requests OTP with /api/auth/otp/request/ (purpose='login')
+    3. User verifies OTP with /api/auth/otp/verify/ (purpose='login')
+    4. User does facial recognition [TODO]
+    5. User calls this endpoint with otp_reference + password
+    """
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = OtpLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = validated_data['user']
+
+        # Generate tokens
+        refresh = RefreshToken.from_user(user)
+        
+        # Add custom claims to refresh token
+        refresh['phone_number'] = user.phone_number
+        refresh['email'] = user.email
+        refresh['name'] = user.name
+        
+        return Response({
+            'message': 'Login successful.',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'phone_number': user.phone_number,
+                'email': user.email,
+                'name': user.name,
+                'biometric_data': getattr(user, 'biometric_data', None),
+            }
+        }, status=status.HTTP_200_OK)
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
@@ -278,3 +501,39 @@ class RegisterView(generics.CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        email = validated_data.get('email')
+        password = validated_data.get('password')
+        password_confirm = validated_data.get('password_confirmation')
+        
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'detail': 'No user found with this email.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if password != password_confirm:
+            return Response({'detail': 'Password and password confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.save(update_fields=['password'])
+
+        return Response(
+            {
+                'message': 'Password berhasil direset.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+

@@ -238,6 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       final otpRes =
                                           await AuthService.otpRequest(
                                             email: inputEmail,
+                                            purpose: 'registration',
                                           );
 
                                       final otpRequests =

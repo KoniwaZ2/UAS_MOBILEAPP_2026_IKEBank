@@ -181,6 +181,7 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       final otpRes =
                                           await AuthService.otpRequest(
                                             email: widget.email,
+                                            purpose: 'registration',
                                           );
 
                                       final otpRequests =
@@ -299,6 +300,7 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       await AuthService.otpVerify(
                                         reference: _reference,
                                         otpcode: otpCodeTrimmed,
+                                        purpose: 'registration',
                                       );
 
                                       if (!context.mounted) {
@@ -308,10 +310,11 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              FotoKtpScreen(
-                                                reference: _reference,
-                                              ),
+                                          builder: (context) => FotoKtpScreen(
+                                            phone: widget.phone,
+                                            email: widget.email,
+                                            reference: _reference,
+                                          ),
                                         ),
                                       );
                                     } catch (e) {
