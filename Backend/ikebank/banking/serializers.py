@@ -25,3 +25,10 @@ class CashFlowSerializer(serializers.ModelSerializer):
             'year',
             'status',
         ]
+
+class TransactionCreateSerializer(serializers.Serializer):
+    saku_id = serializers.IntegerField(required=True)
+    category_id = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(required=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    source_funds = serializers.CharField(required=False, allow_blank=True)

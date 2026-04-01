@@ -146,3 +146,7 @@ EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = 'victormarlinosekolah@gmail.com'
 EMAIL_HOST_PASSWORD = 'dgid hfxt doud tjpa'
+
+# Face login thresholds (balanced to accept same face with lighting/angle variations).
+FACE_LOGIN_MAX_RMS_DISTANCE = 0.2
+FACE_LOGIN_MIN_COSINE_SIMILARITY = 0.95

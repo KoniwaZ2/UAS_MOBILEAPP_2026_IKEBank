@@ -1,13 +1,12 @@
 import secrets
 
-from django.db.models import DecimalField, Q, Sum, Value
-from django.db.models.functions import Coalesce
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, CashFlow, Transaction
+from .models import BankAccount, Saku
 from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, RegisterBankAccountSerializer
+from .services import upsert_cashflow_for_account
 
 
 class RegisterBankAccountView(APIView):
@@ -39,6 +38,14 @@ class RegisterBankAccountView(APIView):
             balance=0.00,
         )
 
+        saku_utama = Saku.objects.create(
+            saku_name="Saku Utama",
+            account=bank_account,
+            category_name="Nabung",
+            balance=0,
+            is_primary=True
+        )
+
         return Response({
             'id': bank_account.id,
             'account_number': bank_account.account_number,
@@ -50,20 +57,6 @@ class RegisterBankAccountView(APIView):
 
 class CashFlowCalculateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
-    @staticmethod
-    def _calculate_status(total_income, total_expense):
-        if total_income <= 0:
-            return 'belum_optimal'
-
-        saving_rate = (total_income - total_expense) / total_income
-        if saving_rate >= 0.5:
-            return 'sangat_optimal'
-        if saving_rate >= 0.2:
-            return 'optimal'
-        if saving_rate >= 0:
-            return 'cukup_optimal'
-        return 'belum_optimal'
 
     def post(self, request):
         input_serializer = CashFlowCalculateSerializer(data=request.data)
@@ -84,37 +77,30 @@ class CashFlowCalculateView(APIView):
         month = validated_data['month']
         year = validated_data['year']
 
-        aggregates = Transaction.objects.filter(
-            account_id=account,
-            timestamp__year=year,
-            timestamp__month=month,
-        ).aggregate(
-            total_income=Coalesce(
-                Sum('amount', filter=Q(category_id__direction='income')),
-                Value(0),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            ),
-            total_expense=Coalesce(
-                Sum('amount', filter=Q(category_id__direction='expense')),
-                Value(0),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            ),
-        )
-
-        total_income = aggregates['total_income']
-        total_expense = aggregates['total_expense']
-        status_value = self._calculate_status(total_income, total_expense)
-
-        cashflow, _ = CashFlow.objects.update_or_create(
-            account_id=account,
-            month=month,
-            year=year,
-            defaults={
-                'total_income': total_income,
-                'total_expense': total_expense,
-                'status': status_value,
-            },
-        )
+        cashflow = upsert_cashflow_for_account(account=account, month=month, year=year)
 
         output_serializer = CashFlowSerializer(cashflow)
         return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+class AccountDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        accounts = BankAccount.objects.filter(user=request.user)
+        data = []
+        for account in accounts:
+            data.append({
+                'id': account.id,
+                'user_id': account.user_id,
+                'user_name': account.user.name,
+                'account_number': account.account_number,
+                'card_number': account.card_number,
+                'balance': str(account.balance),
+            })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class TransactionCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        pass

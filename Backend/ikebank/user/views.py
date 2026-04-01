@@ -354,7 +354,7 @@ class FaceLoginView(generics.GenericAPIView):
         if user is None:
             return Response({'detail': 'User not found for this OTP reference.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if not user.face_encoding:
+        if not user.face_encoding and not user.face_image:
             return Response(
                 {'detail': 'User has no registered face data. Please complete registration first.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -364,16 +364,42 @@ class FaceLoginView(generics.GenericAPIView):
         if not probe_encoding:
             return Response({'detail': 'Failed to extract face features from uploaded image.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        stored_encoding = user.face_encoding
+        # Prefer recomputing encoding from persisted face image to avoid stale/legacy vectors.
+        stored_encoding = None
+        if user.face_image:
+            stored_encoding = user_models.extract_face_encoding(user.face_image)
+
+        if not stored_encoding:
+            stored_encoding = user.face_encoding
+
+        if not stored_encoding:
+            return Response(
+                {'detail': 'Stored face data is missing. Please re-register face data.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if len(stored_encoding) != len(probe_encoding):
             return Response({'detail': 'Stored face data is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Compare two normalized vectors using root-mean-square distance.
-        squared_sum = sum((float(a) - float(b)) ** 2 for a, b in zip(stored_encoding, probe_encoding))
-        rms_distance = math.sqrt(squared_sum / len(stored_encoding))
+        stored_vector = [float(v) for v in stored_encoding]
+        probe_vector = [float(v) for v in probe_encoding]
 
-        threshold = 0.20
-        is_match = rms_distance <= threshold
+        # RMS distance catches absolute per-dimension gaps.
+        squared_sum = sum((a - b) ** 2 for a, b in zip(stored_vector, probe_vector))
+        rms_distance = math.sqrt(squared_sum / len(stored_vector))
+
+        # Cosine similarity helps stabilize against brightness/contrast differences.
+        dot_product = sum(a * b for a, b in zip(stored_vector, probe_vector))
+        stored_norm = math.sqrt(sum(a * a for a in stored_vector))
+        probe_norm = math.sqrt(sum(b * b for b in probe_vector))
+        if stored_norm == 0 or probe_norm == 0:
+            return Response({'detail': 'Face vector is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cosine_similarity = dot_product / (stored_norm * probe_norm)
+
+        max_rms_distance = float(getattr(settings, 'FACE_LOGIN_MAX_RMS_DISTANCE', 0.08))
+        min_cosine_similarity = float(getattr(settings, 'FACE_LOGIN_MIN_COSINE_SIMILARITY', 0.985))
+        is_match = rms_distance <= max_rms_distance and cosine_similarity >= min_cosine_similarity
 
         if not is_match:
             return Response(
@@ -381,7 +407,9 @@ class FaceLoginView(generics.GenericAPIView):
                     'verified': False,
                     'detail': 'Face does not match.',
                     'distance': round(rms_distance, 6),
-                    'threshold': threshold,
+                    'cosine_similarity': round(cosine_similarity, 6),
+                    'max_rms_distance': max_rms_distance,
+                    'min_cosine_similarity': min_cosine_similarity,
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
@@ -397,7 +425,9 @@ class FaceLoginView(generics.GenericAPIView):
                     'name': user.name,
                 },
                 'distance': round(rms_distance, 6),
-                'threshold': threshold,
+                'cosine_similarity': round(cosine_similarity, 6),
+                'max_rms_distance': max_rms_distance,
+                'min_cosine_similarity': min_cosine_similarity,
             },
             status=status.HTTP_200_OK,
         )
