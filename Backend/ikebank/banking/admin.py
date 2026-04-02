@@ -27,6 +27,6 @@ class CardDetailsAdmin(admin.ModelAdmin):
 
 @admin.register(Saku)
 class SakuAdmin(admin.ModelAdmin):
-    list_display = ('saku_name', 'account', 'category_name', 'balance', 'is_primary')
+    list_display = ('id', 'saku_name', 'account', 'category_name', 'balance', 'is_primary')
     search_fields = ('saku_name', 'account__account_number', 'category_name')
     list_filter = ('is_primary',)
