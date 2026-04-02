@@ -1,0 +1,19 @@
+$kind: http-request
+url: http://localhost:8000/api/banking/tambah-saku/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"account_id\": 1,\r
+
+    \  \"saku_name\" : \"Nabung\",\r
+
+    \  \"category_name\": \"Nabung\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc1MTM5MjI2LCJpYXQiOjE3NzUxMzg5MjYsImp0aSI6ImE5NWMyYmNiZTVjZjQzYjM5ZGI1ZjFlMDY1MzdkZGQ0IiwidXNlcl9pZCI6IjIwIiwicGhvbmVfbnVtYmVyIjoiMDg1MjE4NDM3MDc3IiwiZW1haWwiOiJ2aWN0b3JtYXJsaW5vc2Vrb2xhaEBnbWFpbC5jb20iLCJuYW1lIjoiVmljdG9yIn0.K9dU_-zEuuysWlOlKUMYmn_QiqAmJM_p54odASu0nwY
+order: 4442512118329143
