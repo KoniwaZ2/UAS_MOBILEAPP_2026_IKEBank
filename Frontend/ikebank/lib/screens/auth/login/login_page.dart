@@ -8,11 +8,13 @@ import 'lupa_password_screen.dart';
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
   final bool isAfterRegister;
+  final String? reference;
 
   const LoginPage({
     super.key,
     this.prefilledEmail,
     this.isAfterRegister = false,
+    this.reference,
   });
 
   @override
@@ -246,7 +248,10 @@ class _LoginPageState extends State<LoginPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const LupaPasswordScreen(),
+                            builder: (context) => LupaPasswordScreen(
+                              email: _emailController.text,
+                              reference: widget.reference ?? '',
+                            ),
                           ),
                         );
                       },

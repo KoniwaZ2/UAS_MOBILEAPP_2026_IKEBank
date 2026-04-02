@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
@@ -13,6 +14,7 @@ enum LivenessStep { lookLeft, lookRight, smile, blink, done }
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
+  final bool isFromLupaPassword;
   final String? email;
   final String? reference;
   final RegisterFlowData? flowData;
@@ -20,6 +22,7 @@ class FaceRecogScreen extends StatefulWidget {
   const FaceRecogScreen({
     super.key,
     this.isFromRegister = false,
+    this.isFromLupaPassword = false,
     this.email,
     this.reference,
     this.flowData,
@@ -30,6 +33,11 @@ class FaceRecogScreen extends StatefulWidget {
 }
 
 class _FaceRecogScreenState extends State<FaceRecogScreen> {
+  static const bool _skipFaceVerify = bool.fromEnvironment(
+    'SKIP_FACE_VERIFY',
+    defaultValue: false,
+  );
+
   CameraController? _controller;
   late FaceDetector _faceDetector;
   bool _isCameraReady = false;
@@ -43,9 +51,20 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
   static const double _yawThreshold = 12.0;
 
+  bool get _isDevFaceBypassEnabled =>
+      kDebugMode && Platform.isIOS && _skipFaceVerify;
+
   @override
   void initState() {
     super.initState();
+
+    if (_isDevFaceBypassEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToNextPage(skipFaceValidation: true);
+      });
+      return;
+    }
+
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
         enableClassification: true,
@@ -244,9 +263,33 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     await _navigateToNextPage();
   }
 
-  Future<void> _navigateToNextPage() async {
+  Future<void> _navigateToNextPage({bool skipFaceValidation = false}) async {
     if (!mounted || _hasNavigated || _isUploadingFace) return;
     _hasNavigated = true;
+
+    if (skipFaceValidation || _isDevFaceBypassEnabled) {
+      if (widget.isFromRegister) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BuatPassScreen(flowData: widget.flowData),
+          ),
+        );
+        return;
+      }
+
+      final prefilledEmail = widget.email?.trim();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginPage(
+            prefilledEmail: prefilledEmail,
+            reference: widget.reference,
+          ),
+        ),
+      );
+      return;
+    }
 
     final controller = _controller;
     if (controller != null && controller.value.isStreamingImages) {
@@ -365,7 +408,10 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LoginPage(prefilledEmail: prefilledEmail),
+        builder: (context) => LoginPage(
+          prefilledEmail: prefilledEmail,
+          reference: widget.reference,
+        ),
       ),
     );
   }
@@ -379,7 +425,9 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       }
       controller.dispose();
     }
-    _faceDetector.close();
+    if (!_isDevFaceBypassEnabled) {
+      _faceDetector.close();
+    }
     super.dispose();
   }
 
@@ -403,86 +451,100 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       ),
       body: SizedBox(
         width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // TEKS INSTRUKSI
-            Text(
-              _isUploadingFace ? 'Mengunggah selfie...' : _instructionText(),
-              style: alumniSansBold.copyWith(
-                fontSize: 32,
-                color: AppColors.textBlack,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 60),
-
-            // WADAH KAMERA (DUMMY FACE)
-            GestureDetector(
-              onTap: _onCaptureTap,
-              child: Stack(
-                alignment: Alignment.center,
+        child: _isDevFaceBypassEnabled
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Lingkaran luar (Simulasi garis pinggir seperti di Figma)
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.85,
-                    height: MediaQuery.of(context).size.width * 0.85,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade300, width: 2),
+                  // TEKS INSTRUKSI
+                  Text(
+                    _isUploadingFace
+                        ? 'Mengunggah selfie...'
+                        : _instructionText(),
+                    style: alumniSansBold.copyWith(
+                      fontSize: 32,
+                      color: AppColors.textBlack,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.75,
-                    height: MediaQuery.of(context).size.width * 0.75,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      shape: BoxShape.circle,
-                    ),
-                    child: ClipOval(
-                      child: _errorMessage != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Text(
-                                  _errorMessage!,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.black54),
-                                ),
-                              ),
-                            )
-                          : !_isCameraReady || _controller == null
-                          ? const Center(child: CircularProgressIndicator())
-                          : Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width:
-                                        _controller!
-                                            .value
-                                            .previewSize
-                                            ?.height ??
-                                        1,
-                                    height:
-                                        _controller!.value.previewSize?.width ??
-                                        1,
-                                    child: CameraPreview(_controller!),
-                                  ),
-                                ),
-                              ],
+
+                  const SizedBox(height: 60),
+
+                  // WADAH KAMERA (DUMMY FACE)
+                  GestureDetector(
+                    onTap: _onCaptureTap,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Lingkaran luar (Simulasi garis pinggir seperti di Figma)
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.85,
+                          height: MediaQuery.of(context).size.width * 0.85,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 2,
                             ),
+                          ),
+                        ),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.75,
+                          height: MediaQuery.of(context).size.width * 0.75,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: _errorMessage != null
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Text(
+                                        _errorMessage!,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : !_isCameraReady || _controller == null
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      FittedBox(
+                                        fit: BoxFit.cover,
+                                        child: SizedBox(
+                                          width:
+                                              _controller!
+                                                  .value
+                                                  .previewSize
+                                                  ?.height ??
+                                              1,
+                                          height:
+                                              _controller!
+                                                  .value
+                                                  .previewSize
+                                                  ?.width ??
+                                              1,
+                                          child: CameraPreview(_controller!),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 100),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 100),
-          ],
-        ),
       ),
     );
   }
