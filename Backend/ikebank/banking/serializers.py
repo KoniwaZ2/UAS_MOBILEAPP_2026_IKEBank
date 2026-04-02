@@ -27,8 +27,9 @@ class CashFlowSerializer(serializers.ModelSerializer):
         ]
 
 class TransactionCreateSerializer(serializers.Serializer):
+    account_id = serializers.IntegerField(required=True)
     category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
-    amount = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(min_value=1, required=True)
     description = serializers.CharField(required=False, allow_blank=True)
     destination_account = serializers.CharField(required=False, allow_blank=True)  # For transfer_out
     merchant_qris = serializers.CharField(required=False, allow_blank=True)  # For payment
