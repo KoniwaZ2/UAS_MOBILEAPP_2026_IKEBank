@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../core/colors.dart'; 
+import '../../../core/colors.dart';
+
 class TambahDanaScreen extends StatelessWidget {
-  const TambahDanaScreen({super.key});
+  final String accountName;
+  final String accountNumber;
+
+  const TambahDanaScreen({
+    super.key,
+    required this.accountName,
+    required this.accountNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +19,13 @@ class TambahDanaScreen extends StatelessWidget {
       fontWeight: FontWeight.w700,
       fontFamily: 'AlumniSans',
     );
+
+    final safeAccountName = accountName.trim().isEmpty
+        ? 'Pengguna'
+        : accountName;
+    final safeAccountNumber = accountNumber.trim().isEmpty
+        ? '-'
+        : accountNumber;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -49,31 +64,56 @@ class TambahDanaScreen extends StatelessWidget {
                           width: 55,
                           height: 55,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDCD6FF), 
+                            color: const Color(0xFFDCD6FF),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           alignment: Alignment.center,
-                          child: Image.asset('assets/images/IKEHome.png', height: 30, fit: BoxFit.contain),
+                          child: Image.asset(
+                            'assets/images/IKEHome.png',
+                            height: 30,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Jacob Sins", style: alumniSansBold.copyWith(fontSize: 24, color: Colors.black)),
-                            const Text("Saku Utama", style: TextStyle(fontSize: 20, color: Colors.black54)),
+                            Text(
+                              safeAccountName,
+                              style: alumniSansBold.copyWith(
+                                fontSize: 24,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const Text(
+                              "Saku Utama",
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.black54,
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  
-                  const Divider(height: 1, color: Color(0xFFEEEEEE), thickness: 1.5),
-                  
+
+                  const Divider(
+                    height: 1,
+                    color: Color(0xFFEEEEEE),
+                    thickness: 1.5,
+                  ),
+
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 16.0,
+                    ),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFFF9F2), 
-                      borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                      color: Color(0xFFFFF9F2),
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(16),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,22 +122,34 @@ class TambahDanaScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text("Nomor rekening Saku", style: TextStyle(fontSize: 20, color: Colors.black54)),
+                            const Text(
+                              "Nomor rekening Saku",
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.black54,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text("10095653346", style: alumniSansBold.copyWith(fontSize: 18, color: Colors.black)),
+                            Text(
+                              safeAccountNumber,
+                              style: alumniSansBold.copyWith(
+                                fontSize: 18,
+                                color: Colors.black,
+                              ),
+                            ),
                           ],
                         ),
                         GestureDetector(
                           onTap: () {
-                            Clipboard.setData(const ClipboardData(text: "10095653346")).then((_) {
-                             
-                            });
+                            Clipboard.setData(
+                              ClipboardData(text: safeAccountNumber),
+                            ).then((_) {});
                           },
                           child: SvgPicture.asset(
                             'assets/images/copy.svg',
                             height: 24,
                             colorFilter: const ColorFilter.mode(
-                              AppColors.primaryOrange, 
+                              AppColors.primaryOrange,
                               BlendMode.srcIn,
                             ),
                           ),
@@ -111,12 +163,21 @@ class TambahDanaScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            Text("Cara top up", style: alumniSansBold.copyWith(fontSize: 22, color: Colors.black)),
+            Text(
+              "Cara top up",
+              style: alumniSansBold.copyWith(fontSize: 22, color: Colors.black),
+            ),
             const SizedBox(height: 16),
 
-            _buildTopUpMethod(icon: Icons.phone_iphone, title: "Aplikasi Banking"),
+            _buildTopUpMethod(
+              icon: Icons.phone_iphone,
+              title: "Aplikasi Banking",
+            ),
             _buildTopUpMethod(icon: Icons.wifi, title: "Internet Banking"),
-            _buildTopUpMethod(icon: Icons.chat_bubble_outline, title: "SMS Banking"),
+            _buildTopUpMethod(
+              icon: Icons.chat_bubble_outline,
+              title: "SMS Banking",
+            ),
             _buildTopUpMethod(icon: Icons.local_atm, title: "ATM"),
           ],
         ),
@@ -142,9 +203,12 @@ class TambahDanaScreen extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primaryOrange, size: 28),
           const SizedBox(width: 20),
-          Text(title, style: alumniSansBold.copyWith(fontSize: 18, color: Colors.black)),
+          Text(
+            title,
+            style: alumniSansBold.copyWith(fontSize: 18, color: Colors.black),
+          ),
         ],
       ),
     );
   }
-} 
+}

@@ -370,7 +370,7 @@ class AuthService {
 
   static Future<void> forgotPassword({
     required String email,
-    required String purpose,
+    required String otpReference,
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -380,7 +380,7 @@ class AuthService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
-        'purpose': purpose,
+        'otp_reference': otpReference,
         'password': password,
         'password_confirmation': passwordConfirmation,
       }),
