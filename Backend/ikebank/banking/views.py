@@ -559,3 +559,74 @@ class QrisCheckView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class HistoryTransactionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        accounts = BankAccount.objects.filter(user=request.user)
+        if not accounts.exists():
+            return Response(
+                {'detail': 'account_id query parameter is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        account = BankAccount.objects.filter(
+            id=accounts.first().id,
+            user=request.user,
+        ).first()
+
+        if account is None:
+            return Response(
+                {'detail': 'Bank account not found or not owned by user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        transactions = Transaction.objects.filter(account_id=account).order_by('-timestamp')
+        data = []
+        for tx in transactions:
+            data.append({
+                'id': tx.id,
+                'category': tx.category,
+                'amount': str(tx.amount),
+                'balance_after': str(tx.balance_after),
+                'timestamp': tx.timestamp,
+                'description': tx.description,
+                'source_funds': tx.source_funds,
+                'saku_name': tx.saku.saku_name if tx.saku else None,
+            })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class SakuView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        accounts = BankAccount.objects.filter(user=request.user)
+        if not accounts.exists():
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        account = BankAccount.objects.filter(
+            id=accounts.first().id,
+            user=request.user,
+        ).first()
+
+        if account is None:
+            return Response(
+                {'detail': 'Bank account not found or not owned by user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        sakus = Saku.objects.filter(account=account)
+        data = []
+        for saku in sakus:
+            data.append({
+                'id': saku.id,
+                'saku_name': saku.saku_name,
+                'category_name': saku.category_name,
+                'balance': str(saku.balance),
+                'is_primary': saku.is_primary,
+            })
+        return Response(data, status=status.HTTP_200_OK)
