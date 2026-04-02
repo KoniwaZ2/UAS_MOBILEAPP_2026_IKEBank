@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
+import 'dart:io';
+import '../../../models/register_flow_data.dart';
 import '../login/verifikasi_wajah_screen.dart';
 
 class IsiDataScreen extends StatefulWidget {
-  const IsiDataScreen({super.key});
+  final String phone;
+  final String email;
+  final File? ktpImageFile;
+  final Map<String, dynamic> prefillIdentity;
+  final String? reference;
+
+  const IsiDataScreen({
+    super.key,
+    required this.phone,
+    required this.email,
+    this.ktpImageFile,
+    this.prefillIdentity = const <String, dynamic>{},
+    this.reference,
+  });
 
   @override
   State<IsiDataScreen> createState() => _IsiDataScreenState();
@@ -29,6 +44,34 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   final List<String> _listKelamin = ['Laki-Laki', 'Perempuan'];
 
   @override
+  void initState() {
+    super.initState();
+    _applyPrefill();
+  }
+
+  void _applyPrefill() {
+    final data = widget.prefillIdentity;
+
+    _namaController.text = (data['name'] ?? '').toString();
+    _nikController.text = (data['nik'] ?? '').toString();
+    _alamatController.text = (data['address'] ?? '').toString();
+    _agamaController.text = (data['religion'] ?? '').toString();
+    _ibuController.text = (data['mother_name'] ?? '').toString();
+
+    final bornDate = (data['born_date'] ?? '').toString();
+    if (bornDate.isNotEmpty) {
+      _ttlController.text = bornDate;
+    }
+
+    final gender = (data['gender'] ?? '').toString().toLowerCase();
+    if (gender.contains('male') || gender.contains('laki')) {
+      _jenisKelamin = 'Laki-Laki';
+    } else if (gender.contains('female') || gender.contains('perempuan')) {
+      _jenisKelamin = 'Perempuan';
+    }
+  }
+
+  @override
   void dispose() {
     _namaController.dispose();
     _nikController.dispose();
@@ -42,14 +85,14 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   Future<void> _pilihTanggal(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2007, 2, 26), 
-      firstDate: DateTime(1950), 
-      lastDate: DateTime.now(), 
+      initialDate: DateTime(2007, 2, 26),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryOrange, 
+              primary: AppColors.primaryOrange,
             ),
           ),
           child: child!,
@@ -60,7 +103,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     if (picked != null) {
       setState(() {
         String tanggalFormat = DateFormat('dd-MM-yyyy').format(picked);
-        _ttlController.text = tanggalFormat; 
+        _ttlController.text = tanggalFormat;
       });
     }
   }
@@ -79,7 +122,10 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 8.0,
+            ),
             child: Row(
               children: [
                 _buildProgressSegment(isActive: true),
@@ -97,7 +143,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
       body: Column(
         children: [
           const SizedBox(height: 16.0),
-          Expanded( 
+          Expanded(
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(
@@ -113,9 +159,12 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                   topRight: Radius.circular(40),
                 ),
                 child: Form(
-                  key: _formKey, 
+                  key: _formKey,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -128,22 +177,38 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        _buildTextInput(label: "Nama Sesuai KTP", controller: _namaController),
-                        _buildTextInput(label: "Nomor Induk KTP", controller: _nikController, isNumber: true),
-                        
                         _buildTextInput(
-                          label: "Tanggal Lahir", 
-                          controller: _ttlController, 
-                          readOnly: true, 
-                          onTap: () => _pilihTanggal(context), 
+                          label: "Nama Sesuai KTP",
+                          controller: _namaController,
+                        ),
+                        _buildTextInput(
+                          label: "Nomor Induk KTP",
+                          controller: _nikController,
+                          isNumber: true,
+                        ),
+
+                        _buildTextInput(
+                          label: "Tanggal Lahir",
+                          controller: _ttlController,
+                          readOnly: true,
+                          onTap: () => _pilihTanggal(context),
                           suffixIcon: Icons.calendar_today,
                         ),
 
                         _buildDropdownInput(label: "Jenis Kelamin"),
 
-                        _buildTextInput(label: "Alamat Sesuai KTP", controller: _alamatController),
-                        _buildTextInput(label: "Agama", controller: _agamaController),
-                        _buildTextInput(label: "Nama Gadis Ibu Kandung", controller: _ibuController),
+                        _buildTextInput(
+                          label: "Alamat Sesuai KTP",
+                          controller: _alamatController,
+                        ),
+                        _buildTextInput(
+                          label: "Agama",
+                          controller: _agamaController,
+                        ),
+                        _buildTextInput(
+                          label: "Nama Gadis Ibu Kandung",
+                          controller: _ibuController,
+                        ),
 
                         const SizedBox(height: 40),
 
@@ -160,7 +225,11 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                               if (_formKey.currentState!.validate()) {
                                 if (_jenisKelamin == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Pilih Jenis Kelamin terlebih dahulu!')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Pilih Jenis Kelamin terlebih dahulu!',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
@@ -168,9 +237,36 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const VerifikasiWajahScreen(
-                                      isFromRegister: true, 
-                                    ), 
+                                    builder: (context) => VerifikasiWajahScreen(
+                                      isFromRegister: true,
+                                      reference: widget.reference,
+                                      flowData: RegisterFlowData(
+                                        phoneNumber: widget.phone,
+                                        email: widget.email,
+                                        otpReference: widget.reference ?? '',
+                                        ktpFile: widget.ktpImageFile,
+                                        name: _namaController.text.trim(),
+                                        nik: _nikController.text.trim(),
+                                        bornPlace:
+                                            (widget.prefillIdentity['born_place']
+                                                    ?.toString()
+                                                    .trim()
+                                                    .isNotEmpty ??
+                                                false)
+                                            ? widget
+                                                  .prefillIdentity['born_place']
+                                                  .toString()
+                                                  .trim()
+                                            : '-',
+                                        bornDate: _toApiDate(
+                                          _ttlController.text.trim(),
+                                        ),
+                                        gender: _toApiGender(_jenisKelamin),
+                                        address: _alamatController.text.trim(),
+                                        religion: _agamaController.text.trim(),
+                                        motherName: _ibuController.text.trim(),
+                                      ),
+                                    ),
                                   ),
                                 );
                               }
@@ -207,7 +303,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0), 
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
@@ -215,7 +311,10 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
           TextFormField(
             controller: controller,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
@@ -223,7 +322,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
             onTap: onTap,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Bagian ini harus diisi'; 
+                return 'Bagian ini harus diisi';
               }
               return null;
             },
@@ -232,8 +331,13 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
               isDense: true,
               contentPadding: const EdgeInsets.only(top: 4, bottom: 4),
               border: InputBorder.none,
-              suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: Colors.grey.shade700) : null,
-              suffixIconConstraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              suffixIcon: suffixIcon != null
+                  ? Icon(suffixIcon, color: Colors.grey.shade700)
+                  : null,
+              suffixIconConstraints: const BoxConstraints(
+                minWidth: 24,
+                minHeight: 24,
+              ),
             ),
           ),
         ],
@@ -244,7 +348,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   Widget _buildDropdownInput({required String label}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), 
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(12),
@@ -252,11 +356,17 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
           DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _jenisKelamin,
-              icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade700),
+              initialValue: _jenisKelamin,
+              icon: Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.grey.shade700,
+              ),
               isExpanded: true,
               decoration: const InputDecoration(
                 isDense: true,
@@ -266,7 +376,10 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
               items: _listKelamin.map((String val) {
                 return DropdownMenuItem<String>(
                   value: val,
-                  child: Text(val, style: const TextStyle(fontSize: 16, color: Colors.black)),
+                  child: Text(
+                    val,
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
                 );
               }).toList(),
               onChanged: (newValue) {
@@ -284,22 +397,36 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6, 
-        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
+        height: 6,
+        margin: const EdgeInsets.symmetric(horizontal: 4.0),
         decoration: BoxDecoration(
-          gradient: isActive 
+          gradient: isActive
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-              
-          color: isActive 
-              ? null 
-              : Colors.white.withValues(alpha: 0.6), 
+
+          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
         ),
       ),
     );
+  }
+
+  String _toApiDate(String value) {
+    try {
+      final parsed = DateFormat('dd-MM-yyyy').parseStrict(value);
+      return DateFormat('yyyy-MM-dd').format(parsed);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  String _toApiGender(String? value) {
+    final normalized = (value ?? '').toLowerCase();
+    if (normalized.contains('laki')) return 'MALE';
+    if (normalized.contains('perempuan')) return 'FEMALE';
+    return 'OTHER';
   }
 }

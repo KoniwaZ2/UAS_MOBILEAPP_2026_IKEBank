@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-import 'verifikasi_code_screen.dart'; 
+import 'verifikasi_code_screen.dart';
+import '../../../api/auth.dart';
 
 class MasukScreen extends StatefulWidget {
   const MasukScreen({super.key});
@@ -11,30 +12,94 @@ class MasukScreen extends StatefulWidget {
 
 class _MasukScreenState extends State<MasukScreen> {
   final TextEditingController _emailController = TextEditingController();
-  
-  String? _errorMessage;
 
-  void _validasiDanLanjut() {
-    String email = _emailController.text.trim();
-    
-    bool isEmailValid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(email);
+  String? _errorMessage;
+  bool _isCheckingLogin = false;
+  final bool _isLoading = false;
+
+  Future<void> _validasiDanLanjut() async {
+    final email = _emailController.text.trim();
+
+    final isEmailValid = RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    ).hasMatch(email);
+
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = "Email tidak boleh kosong";
+      });
+      return;
+    }
+
+    if (!isEmailValid) {
+      setState(() {
+        _errorMessage = "Format email tidak valid (contoh: nama@gmail.com)";
+      });
+      return;
+    }
 
     setState(() {
-      if (email.isEmpty) {
-        _errorMessage = "Email tidak boleh kosong";
-      } else if (!isEmailValid) {
-        _errorMessage = "Format email tidak valid (contoh: nama@gmail.com)";
-      } else {
-        _errorMessage = null;
-        
-        Navigator.push(
-          context, 
-          MaterialPageRoute(
-            builder: (context) => VerifikasiCodeScreen(emailUser: email)
-          )
-        );
-      }
+      _errorMessage = null;
+      _isCheckingLogin = true;
     });
+
+    try {
+      final result = await AuthService.checkLogin(email: email);
+      final exists = result['exists'] == true;
+
+      if (!context.mounted) {
+        return;
+      }
+
+      if (!exists) {
+        setState(() {
+          _errorMessage = "Email belum terdaftar";
+          _isCheckingLogin = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _isCheckingLogin = false;
+      });
+
+      final otpRes = await AuthService.otpRequest(
+        email: email,
+        purpose: 'login',
+      );
+      final otpRequests = (otpRes['otp_requests'] as List?) ?? [];
+      if (otpRequests.isEmpty) {
+        throw Exception('OTP reference tidak ditemukan');
+      }
+      final reference =
+          (otpRequests.first as Map<String, dynamic>)['reference']
+              ?.toString() ??
+          '';
+
+      if (reference.isEmpty) {
+        throw Exception('OTP reference kosong');
+      }
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              VerifikasiCodeScreen(email: email, reference: reference),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isCheckingLogin = false;
+      });
+    }
   }
 
   @override
@@ -48,7 +113,7 @@ class _MasukScreenState extends State<MasukScreen> {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
 
     return Scaffold(
-      backgroundColor: AppColors.primaryOrange, 
+      backgroundColor: AppColors.primaryOrange,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -70,12 +135,13 @@ class _MasukScreenState extends State<MasukScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -100,35 +166,49 @@ class _MasukScreenState extends State<MasukScreen> {
 
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
+                            color: const Color(
+                              0xFFD9D9D9,
+                            ).withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
-                            border: _errorMessage != null 
-                                ? Border.all(color: Colors.red, width: 1.5) 
+                            border: _errorMessage != null
+                                ? Border.all(color: Colors.red, width: 1.5)
                                 : null,
                           ),
                           child: TextField(
                             controller: _emailController,
-                            keyboardType: TextInputType.emailAddress, 
+                            keyboardType: TextInputType.emailAddress,
                             style: const TextStyle(fontSize: 18),
                             decoration: const InputDecoration(
                               hintText: "Alamat Email",
-                              hintStyle: TextStyle(color: Colors.black, fontSize: 16),
+                              hintStyle: TextStyle(
+                                color: Colors.black,
+                                fontSize: 16,
+                              ),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 18,
+                              ),
                             ),
                           ),
                         ),
-                        
-                        if (_errorMessage != null) 
+
+                        if (_errorMessage != null)
                           Padding(
-                            padding: const EdgeInsets.only(top: 8.0, left: 10.0),
+                            padding: const EdgeInsets.only(
+                              top: 8.0,
+                              left: 10.0,
+                            ),
                             child: Text(
                               _errorMessage!,
-                              style: const TextStyle(color: Colors.red, fontSize: 14),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
 
-                        const Spacer(), 
+                        const Spacer(),
 
                         SizedBox(
                           width: double.infinity,
@@ -141,9 +221,11 @@ class _MasukScreenState extends State<MasukScreen> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            onPressed: _validasiDanLanjut, 
+                            onPressed: _isCheckingLogin
+                                ? null
+                                : _validasiDanLanjut,
                             child: Text(
-                              "Lanjut",
+                              _isCheckingLogin ? "Memproses..." : "Lanjut",
                               style: alumniSansBold.copyWith(
                                 fontSize: 20,
                                 color: Colors.white,
@@ -163,4 +245,4 @@ class _MasukScreenState extends State<MasukScreen> {
       ),
     );
   }
-} 
+}

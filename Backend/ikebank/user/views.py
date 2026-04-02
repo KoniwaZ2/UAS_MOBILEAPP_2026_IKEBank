@@ -3,23 +3,37 @@ from rest_framework.response import Response
 from user.models import User, OtpVerification, generate_otp_code, hash_otp_code
 from .serializers import (
     CheckPhoneEmailSerializer,
+    FaceLoginSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
     OtpRequestSerializer,
     OtpVerifySerializer,
     KtpUploadSerializer,
+    FaceUploadSerializer,
+    CheckLoginSerializer,
+    OtpLoginSerializer,
+    ForgotPasswordSerializer,
 )
+from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+import re
+import math
+import pytesseract
+from PIL import Image
+import user.models as user_models
 
 User = get_user_model()
 
 
-def _mask_phone_number(phone_number):
-    if not phone_number or len(phone_number) < 4:
-        return phone_number
-    return f"{phone_number[:4]}{'*' * max(len(phone_number) - 6, 1)}{phone_number[-2:]}"
+# def _mask_phone_number(phone_number):
+#     if not phone_number or len(phone_number) < 4:
+#         return phone_number
+#     return f"{phone_number[:4]}{'*' * max(len(phone_number) - 6, 1)}{phone_number[-2:]}"
 
 
 def _mask_email(email):
@@ -33,17 +47,82 @@ def _mask_email(email):
 
 
 def _extract_identity_from_ktp_image(_ktp_image):
-    # Placeholder extractor: replace this with OCR service integration.
-    return {
-        'name': '',
-        'nik': '',
-        'born_place': '',
-        'born_date': '',
-        'gender': '',
-        'address': '',
-        'religion': '',
+    def _extract_field_from_lines(lines, labels):
+        for line in lines:
+            normalized_line = re.sub(r'\s+', ' ', line).strip()
+            upper_line = normalized_line.upper()
+            for label in labels:
+                if upper_line.startswith(label):
+                    value = re.sub(r'^.*?:', '', normalized_line, count=1).strip()
+                    if not value and ':' not in normalized_line:
+                        value = normalized_line[len(label):].strip(' .:-')
+                    return value
+        return ''
+
+    def _extract_nik(text):
+        match = re.search(r'\b\d{16}\b', text)
+        if match:
+            return match.group(0)
+
+        # Fallback for OCR output that inserts spaces between digits.
+        compact_digits = re.sub(r'\D', '', text)
+        fallback_match = re.search(r'\d{16}', compact_digits)
+        return fallback_match.group(0) if fallback_match else ''
+
+    try:
+        _ktp_image.seek(0)
+        image = Image.open(_ktp_image)
+        raw_text = pytesseract.image_to_string(image, lang='ind')
+    except Exception:
+        return {
+            'name': '',
+            'nik': '',
+            'born_place': '',
+            'born_date': '',
+            'gender': '',
+            'address': '',
+            'religion': '',
+            'mother_name': '',
+        }
+
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+    name = _extract_field_from_lines(lines, ['NAMA'])
+    address = _extract_field_from_lines(lines, ['ALAMAT'])
+    religion = _extract_field_from_lines(lines, ['AGAMA'])
+    gender = _extract_field_from_lines(lines, ['JENIS KELAMIN'])
+
+    born_place = ''
+    born_date = ''
+    birth_line = _extract_field_from_lines(lines, ['TEMPAT/TGL LAHIR', 'TEMPAT, TGL LAHIR'])
+    if birth_line:
+        # Common format: "KOTA, DD-MM-YYYY".
+        parts = [item.strip() for item in birth_line.split(',') if item.strip()]
+        if len(parts) >= 2:
+            born_place = parts[0]
+            born_date = parts[1]
+        else:
+            date_match = re.search(r'(\d{2}[-/]\d{2}[-/]\d{4})', birth_line)
+            if date_match:
+                born_date = date_match.group(1)
+                born_place = birth_line.replace(born_date, '').strip(' ,.-')
+            else:
+                born_place = birth_line
+
+    extracted = {
+        'name': name,
+        'nik': _extract_nik(raw_text),
+        'born_place': born_place,
+        'born_date': born_date,
+        'gender': gender,
+        'address': address,
+        'religion': religion,
+        # Not available on Indonesian KTP, kept for registration payload compatibility.
         'mother_name': '',
     }
+    if settings.DEBUG:
+        extracted['raw_text'] = raw_text
+
+    return extracted
 
 
 def _get_verified_registration_otp(reference, purpose):
@@ -76,6 +155,7 @@ class OtpRequestView(generics.GenericAPIView):
         otp_requests = []
         purpose = validated_data['purpose']
 
+        # Handle email
         if validated_data.get('email'):
             otp_code = generate_otp_code()
             otp = OtpVerification.objects.create(
@@ -85,6 +165,22 @@ class OtpRequestView(generics.GenericAPIView):
                 otp_code_hash=hash_otp_code(otp_code),
                 expires_at=OtpVerification.get_default_expiry(minutes=5),
             )
+            
+            html_content = render_to_string('email/otp.html', {
+                'otp': otp_code,
+                'purpose': purpose,
+            })
+            
+            message = EmailMultiAlternatives(
+                subject='Kode OTP Kamu',
+                body='Gunakan kode OTP kamu',
+                from_email='noreply@ikebank.com',
+                to=[validated_data['email']],
+            )
+
+            message.attach_alternative(html_content, "text/html")
+            message.send()
+
             item = {
                 'reference': str(otp.reference),
                 'channel': otp.channel,
@@ -123,7 +219,10 @@ class OtpVerifyView(generics.GenericAPIView):
             return Response({'detail': 'OTP reference not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if otp.is_verified:
-            return Response({'message': 'OTP already verified.', 'verified': True}, status=status.HTTP_200_OK)
+            return Response(
+                {'detail': 'OTP already verified. Please request a new OTP code.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if otp.is_expired():
             return Response({'detail': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -182,6 +281,219 @@ class KtpUploadView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+
+class FaceUploadView(generics.GenericAPIView):
+    serializer_class = FaceUploadSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        purpose = validated_data.get('purpose', OtpVerification.PURPOSE_REGISTRATION)
+
+        if purpose == OtpVerification.PURPOSE_REGISTRATION:
+            reference = validated_data.get('reference')
+            if reference is None:
+                return Response(
+                    {'detail': 'reference is required for registration face upload.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            otp, error_response = _get_verified_registration_otp(
+                reference=reference,
+                purpose=OtpVerification.PURPOSE_REGISTRATION,
+            )
+            if error_response is not None:
+                return error_response
+
+            draft, _ = RegistrationDraft.objects.get_or_create(otp_reference=otp)
+            draft.face_image = validated_data['face']
+            draft.save(update_fields=['face_image', 'updated_at'])
+
+            return Response(
+                {
+                    'message': 'Face image uploaded successfully.',
+                    'reference': str(otp.reference),
+                    'purpose': purpose,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                'message': 'Face image uploaded successfully.',
+                'purpose': purpose,
+            },
+            status=status.HTTP_200_OK,
+        )
+    
+class FaceLoginView(generics.GenericAPIView):
+    serializer_class = FaceLoginSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        otp = OtpVerification.objects.filter(
+            reference=validated_data['reference'],
+            purpose=OtpVerification.PURPOSE_LOGIN,
+            is_verified=True,
+        ).first()
+
+        if otp is None:
+            return Response({'detail': 'OTP reference not found or not verified.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if otp.is_expired():
+            return Response({'detail': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone_number=otp.destination).first() or User.objects.filter(email=otp.destination).first()
+        if user is None:
+            return Response({'detail': 'User not found for this OTP reference.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.face_encoding and not user.face_image:
+            return Response(
+                {'detail': 'User has no registered face data. Please complete registration first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        probe_encoding = user_models.extract_face_encoding(validated_data['face'])
+        if not probe_encoding:
+            return Response({'detail': 'Failed to extract face features from uploaded image.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Prefer recomputing encoding from persisted face image to avoid stale/legacy vectors.
+        stored_encoding = None
+        if user.face_image:
+            stored_encoding = user_models.extract_face_encoding(user.face_image)
+
+        if not stored_encoding:
+            stored_encoding = user.face_encoding
+
+        if not stored_encoding:
+            return Response(
+                {'detail': 'Stored face data is missing. Please re-register face data.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(stored_encoding) != len(probe_encoding):
+            return Response({'detail': 'Stored face data is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stored_vector = [float(v) for v in stored_encoding]
+        probe_vector = [float(v) for v in probe_encoding]
+
+        # RMS distance catches absolute per-dimension gaps.
+        squared_sum = sum((a - b) ** 2 for a, b in zip(stored_vector, probe_vector))
+        rms_distance = math.sqrt(squared_sum / len(stored_vector))
+
+        # Cosine similarity helps stabilize against brightness/contrast differences.
+        dot_product = sum(a * b for a, b in zip(stored_vector, probe_vector))
+        stored_norm = math.sqrt(sum(a * a for a in stored_vector))
+        probe_norm = math.sqrt(sum(b * b for b in probe_vector))
+        if stored_norm == 0 or probe_norm == 0:
+            return Response({'detail': 'Face vector is invalid. Please re-register face data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cosine_similarity = dot_product / (stored_norm * probe_norm)
+
+        max_rms_distance = float(getattr(settings, 'FACE_LOGIN_MAX_RMS_DISTANCE', 0.08))
+        min_cosine_similarity = float(getattr(settings, 'FACE_LOGIN_MIN_COSINE_SIMILARITY', 0.985))
+        is_match = rms_distance <= max_rms_distance and cosine_similarity >= min_cosine_similarity
+
+        if not is_match:
+            return Response(
+                {
+                    'verified': False,
+                    'detail': 'Face does not match.',
+                    'distance': round(rms_distance, 6),
+                    'cosine_similarity': round(cosine_similarity, 6),
+                    'max_rms_distance': max_rms_distance,
+                    'min_cosine_similarity': min_cosine_similarity,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(
+            {
+                'message': 'Face verified successfully.',
+                'verified': True,
+                'reference': str(otp.reference),
+                'user': {
+                    'phone_number': user.phone_number,
+                    'email': user.email,
+                    'name': user.name,
+                },
+                'distance': round(rms_distance, 6),
+                'cosine_similarity': round(cosine_similarity, 6),
+                'max_rms_distance': max_rms_distance,
+                'min_cosine_similarity': min_cosine_similarity,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        
+
+class CheckLoginView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = CheckLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone_number = serializer.validated_data.get('phone_number')
+        email = serializer.validated_data.get('email')
+
+        if not phone_number and not email:
+            return Response({'detail': 'Either phone number or email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_exists = User.objects.filter(phone_number=phone_number).exists() if phone_number else User.objects.filter(email=email).exists()
+
+        if user_exists:
+            return Response({'exists': True, 'message': 'User with this phone number exists.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'exists': False, 'message': 'No user found with this phone number.'}, status=status.HTTP_200_OK)
+
+class OtpLoginView(generics.GenericAPIView):
+    """
+    Login using verified OTP + password
+    Flow: 
+    1. User checks login with /api/auth/login-check/
+    2. User requests OTP with /api/auth/otp/request/ (purpose='login')
+    3. User verifies OTP with /api/auth/otp/verify/ (purpose='login')
+    4. User does facial recognition [TODO]
+    5. User calls this endpoint with otp_reference + password
+    """
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = OtpLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = validated_data['user']
+
+        # Generate tokens
+        refresh = RefreshToken.from_user(user)
+        
+        # Add custom claims to refresh token
+        refresh['phone_number'] = user.phone_number
+        refresh['email'] = user.email
+        refresh['name'] = user.name
+        
+        return Response({
+            'message': 'Login successful.',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'phone_number': user.phone_number,
+                'email': user.email,
+                'name': user.name,
+                'biometric_data': getattr(user, 'biometric_data', None),
+            }
+        }, status=status.HTTP_200_OK)
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
@@ -189,3 +501,39 @@ class RegisterView(generics.CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        email = validated_data.get('email')
+        password = validated_data.get('password')
+        password_confirm = validated_data.get('password_confirmation')
+        
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'detail': 'No user found with this email.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if password != password_confirm:
+            return Response({'detail': 'Password and password confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.save(update_fields=['password'])
+
+        return Response(
+            {
+                'message': 'Password berhasil direset.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+

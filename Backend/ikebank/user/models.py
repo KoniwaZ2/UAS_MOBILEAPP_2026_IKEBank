@@ -7,6 +7,7 @@ from datetime import timedelta
 import secrets
 import uuid
 import hashlib
+from PIL import Image
 
 #hashing functions with pepper for sensitive data like NIK, biometric data, mother name, and PIN
 def _hash_with_pepper(value, namespace):
@@ -39,6 +40,40 @@ def generate_otp_code(length=6):
     upper_bound = 10 ** length
     value = secrets.randbelow(upper_bound)
     return f"{value:0{length}d}"
+
+
+def upload_face_image_to(instance, filename):
+    """Generate upload path for face image based on user email"""
+    email = instance.email.lower().split('@')[0]  # Get email prefix
+    ext = filename.split('.')[-1]  # Get file extension
+    return f'face_images/{email}/face.{ext}'
+
+
+def upload_ktp_image_to(instance, filename):
+    """Generate upload path for KTP image based on user email"""
+    email = instance.email.lower().split('@')[0]  # Get email prefix
+    ext = filename.split('.')[-1]  # Get file extension
+    return f'ktp_images/{email}/ktp.{ext}'
+
+
+def extract_face_encoding(image_file, width=16, height=8):
+    """Build a lightweight, deterministic 128-dim face encoding from image pixels."""
+    if not image_file:
+        return None
+
+    try:
+        image_file.seek(0)
+        image = Image.open(image_file).convert('L').resize((width, height))
+        pixels = list(image.getdata())
+        encoding = [round(pixel / 255.0, 6) for pixel in pixels]
+        image_file.seek(0)
+        return encoding
+    except Exception:
+        try:
+            image_file.seek(0)
+        except Exception:
+            pass
+        return None
 
 # User manager
 class UserManager(BaseUserManager):
@@ -73,17 +108,17 @@ class UserManager(BaseUserManager):
 # User model
 class User(AbstractBaseUser, PermissionsMixin):
     GENDER_CHOICES = [
-        ('Male', 'Male'),
-        ('Female', 'Female'),
-        ('Other', 'Other'),
+        ('MALE', 'MALE'),
+        ('FEMALE', 'FEMALE'),
+        ('OTHER', 'OTHER'),
     ]
 
     RELOGION_CHOICES = [
-        ('Islam', 'Islam'),
-        ('Christianity', 'Christianity'),
-        ('Hinduism', 'Hinduism'),
-        ('Buddhism', 'Buddhism'),
-        ('Other', 'Other'),
+        ('ISLAM', 'ISLAM'),
+        ('CHRISTIANITY', 'CHRISTIANITY'),
+        ('HINDUISM', 'HINDUISM'),
+        ('BUDDHISM', 'BUDDHISM'),
+        ('OTHER', 'OTHER'),
     ]
     
     id = models.BigAutoField(primary_key=True)
@@ -91,9 +126,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     name = models.CharField(max_length=255)
-    biometric_data = models.TextField(blank=True, null=True)
-    ktp = models.ImageField(upload_to='ktp_images/', blank=False, null=False)
-    nik = models.CharField(max_length=64, unique=True, blank=False, null=False)
+    face_encoding = models.JSONField(blank=True, null=True)  # Store face embedding as a list of floats
+    face_image = models.ImageField(upload_to=upload_face_image_to, blank=False, null=False, default='face_images/default_face.png')  # Face image saved as face_images/{email}/face.{ext}
+    ktp = models.ImageField(upload_to=upload_ktp_image_to, blank=True, null=True)  # KTP image saved as ktp_images/{email}/ktp.{ext}
+    nik = models.CharField(max_length=64, unique=True, blank=True, null=True)
     born_place = models.CharField(max_length=255, blank=False, null=False)
     born_date = models.DateField(blank=False, null=False)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False, null=False)
@@ -108,14 +144,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = ['email', 'name', 'ktp', 'nik', 'born_place', 'born_date', 'gender', 'address', 'religion', 'mother_name', 'pin']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['phone_number', 'name', 'ktp', 'nik', 'born_place', 'born_date', 'gender', 'address', 'religion', 'mother_name', 'pin']
     
     def __str__(self):
         return self.name
 
 
 class OtpVerification(models.Model):
+    # ubah capslok smua
     CHANNEL_SMS = 'sms'
     CHANNEL_EMAIL = 'email'
     CHANNEL_CHOICES = [
@@ -124,8 +161,10 @@ class OtpVerification(models.Model):
     ]
 
     PURPOSE_REGISTRATION = 'registration'
+    PURPOSE_LOGIN = 'login'
     PURPOSE_CHOICES = [
         (PURPOSE_REGISTRATION, 'Registration'),
+        (PURPOSE_LOGIN, 'Login'),
     ]
 
     id = models.BigAutoField(primary_key=True)
@@ -178,6 +217,8 @@ class RegistrationDraft(models.Model):
         related_name='registration_draft',
     )
     ktp_image = models.ImageField(upload_to='ktp_images/drafts/', null=True, blank=True)
+    face_image = models.ImageField(upload_to='face_images/drafts/', null=True, blank=True)
+    face_encoding = models.JSONField(blank=True, null=True)
     extracted_identity = models.JSONField(default=dict)
     is_ktp_confirmed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
