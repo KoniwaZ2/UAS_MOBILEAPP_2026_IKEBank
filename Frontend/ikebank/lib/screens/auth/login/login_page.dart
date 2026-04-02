@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
-import '../../home/home_screen.dart';
+import '../../bottomnav/main_tab_screen.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
@@ -280,6 +281,11 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MainTabScreen()),
+                              (Route<dynamic> route) => false, 
+                            );
                             if (_isSubmitting) {
                               return;
                             }
@@ -312,6 +318,8 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             Navigator.pushAndRemoveUntil(
                               context,
+                              MaterialPageRoute(builder: (context) => const MainTabScreen()),
+                              (Route<dynamic> route) => false, 
                               MaterialPageRoute(
                                 builder: (context) => const HomeScreen(
                                   entrySource: HomeEntrySource.login,

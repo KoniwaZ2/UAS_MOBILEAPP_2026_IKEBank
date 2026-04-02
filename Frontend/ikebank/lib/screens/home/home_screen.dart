@@ -524,11 +524,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           child: const Text(
-                            "Lihat Semua",
-                            style: TextStyle(
-                              color: AppColors.primaryOrange,
-                              fontSize: 12,
-                            ),
+                            "Lihat Semua", 
+                            style: TextStyle(color: AppColors.primaryOrange, fontSize: 18)
                           ),
                         ),
                       ],
