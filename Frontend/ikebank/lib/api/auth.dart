@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static String baseUrl = 'http://192.168.1.29:8000/api/auth';
+  static String baseUrl = 'http://192.168.1.12:8000/api/auth';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
@@ -370,7 +370,7 @@ class AuthService {
 
   static Future<void> forgotPassword({
     required String email,
-    required String purpose,
+    required String otpReference,
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -380,7 +380,7 @@ class AuthService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
-        'purpose': purpose,
+        'otp_reference': otpReference,
         'password': password,
         'password_confirmation': passwordConfirmation,
       }),

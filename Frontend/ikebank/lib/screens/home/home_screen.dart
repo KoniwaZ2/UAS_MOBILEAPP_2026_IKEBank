@@ -156,9 +156,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  (_primaryAccount?.user_name.isNotEmpty ??
+                                  (_primaryAccount?.username.isNotEmpty ??
                                           false)
-                                      ? _primaryAccount!.user_name
+                                      ? _primaryAccount!.username
                                       : 'Pengguna',
                                   style: TextStyle(
                                     color: Colors.white,
@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Clipboard.setData(
                                       ClipboardData(
                                         text:
-                                            _primaryAccount?.account_number ??
+                                            _primaryAccount?.accountnumber ??
                                             '-',
                                       ),
                                     ).then((_) {});
@@ -192,8 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          _primaryAccount?.account_number ??
-                                              '-',
+                                          _primaryAccount?.accountnumber ?? '-',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 12,
@@ -362,7 +361,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  const TambahDanaScreen(),
+                                                  TambahDanaScreen(
+                                                    accountName:
+                                                        _primaryAccount
+                                                            ?.username ??
+                                                        'Pengguna',
+                                                    accountNumber:
+                                                        _primaryAccount
+                                                            ?.accountnumber ??
+                                                        '-',
+                                                  ),
                                             ),
                                           );
                                         },
@@ -524,8 +532,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           child: const Text(
-                            "Lihat Semua", 
-                            style: TextStyle(color: AppColors.primaryOrange, fontSize: 18)
+                            "Lihat Semua",
+                            style: TextStyle(
+                              color: AppColors.primaryOrange,
+                              fontSize: 18,
+                            ),
                           ),
                         ),
                       ],

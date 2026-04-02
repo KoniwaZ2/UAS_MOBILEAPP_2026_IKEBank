@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -528,13 +528,18 @@ class QrisCheckView(APIView):
     Check if a QRIS number is registered in the system
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = QRISCheckSerializer
 
-    def get(self, request):
-        qris_number = request.query_params.get('qris_number', '').strip()
+    def post(self, request):
+        serializer = QRISCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        qris_number = validated_data.get('qris_number')
 
         if not qris_number:
             return Response(
-                {'detail': 'qris_number query parameter is required.'},
+                {'detail': 'qris_number is required.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

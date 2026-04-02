@@ -1,29 +1,42 @@
 class AccountDetail {
   final int id;
-  final int user_id;
-  final String user_name;
-  final String account_number;
-  final String card_number;
+  final int userid;
+  final String username;
+  final String accountnumber;
+  final String cardnumber;
   final String balance;
 
   AccountDetail({
     required this.id,
-    required this.user_id,
-    required this.user_name,
-    required this.account_number,
-    required this.card_number,
+    required this.userid,
+    required this.username,
+    required this.accountnumber,
+    required this.cardnumber,
     required this.balance,
   });
 
   factory AccountDetail.fromJson(Map<String, dynamic> json) {
     return AccountDetail(
       id: _parseInt(json['id']),
-      user_id: _parseInt(json['user_id']),
-      user_name: (json['user_name'] ?? '').toString(),
-      account_number: (json['account_number'] ?? '').toString(),
-      card_number: (json['card_number'] ?? '').toString(),
+      userid: _parseInt(json['user_id']),
+      username: _readString(json, ['user_name']),
+      accountnumber: _readString(json, ['account_number']),
+      cardnumber: _readString(json, ['card_number']),
       balance: (json['balance'] ?? '0').toString(),
     );
+  }
+
+  static String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) {
+          return text;
+        }
+      }
+    }
+    return '';
   }
 
   static int _parseInt(dynamic value) {
