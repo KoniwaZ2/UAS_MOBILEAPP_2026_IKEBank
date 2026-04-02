@@ -27,6 +27,8 @@ class CashFlowSerializer(serializers.ModelSerializer):
         ]
 
 class TransactionCreateSerializer(serializers.Serializer):
+    pin = serializers.CharField(required=True)
+    account_id = serializers.IntegerField(required=True)
     category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
     amount = serializers.IntegerField(required=True)
     description = serializers.CharField(required=False, allow_blank=True)

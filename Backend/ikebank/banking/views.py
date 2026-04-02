@@ -1,11 +1,12 @@
 import secrets
 
+from django.contrib.auth.hashers import check_password
 from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, Saku, Transaction
+from .models import BankAccount, Qris, Saku, Transaction
 from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
 from .services import upsert_cashflow_for_account
 
@@ -113,7 +114,7 @@ class TransactionCreateView(APIView):
         validated_data = serializer.validated_data
 
         account = BankAccount.objects.filter(
-            id=request.data.get('account_id'),
+            id=validated_data['account_id'],
             user=request.user,
         ).first()
 
@@ -139,6 +140,27 @@ class TransactionCreateView(APIView):
         amount = validated_data['amount']
         destination_account_number = validated_data.get('destination_account', '')
         merchant_qris = validated_data.get('merchant_qris', '')
+        pin = validated_data['pin']
+
+        if not request.user.pin:
+            return Response(
+                {'detail': 'PIN belum diset untuk user ini.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not check_password(pin, request.user.pin):
+            return Response(
+                {'detail': 'Invalid PIN.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if category == 'payment':
+            merchant_exists = Qris.objects.filter(qris_number=merchant_qris).exists()
+            if not merchant_exists:
+                return Response(
+                    {'detail': 'QRIS merchant not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Validasi: External transactions hanya dari Saku Utama
         if saku_utama.balance < amount:
