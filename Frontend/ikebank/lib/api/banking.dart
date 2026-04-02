@@ -4,7 +4,7 @@ import 'auth.dart';
 import '../models/account_detail.dart';
 
 class BankingService {
-  static String baseUrl = 'http://192.168.1.29:8000/api/banking';
+  static String baseUrl = 'http://192.168.1.12:8000/api/banking';
 
   static Future<Map<String, dynamic>> registerAccount() async {
     final url = Uri.parse('$baseUrl/register/');
@@ -38,6 +38,24 @@ class BankingService {
       return <AccountDetail>[];
     } else {
       throw Exception('Failed to fetch account details');
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkQris({
+    required String qrisNumber,
+  }) async {
+    final url = Uri.parse("$baseUrl/qris-check/");
+    final headers = await AuthService.buildAuthHeaders();
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: jsonEncode({'qris_number': qrisNumber}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to check QRIS');
     }
   }
 }
