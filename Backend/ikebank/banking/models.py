@@ -1,5 +1,5 @@
 from django.db import models
-
+import uuid
 #semua saldo termasuk dari deposito, saku, dan tabungan
 class BankAccount(models.Model):
     user = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='bank_accounts')
@@ -27,7 +27,8 @@ class Transaction(models.Model):
 
     INCOME_CATEGORIES = ('transfer_in', 'deposit', 'interest')
     EXPENSE_CATEGORIES = ('transfer_out', 'payment', 'withdrawal', 'other')
-
+    
+    transaction_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transactions')
     saku = models.ForeignKey('Saku', on_delete=models.CASCADE, null=True, blank=True, related_name='transactions')
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=False, blank=False)
@@ -65,8 +66,14 @@ class CashFlow(models.Model):
 
 
 class Qris(models.Model):
+    AQUIERER_CHOICES = [
+        ('Bank BCA', 'Bank BCA'),
+    ]
     qris_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
     merchant_name = models.CharField(max_length=255, null=False, blank=False)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    aquirer = models.CharField(max_length=255, null=True, blank=True, choices=AQUIERER_CHOICES)
+    PAN_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
     def __str__(self):
         return f"{self.merchant_name} - {self.qris_number}"
@@ -88,9 +95,9 @@ class CardDetails(models.Model):
 
 class Saku(models.Model):
     CATEGORY_CHOICES = [
-        ("Nabung", "Nabung"),
-        ("Transaksi", "Transaksi"),
-        ("Lainnya", "Lainnya"),
+        ("nabung", "Nabung"),
+        ("transaksi", "Transaksi"),
+        ("lainnya", "Lainnya"),
     ]
     id = models.BigAutoField(primary_key=True)
     saku_name = models.CharField(max_length=50, null=False, blank=False)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import BankAccount, CashFlow, Transaction
+from .models import BankAccount, CashFlow, Saku, Transaction
 
 
 class RegisterBankAccountSerializer(serializers.Serializer):
@@ -62,7 +62,7 @@ class InternalTransferSerializer(serializers.Serializer):
 class TambahSakuSerializer(serializers.Serializer):
     """Add new Saku to existing Bank Account"""
     saku_name = serializers.CharField(required=True)
-    category_name = serializers.CharField(required=True)
+    category_name = serializers.ChoiceField(choices=Saku.CATEGORY_CHOICES, required=True)
     is_primary = serializers.BooleanField(required=False, default=False)
 
 class QRISCheckSerializer(serializers.Serializer):

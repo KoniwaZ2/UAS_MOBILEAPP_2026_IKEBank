@@ -9,7 +9,7 @@ class BankAccountAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('account_id', 'category', 'amount', 'balance_after', 'timestamp')
+    list_display = ('transaction_id', 'account_id', 'category', 'amount', 'balance_after', 'timestamp')
     search_fields = ('account_id__account_number', 'category')
     list_filter = ('timestamp',)
 
