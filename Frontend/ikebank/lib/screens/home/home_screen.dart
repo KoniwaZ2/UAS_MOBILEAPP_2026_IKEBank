@@ -8,6 +8,8 @@ import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'promo_screen.dart';
 import 'saku_utama/saku_utama_screen.dart';
+import 'layanan/cash_flow_screen.dart';
+import 'layanan/beli_bayar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -292,8 +294,28 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             _buildServiceItem(imagePath: 'assets/images/celengan.png', label: "Saku Celengan", iconSize: 38),
                             _buildServiceItem(imagePath: 'assets/images/deposito.png', label: "Saku Deposito", iconSize: 38),
-                            _buildServiceItem(imagePath: 'assets/images/CashF.png', label: "Cash Flow", iconSize: 38),
-                            _buildServiceItem(imagePath: 'assets/images/bill.png', label: "Beli & Bayar"),
+                            _buildServiceItem(
+                              imagePath: 'assets/images/CashF.png', 
+                              label: "Cash Flow", 
+                              iconSize: 38,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const CashFlowScreen()),
+                                );
+                              }
+                            ),
+
+                            _buildServiceItem(
+                              imagePath: 'assets/images/bill.png', 
+                              label: "Beli & Bayar",
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const BeliBayarScreen()),
+                                );
+                              }
+                            ),
                             _buildServiceItem(imagePath: 'assets/images/CS.png', label: "Bantuan CS"),
                           ],
                         ),
