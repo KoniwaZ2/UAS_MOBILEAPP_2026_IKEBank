@@ -1,13 +1,18 @@
 import secrets
 
+from django.contrib.auth.hashers import check_password
 from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, Saku, Transaction
+from .models import BankAccount, Qris, Saku, Transaction
 from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
 from .services import upsert_cashflow_for_account
+
+
+def get_user_bank_account(user):
+    return BankAccount.objects.filter(user=user).first()
 
 
 class RegisterBankAccountView(APIView):
@@ -64,10 +69,7 @@ class CashFlowCalculateView(APIView):
         input_serializer.is_valid(raise_exception=True)
         validated_data = input_serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -112,10 +114,7 @@ class TransactionCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=request.data.get('account_id'),
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -139,6 +138,27 @@ class TransactionCreateView(APIView):
         amount = validated_data['amount']
         destination_account_number = validated_data.get('destination_account', '')
         merchant_qris = validated_data.get('merchant_qris', '')
+        pin = validated_data['pin']
+
+        if not request.user.pin:
+            return Response(
+                {'detail': 'PIN belum diset untuk user ini.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not check_password(pin, request.user.pin):
+            return Response(
+                {'detail': 'Invalid PIN.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if category == 'payment':
+            merchant_exists = Qris.objects.filter(qris_number=merchant_qris).exists()
+            if not merchant_exists:
+                return Response(
+                    {'detail': 'QRIS merchant not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Validasi: External transactions hanya dari Saku Utama
         if saku_utama.balance < amount:
@@ -245,10 +265,7 @@ class TambahDanaView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -326,10 +343,7 @@ class InternalTransferView(APIView):
         validated_data = serializer.validated_data
 
         # Get account
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -456,10 +470,7 @@ class TambahSakuView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -559,3 +570,52 @@ class QrisCheckView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class HistoryTransactionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank account found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        transactions = Transaction.objects.filter(account_id=account).order_by('-timestamp')
+        data = []
+        for tx in transactions:
+            data.append({
+                'id': tx.id,
+                'category': tx.category,
+                'amount': str(tx.amount),
+                'balance_after': str(tx.balance_after),
+                'timestamp': tx.timestamp,
+                'description': tx.description,
+                'source_funds': tx.source_funds,
+                'saku_name': tx.saku.saku_name if tx.saku else None,
+            })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class SakuView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        sakus = Saku.objects.filter(account=account)
+        data = []
+        for saku in sakus:
+            data.append({
+                'id': saku.id,
+                'saku_name': saku.saku_name,
+                'category_name': saku.category_name,
+                'balance': str(saku.balance),
+                'is_primary': saku.is_primary,
+            })
+        return Response(data, status=status.HTTP_200_OK)

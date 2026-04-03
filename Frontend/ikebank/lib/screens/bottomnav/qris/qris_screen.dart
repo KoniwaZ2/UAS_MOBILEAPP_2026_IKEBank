@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
     as ml;
@@ -56,11 +57,10 @@ class _QrisScreenState extends State<QrisScreen> {
   }
 
   Future<void> _handleScannedValue(String? value) async {
-    _trace('[QRIS] _handleScannedValue called with value=$value');
     final qrisValue = value?.trim() ?? '';
     if (qrisValue.isEmpty || _isHandlingScan || !mounted) {
-      _trace(
-        '[QRIS] skip handle: empty=${qrisValue.isEmpty}, handling=$_isHandlingScan, mounted=$mounted',
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QR tidak valid. Coba lagi.')),
       );
       return;
     }
@@ -80,13 +80,10 @@ class _QrisScreenState extends State<QrisScreen> {
       _trace('[QRIS] widget not mounted after stop scanner');
       return;
     }
-
+    late final Map<String, dynamic> qrisDetail;
     try {
-      _trace('[QRIS] checkQris request -> $qrisValue');
-      await BankingService.checkQris(qrisNumber: qrisValue);
-      _trace('[QRIS] checkQris success');
+      qrisDetail = await BankingService.checkQris(qrisNumber: qrisValue);
     } catch (e) {
-      _trace('[QRIS] checkQris error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal memproses QRIS. Coba lagi.')),
       );
@@ -103,7 +100,12 @@ class _QrisScreenState extends State<QrisScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const QrisKonfirmasiScreen()),
+      MaterialPageRoute(
+        builder: (context) => QrisKonfirmasiScreen(
+          qrisNumber: qrisValue,
+          merchantName: qrisDetail['merchant_name'] ?? 'Unknown Merchant',
+        ),
+      ),
     ).then((_) async {
       if (!mounted) return;
       _isHandlingScan = false;
@@ -123,10 +125,8 @@ class _QrisScreenState extends State<QrisScreen> {
   }
 
   Future<void> _pickAndScanFromGallery() async {
-    _trace('[QRIS] pick image from gallery start');
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    _trace('[QRIS] picked image: ${image?.path}');
 
     if (!mounted || image == null) return;
 
@@ -135,11 +135,8 @@ class _QrisScreenState extends State<QrisScreen> {
     try {
       final inputImage = InputImage.fromFilePath(image.path);
       final barcodes = await barcodeScanner.processImage(inputImage);
-      _trace('[QRIS] barcode count from gallery: ${barcodes.length}');
       firstValue = _extractMlBarcodeValue(barcodes);
-      _trace('[QRIS] extracted gallery value: $firstValue');
     } on MissingPluginException {
-      _trace('[QRIS] plugin missing for MLKit barcode scanning');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -148,6 +145,12 @@ class _QrisScreenState extends State<QrisScreen> {
           ),
         ),
       );
+      return;
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memproses gambar: $e')));
       return;
     } finally {
       try {
@@ -160,7 +163,6 @@ class _QrisScreenState extends State<QrisScreen> {
     if (!mounted) return;
 
     if (firstValue == null || firstValue.trim().isEmpty) {
-      _trace('[QRIS] no QR value extracted from selected image');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('QR tidak ditemukan pada foto yang dipilih.'),
@@ -168,8 +170,6 @@ class _QrisScreenState extends State<QrisScreen> {
       );
       return;
     }
-
-    _trace('[QRIS] forwarding value to _handleScannedValue');
     await _handleScannedValue(firstValue);
   }
 
