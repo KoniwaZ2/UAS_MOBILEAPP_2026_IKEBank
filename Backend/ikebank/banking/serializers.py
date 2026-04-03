@@ -8,7 +8,6 @@ class RegisterBankAccountSerializer(serializers.Serializer):
 
 
 class CashFlowCalculateSerializer(serializers.Serializer):
-    account_id = serializers.IntegerField(required=True)
     month = serializers.IntegerField(min_value=1, max_value=12, required=True)
     year = serializers.IntegerField(min_value=2000, max_value=2100, required=True)
 
@@ -28,7 +27,6 @@ class CashFlowSerializer(serializers.ModelSerializer):
 
 class TransactionCreateSerializer(serializers.Serializer):
     pin = serializers.CharField(required=True)
-    account_id = serializers.IntegerField(required=True)
     category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
     amount = serializers.IntegerField(required=True)
     description = serializers.CharField(required=False, allow_blank=True)
@@ -50,14 +48,12 @@ class TransactionCreateSerializer(serializers.Serializer):
 
 class TambahDanaSerializer(serializers.Serializer):
     """External deposits to primary Saku Utama (ATM, incoming transfer)"""
-    account_id = serializers.IntegerField(required=True)
     amount = serializers.IntegerField(required=True)
     description = serializers.CharField(required=False, allow_blank=True)
     source = serializers.CharField(required=False, allow_blank=True)  # ATM, Transfer In, etc
 
 class InternalTransferSerializer(serializers.Serializer):
     """Transfer between Sakus - only between Saku Utama and other Sakus"""
-    account_id = serializers.IntegerField(required=True)
     source_saku_id = serializers.IntegerField(required=True)  # From Saku (should be Utama)
     destination_saku_id = serializers.IntegerField(required=True)  # To Saku
     amount = serializers.IntegerField(required=True)
@@ -65,7 +61,6 @@ class InternalTransferSerializer(serializers.Serializer):
 
 class TambahSakuSerializer(serializers.Serializer):
     """Add new Saku to existing Bank Account"""
-    account_id = serializers.IntegerField(required=True)
     saku_name = serializers.CharField(required=True)
     category_name = serializers.CharField(required=True)
     is_primary = serializers.BooleanField(required=False, default=False)

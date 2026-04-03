@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -8,6 +9,10 @@ class AuthService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
+  static const Duration _refreshBuffer = Duration(minutes: 2);
+  static const Duration _activityRefreshThrottle = Duration(minutes: 3);
+  static DateTime? _lastActivityRefreshAttempt;
+  static Completer<bool>? _refreshCompleter;
 
   static Future<void> saveTokens({
     required String accessToken,
@@ -23,6 +28,19 @@ class AuthService {
 
   static Future<String?> getRefreshToken() async {
     return _secureStorage.read(key: _refreshTokenKey);
+  }
+
+  static Future<void> onUserActivity() async {
+    final now = DateTime.now();
+    if (_lastActivityRefreshAttempt != null) {
+      final elapsed = now.difference(_lastActivityRefreshAttempt!);
+      if (elapsed < _activityRefreshThrottle) {
+        return;
+      }
+    }
+
+    _lastActivityRefreshAttempt = now;
+    await _refreshAccessTokenIfNeeded();
   }
 
   static Future<bool> hasAccessToken() async {
@@ -48,6 +66,185 @@ class AuthService {
     }
 
     return headers;
+  }
+
+  static Future<http.Response> authorizedGet(
+    Uri url, {
+    Map<String, String>? headers,
+  }) async {
+    await _refreshAccessTokenIfNeeded();
+
+    final authHeaders = await buildAuthHeaders(includeJsonContentType: false);
+    final mergedHeaders = <String, String>{...authHeaders, ...?headers};
+    var response = await http.get(url, headers: mergedHeaders);
+
+    if (response.statusCode == 401) {
+      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      if (refreshed) {
+        final retryHeaders = await buildAuthHeaders(
+          includeJsonContentType: false,
+        );
+        response = await http.get(
+          url,
+          headers: <String, String>{...retryHeaders, ...?headers},
+        );
+      }
+    }
+
+    return response;
+  }
+
+  static Future<http.Response> authorizedPost(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    await _refreshAccessTokenIfNeeded();
+
+    final authHeaders = await buildAuthHeaders(includeJsonContentType: true);
+    final mergedHeaders = <String, String>{...authHeaders, ...?headers};
+    var response = await http.post(url, headers: mergedHeaders, body: body);
+
+    if (response.statusCode == 401) {
+      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      if (refreshed) {
+        final retryHeaders = await buildAuthHeaders(includeJsonContentType: true);
+        response = await http.post(
+          url,
+          headers: <String, String>{...retryHeaders, ...?headers},
+          body: body,
+        );
+      }
+    }
+
+    return response;
+  }
+
+  static Future<bool> _refreshAccessTokenIfNeeded({bool force = false}) async {
+    final accessToken = await getAccessToken();
+    final needsRefresh =
+        force ||
+        accessToken == null ||
+        accessToken.isEmpty ||
+        _isTokenExpiringSoon(accessToken, _refreshBuffer);
+
+    if (!needsRefresh) {
+      return true;
+    }
+
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<bool>();
+    try {
+      final refreshed = await _performRefresh();
+      _refreshCompleter!.complete(refreshed);
+      return refreshed;
+    } catch (_) {
+      _refreshCompleter!.complete(false);
+      return false;
+    } finally {
+      _refreshCompleter = null;
+    }
+  }
+
+  static Future<bool> _performRefresh() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return false;
+    }
+
+    final endpoints = <String>['$baseUrl/token/refresh/', '$baseUrl/refresh/'];
+
+    for (final endpoint in endpoints) {
+      try {
+        final response = await http.post(
+          Uri.parse(endpoint),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'refresh': refreshToken,
+            'refresh_token': refreshToken,
+          }),
+        );
+
+        if (response.statusCode != 200) {
+          continue;
+        }
+
+        final decoded = jsonDecode(response.body);
+        if (decoded is! Map<String, dynamic>) {
+          continue;
+        }
+
+        final tokens = _extractTokens(decoded);
+        if (tokens != null) {
+          await saveTokens(
+            accessToken: tokens['access']!,
+            refreshToken: tokens['refresh']!,
+          );
+          return true;
+        }
+
+        final accessOnly = _extractAccessToken(decoded);
+        if (accessOnly != null && accessOnly.isNotEmpty) {
+          await _secureStorage.write(key: _accessTokenKey, value: accessOnly);
+          return true;
+        }
+      } catch (_) {
+        // Try next endpoint candidate.
+      }
+    }
+
+    return false;
+  }
+
+  static String? _extractAccessToken(Map<String, dynamic> decoded) {
+    final nestedToken = decoded['token'];
+    if (nestedToken is Map<String, dynamic>) {
+      final access = nestedToken['access']?.toString();
+      if (access != null && access.isNotEmpty) {
+        return access;
+      }
+    }
+
+    final direct = decoded['access']?.toString() ?? decoded['access_token']?.toString();
+    if (direct == null || direct.isEmpty) {
+      return null;
+    }
+    return direct;
+  }
+
+  static bool _isTokenExpiringSoon(String token, Duration buffer) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return true;
+      }
+
+      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final decoded = jsonDecode(payload);
+      if (decoded is! Map<String, dynamic>) {
+        return true;
+      }
+
+      final expValue = decoded['exp'];
+      final expSeconds = expValue is int
+          ? expValue
+          : int.tryParse(expValue?.toString() ?? '');
+      if (expSeconds == null) {
+        return true;
+      }
+
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+        expSeconds * 1000,
+        isUtc: true,
+      );
+      final nowUtc = DateTime.now().toUtc();
+      return nowUtc.add(buffer).isAfter(expiresAt);
+    } catch (_) {
+      return true;
+    }
   }
 
   static Map<String, String>? _extractTokens(Map<String, dynamic> decoded) {

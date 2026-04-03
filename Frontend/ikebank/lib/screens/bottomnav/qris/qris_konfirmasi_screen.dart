@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../models/wallet_source.dart';
+import '../../../api/banking.dart';
 import 'qris_pin_screen.dart';
 
 class QrisKonfirmasiScreen extends StatefulWidget {
-  const QrisKonfirmasiScreen({super.key});
+  final String qrisNumber;
+  final String merchantName;
+
+  const QrisKonfirmasiScreen({
+    super.key,
+    required this.qrisNumber,
+    required this.merchantName,
+  });
 
   @override
   State<QrisKonfirmasiScreen> createState() => _QrisKonfirmasiScreenState();
@@ -11,14 +20,55 @@ class QrisKonfirmasiScreen extends StatefulWidget {
 
 class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
   final TextEditingController _amountController = TextEditingController();
-
-  String _selectedSakuName = "Saku Utama";
-  String _selectedSakuBalance = "Rp3.000.000";
+  List<WalletSource> _walletSources = [];
+  WalletSource? _selectedSource;
 
   final TextStyle alumniSansBold = const TextStyle(
     fontWeight: FontWeight.w800,
     fontFamily: 'AlumniSans',
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWalletSources();
+  }
+
+  WalletSource? _resolveDefaultSource(List<WalletSource> sources) {
+    if (sources.isEmpty) {
+      return null;
+    }
+    return sources.firstWhere(
+      (source) => source.category == WalletCategory.utama,
+      orElse: () => sources.first,
+    );
+  }
+
+  Future<void> _loadWalletSources() async {
+    try {
+      final fetchedSources = await BankingService.fetchQrisFundingSources();
+      if (!mounted) return;
+
+      if (fetchedSources.isEmpty) {
+        setState(() {
+          _walletSources = [];
+          _selectedSource = null;
+        });
+        return;
+      }
+
+      final defaultSource = _resolveDefaultSource(fetchedSources);
+
+      setState(() {
+        _walletSources = fetchedSources;
+        _selectedSource = defaultSource;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal memuat sumber dana')));
+    }
+  }
 
   @override
   void dispose() {
@@ -27,6 +77,21 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
   }
 
   void _showSumberDanaBottomSheet() {
+    final allowedSources = _walletSources
+        .where(
+          (source) =>
+              source.category == WalletCategory.utama ||
+              source.category == WalletCategory.transaksi,
+        )
+        .toList();
+
+    if (allowedSources.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sumber dana belum tersedia.')),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -68,34 +133,28 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
               ),
               const SizedBox(height: 16),
 
-              _buildBottomSheetItem(
-                title: "Saku Utama",
-                balance: "Rp 3.000.000",
-                imagePath: 'assets/images/IKEHome.png',
-                tag: null,
-                onTap: () {
-                  setState(() {
-                    _selectedSakuName = "Saku Utama";
-                    _selectedSakuBalance = "Rp3.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 12),
+              ...allowedSources.asMap().entries.map((entry) {
+                final index = entry.key;
+                final source = entry.value;
 
-              _buildBottomSheetItem(
-                title: "Uang Belanja",
-                balance: "Rp 5.000.000",
-                imagePath: 'assets/images/celengan.png',
-                tag: "Nabung",
-                onTap: () {
-                  setState(() {
-                    _selectedSakuName = "Uang Belanja";
-                    _selectedSakuBalance = "Rp5.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-              ),
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == allowedSources.length - 1 ? 0 : 12,
+                  ),
+                  child: _buildBottomSheetItem(
+                    title: source.name,
+                    balance: source.balance,
+                    imagePath: source.imagePath,
+                    tag: source.tag,
+                    onTap: () {
+                      setState(() {
+                        _selectedSource = source;
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                );
+              }),
             ],
           ),
         );
@@ -241,8 +300,8 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Kopi Nako",
+                          Text(
+                            widget.merchantName,
                             style: TextStyle(
                               fontSize: 28,
                               color: Colors.black,
@@ -251,8 +310,11 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Tangerang",
-                            style: TextStyle(fontSize: 16, color: Colors.black),
+                            widget.qrisNumber,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
                           ),
                         ],
                       ),
@@ -338,14 +400,14 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _selectedSakuName,
+                                  _selectedSource?.name ?? '-',
                                   style: const TextStyle(
                                     fontSize: 18,
                                     color: Colors.black,
                                   ),
                                 ),
                                 Text(
-                                  _selectedSakuBalance,
+                                  _selectedSource?.balance ?? 'Rp0',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey.shade800,
@@ -380,10 +442,24 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
+                    final amount = _amountController.text.trim();
+                    if (amount.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Masukkan jumlah pembayaran terlebih dahulu.'),
+                        ),
+                      );
+                      return;
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const QrisPinScreen(),
+                        builder: (context) => QrisPinScreen(
+                          qrisNumber: widget.qrisNumber,
+                          amount: amount,
+                          merchantName: widget.merchantName,
+                        ),
                       ),
                     );
                   },

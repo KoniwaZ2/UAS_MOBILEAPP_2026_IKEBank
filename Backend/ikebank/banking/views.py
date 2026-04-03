@@ -11,6 +11,10 @@ from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCh
 from .services import upsert_cashflow_for_account
 
 
+def get_user_bank_account(user):
+    return BankAccount.objects.filter(user=user).first()
+
+
 class RegisterBankAccountView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -65,10 +69,7 @@ class CashFlowCalculateView(APIView):
         input_serializer.is_valid(raise_exception=True)
         validated_data = input_serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -113,10 +114,7 @@ class TransactionCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -267,10 +265,7 @@ class TambahDanaView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -348,10 +343,7 @@ class InternalTransferView(APIView):
         validated_data = serializer.validated_data
 
         # Get account
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -478,10 +470,7 @@ class TambahSakuView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = BankAccount.objects.filter(
-            id=validated_data['account_id'],
-            user=request.user,
-        ).first()
+        account = get_user_bank_account(request.user)
 
         if account is None:
             return Response(
@@ -586,22 +575,11 @@ class HistoryTransactionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        accounts = BankAccount.objects.filter(user=request.user)
-        if not accounts.exists():
-            return Response(
-                {'detail': 'account_id query parameter is required.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        account = BankAccount.objects.filter(
-            id=accounts.first().id,
-            user=request.user,
-        ).first()
-
+        account = get_user_bank_account(request.user)
         if account is None:
             return Response(
-                {'detail': 'Bank account not found or not owned by user.'},
-                status=status.HTTP_404_NOT_FOUND,
+                {'detail': 'No bank account found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         transactions = Transaction.objects.filter(account_id=account).order_by('-timestamp')
@@ -623,21 +601,10 @@ class SakuView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        accounts = BankAccount.objects.filter(user=request.user)
-        if not accounts.exists():
-            return Response(
-                {'detail': 'No bank accounts found for user.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        account = BankAccount.objects.filter(
-            id=accounts.first().id,
-            user=request.user,
-        ).first()
-
+        account = get_user_bank_account(request.user)
         if account is None:
             return Response(
-                {'detail': 'Bank account not found or not owned by user.'},
+                {'detail': 'No bank accounts found for user.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
