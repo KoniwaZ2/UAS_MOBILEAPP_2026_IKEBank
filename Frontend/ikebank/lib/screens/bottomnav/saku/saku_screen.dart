@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'tambah_saku_screen.dart';
+import '../../home/saku_utama/saku_utama_screen.dart';
+import 'history_transaksi_screen.dart';
 
 class SakuScreen extends StatefulWidget {
   const SakuScreen({super.key});
@@ -383,7 +385,34 @@ class _SakuScreenState extends State<SakuScreen> {
   Widget _buildSakuCard({required String title, required String amount, required String imageAsset}) {
     bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
     return GestureDetector(
-      onTap: () {}, 
+      onTap: () {
+        if (title == "Saku Utama") {
+          // 1. Saku Utama -> Masuk ke layar Saku Utama 
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
+          );
+        } 
+        else if (title == "Saku Celengan" || title == "Saku Deposito") {
+          // 2. Saku Bawaan Lainnya -> Tampilkan Notifikasi (karena akan dibuat di menu Layanan nanti)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Menu $title akan diarahkan ke Layanan Utama!")),
+          );
+        } 
+        else {
+          // 3. Saku Tambahan (Custom) -> Masuk ke layar History Transaksi Saku
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HistoryTransaksiScreen(
+                title: title,
+                amount: amount,
+                imageAsset: imageAsset,
+              ),
+            ),
+          );
+        }
+      }, 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, 
         children: [

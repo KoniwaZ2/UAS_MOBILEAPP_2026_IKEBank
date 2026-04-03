@@ -7,6 +7,7 @@ import 'reward_screen.dart';
 import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'promo_screen.dart';
+import 'saku_utama/saku_utama_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -279,7 +280,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisSpacing: 5,
                           childAspectRatio: 1.3,
                           children: [
-                            _buildServiceItem(imagePath: 'assets/images/IKEHome.png', label: "Saku Utama"),
+                            _buildServiceItem(
+                              imagePath: 'assets/images/IKEHome.png', 
+                              label: "Saku Utama",
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
+                                );
+                              }
+                            ),
                             _buildServiceItem(imagePath: 'assets/images/celengan.png', label: "Saku Celengan", iconSize: 38),
                             _buildServiceItem(imagePath: 'assets/images/deposito.png', label: "Saku Deposito", iconSize: 38),
                             _buildServiceItem(imagePath: 'assets/images/CashF.png', label: "Cash Flow", iconSize: 38),
@@ -404,31 +414,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildServiceItem({required String imagePath, required String label, double iconSize = 28}) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 52,
-          decoration: const BoxDecoration(
-            color: Color(0xFFDCD6FF), 
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(10),
-              bottom: Radius.circular(25),
+  Widget _buildServiceItem({required String imagePath, required String label, double iconSize = 28, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDCD6FF), 
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(10),
+                bottom: Radius.circular(25),
+              ),
             ),
+            alignment: Alignment.center,
+            child: Image.asset(imagePath, height: iconSize, fit: BoxFit.contain), 
           ),
-          alignment: Alignment.center,
-          child: Image.asset(imagePath, height: iconSize, fit: BoxFit.contain), 
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, color: Colors.black87),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+          ),
+        ],
+      ),
     );
   }
 
