@@ -67,3 +67,6 @@ class TambahSakuSerializer(serializers.Serializer):
 
 class QRISCheckSerializer(serializers.Serializer):
     qris_number = serializers.CharField(required=True)
+
+class SakuDetailSerializer(serializers.ModelSerializer):
+    saku_id = serializers.IntegerField(source='id')

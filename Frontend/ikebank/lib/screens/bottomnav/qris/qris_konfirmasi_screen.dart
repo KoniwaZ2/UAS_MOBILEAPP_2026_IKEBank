@@ -470,6 +470,8 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                           location: widget.location,
                           aquirer: widget.aquirer,
                           panId: widget.panId,
+                          walletName: _selectedSource?.name ?? 'Saku Utama',
+                          walletBalance: _selectedSource?.balance ?? 'Rp0',
                         ),
                       ),
                     );

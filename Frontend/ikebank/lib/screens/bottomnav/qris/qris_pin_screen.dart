@@ -9,6 +9,8 @@ class QrisPinScreen extends StatefulWidget {
   final String location;
   final String aquirer;
   final String panId;
+  final String walletName;
+  final String walletBalance;
 
   const QrisPinScreen({
     super.key,
@@ -18,6 +20,8 @@ class QrisPinScreen extends StatefulWidget {
     required this.location,
     required this.aquirer,
     required this.panId,
+    required this.walletName,
+    required this.walletBalance,
   });
 
   @override
@@ -158,6 +162,16 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                               location: widget.location,
                               aquirer: widget.aquirer,
                               panId: widget.panId,
+                              walletName: widget.walletName,
+                              walletBalance: widget.walletBalance,
+                              transactionId:
+                                  paymentResponse['transaction_id']
+                                      ?.toString() ??
+                                  'Unknown Transaction ID',
+                              transactionTime:
+                                  paymentResponse['transaction_time']
+                                      ?.toString() ??
+                                  'Unknown Transaction Time',
                             ),
                           ),
                         );

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Qris, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -243,7 +243,8 @@ class TransactionCreateView(APIView):
                 'detail': 'Transaction completed successfully.',
                 'transaction_id': sender_transaction.transaction_id.hex,
                 'new_balance': account.balance,
-                'saku_balance': saku_utama.balance
+                'saku_balance': saku_utama.balance,
+                'transaction_time': sender_transaction.timestamp,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -567,6 +568,9 @@ class QrisCheckView(APIView):
             {
                 'qris_number': qris.qris_number,
                 'merchant_name': qris.merchant_name,
+                'location': qris.location,
+                'aquirer': qris.aquirer,
+                'PAN_id': qris.PAN_id,
             },
             status=status.HTTP_200_OK,
         )
@@ -618,4 +622,32 @@ class SakuView(APIView):
                 'balance': str(saku.balance),
                 'is_primary': saku.is_primary,
             })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class SakuDetailView(APIView):
+    serializer_class = SakuDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        saku = Saku.objects.filter(account=account, id=pk).first()
+        if saku is None:
+            return Response(
+                {'detail': 'Saku not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = {
+            'id': saku.id,
+            'saku_name': saku.saku_name,
+            'category_name': saku.category_name,
+            'balance': str(saku.balance),
+            'is_primary': saku.is_primary,
+        }
         return Response(data, status=status.HTTP_200_OK)

@@ -105,7 +105,7 @@ class _QrisScreenState extends State<QrisScreen> {
           merchantName: qrisDetail['merchant_name'] ?? 'Unknown Merchant',
           location: qrisDetail['location'] ?? 'Unknown Location',
           aquirer: qrisDetail['aquirer'] ?? 'Unknown Acquirer',
-          panId: qrisDetail['pan_id'] ?? 'Unknown PAN ID',
+          panId: qrisDetail['PAN_id'] ?? 'Unknown PAN ID',
         ),
       ),
     ).then((_) async {

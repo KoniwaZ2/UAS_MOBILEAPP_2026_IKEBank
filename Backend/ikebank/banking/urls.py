@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView
+from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView
 
 
 urlpatterns = [
@@ -12,6 +12,7 @@ urlpatterns = [
     path('internal-transfer/', InternalTransferView.as_view(), name='internal-transfer'),
     path('tambah-saku/', TambahSakuView.as_view(), name='tambah-saku'),
     path('saku-list/', SakuView.as_view(), name='saku-list-create'),
+    path('saku-detail/', SakuDetailView.as_view(), name='saku-detail'),
     path('qris-check/', QrisCheckView.as_view(), name='qris-check'),
     path('transactions-history/', HistoryTransactionView.as_view(), name='transactions-history'),
 ]
