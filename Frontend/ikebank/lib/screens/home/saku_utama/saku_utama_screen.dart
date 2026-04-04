@@ -16,7 +16,7 @@ class SakuUtamaScreen extends StatelessWidget {
     super.key,
     this.title = "Saku Utama",
     this.amount = "Rp 3.000.000",
-    this.imageAsset = 'assets/images/IKEHome.png', 
+    this.imageAsset = 'assets/images/IKEHome.png',
   });
 
   @override
@@ -25,21 +25,18 @@ class SakuUtamaScreen extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white, 
+        color: Colors.white,
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0.0, 0.55], 
-            colors: [
-              Color(0x1AFFDBB7), 
-              Color(0x33FF7F00), 
-            ],
+          stops: [0.0, 0.55],
+          colors: [Color(0xFFFFF7EE), Color(0xFFFFEEDB)],
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, 
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          toolbarHeight: 50, 
+          toolbarHeight: 50,
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
@@ -56,7 +53,7 @@ class SakuUtamaScreen extends StatelessWidget {
           ],
           centerTitle: true,
           title: Transform.translate(
-            offset: const Offset(0, 6), 
+            offset: const Offset(0, 6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -70,31 +67,45 @@ class SakuUtamaScreen extends StatelessWidget {
                     height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 4), 
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
                       "Nomor rekening  ",
-                      style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 107, 107, 107)),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color.fromARGB(255, 107, 107, 107),
+                      ),
                     ),
                     const Text(
-                      "10095653346 ", 
-                      style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold),
+                      "10095653346 ",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
-                        Clipboard.setData(const ClipboardData(text: "10095653346"));
+                        Clipboard.setData(
+                          const ClipboardData(text: "10095653346"),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Nomor rekening berhasil disalin!")),
+                          const SnackBar(
+                            content: Text("Nomor rekening berhasil disalin!"),
+                          ),
                         );
                       },
                       child: Padding(
-                        padding: const EdgeInsets.all(4.0), 
+                        padding: const EdgeInsets.all(4.0),
                         child: SvgPicture.asset(
                           'assets/images/copy.svg',
                           height: 14,
-                          colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn), 
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFFF7F00),
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                     ),
@@ -107,8 +118,8 @@ class SakuUtamaScreen extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 50), 
-              
+              const SizedBox(height: 50),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Stack(
@@ -117,7 +128,12 @@ class SakuUtamaScreen extends StatelessWidget {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.only(top: 60, bottom: 24, left: 16, right: 16),
+                      padding: const EdgeInsets.only(
+                        top: 60,
+                        bottom: 24,
+                        left: 16,
+                        right: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
@@ -132,52 +148,83 @@ class SakuUtamaScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          const Text("Dana tersedia", style: TextStyle(fontSize: 16, color: Colors.black)),
+                          const Text(
+                            "Dana tersedia",
+                            style: TextStyle(fontSize: 16, color: Colors.black),
+                          ),
                           const SizedBox(height: 4),
                           Text(
-                            amount, 
+                            amount,
                             style: const TextStyle(
-                              fontFamily: 'AlumniSans', 
-                              fontSize: 32, 
-                              fontWeight: FontWeight.w900, 
-                              color: Color(0xFFFF7F00)
+                              fontFamily: 'AlumniSans',
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFF7F00),
                             ),
                           ),
-                          const SizedBox(height: 2), 
-                          
+                          const SizedBox(height: 2),
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildActionButton(icon: Icons.add, label: "Tambah dana", onTap: () {
-                                _showTambahDanaBottomSheet(context);
-                              }),
-                              _buildActionButton(svgPath: 'assets/images/pindah.svg', label: "Pindah dana", onTap: () {
-                                _showPindahkanKeBottomSheet(context);
-                              }),
-                              _buildActionButton(icon: Icons.arrow_forward, label: "Kirim & bayar", onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const TransferDanaScreen()),
-                                );
-                              }),
+                              _buildActionButton(
+                                icon: Icons.add,
+                                label: "Tambah dana",
+                                onTap: () {
+                                  _showTambahDanaBottomSheet(context);
+                                },
+                              ),
+                              _buildActionButton(
+                                svgPath: 'assets/images/pindah.svg',
+                                label: "Pindah dana",
+                                onTap: () {
+                                  _showPindahkanKeBottomSheet(context);
+                                },
+                              ),
+                              _buildActionButton(
+                                icon: Icons.arrow_forward,
+                                label: "Kirim & bayar",
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const TransferDanaScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    
+
                     Positioned(
                       top: -30,
                       child: Container(
-                        width: 70, height: 75,
+                        width: 70,
+                        height: 75,
                         decoration: const BoxDecoration(
                           color: Color(0xFFCCCCFF),
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(35)),
+                          borderRadius: BorderRadius.vertical(
+                            bottom: Radius.circular(35),
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: isSvg
-                            ? SvgPicture.asset(imageAsset, height: 50, fit: BoxFit.contain)
-                            : Image.asset(imageAsset, height: 50, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.image, color: Colors.grey)),
+                            ? SvgPicture.asset(
+                                imageAsset,
+                                height: 50,
+                                fit: BoxFit.contain,
+                              )
+                            : Image.asset(
+                                imageAsset,
+                                height: 50,
+                                fit: BoxFit.contain,
+                                errorBuilder: (c, e, s) =>
+                                    const Icon(Icons.image, color: Colors.grey),
+                              ),
                       ),
                     ),
                   ],
@@ -188,7 +235,10 @@ class SakuUtamaScreen extends StatelessWidget {
 
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 16.0,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -198,14 +248,24 @@ class SakuUtamaScreen extends StatelessWidget {
                   children: [
                     SvgPicture.asset(
                       'assets/images/kartu.svg',
-                      height: 24, 
-                      colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn), 
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFFF7F00),
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     const Expanded(
-                      child: Text("**** **** **** 2706", style: TextStyle(fontSize: 16, color: Colors.black87)),
+                      child: Text(
+                        "**** **** **** 2706",
+                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
                     ),
-                    Icon(Icons.arrow_forward_ios, color: const Color(0xFFFF7F00).withOpacity(0.7), size: 18),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: const Color(0xFFFF7F00).withOpacity(0.7),
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -215,10 +275,16 @@ class SakuUtamaScreen extends StatelessWidget {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+                  padding: const EdgeInsets.only(
+                    left: 24.0,
+                    right: 24.0,
+                    top: 24.0,
+                  ),
                   decoration: const BoxDecoration(
-                    color: Colors.white, 
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,10 +302,18 @@ class SakuUtamaScreen extends StatelessWidget {
                               child: const TextField(
                                 decoration: InputDecoration(
                                   hintText: "Cari transaksi",
-                                  hintStyle: TextStyle(color: Colors.black87, fontSize: 16),
-                                  prefixIcon: Icon(Icons.search, color: Colors.black87),
+                                  hintStyle: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.black87,
+                                  ),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -247,28 +321,28 @@ class SakuUtamaScreen extends StatelessWidget {
                           const SizedBox(width: 16),
                           GestureDetector(
                             onTap: () {
-                              _showFilterBottomSheet(context); 
+                              _showFilterBottomSheet(context);
                             },
                             child: SvgPicture.asset(
-                              'assets/images/history.svg', 
+                              'assets/images/history.svg',
                               height: 28,
                             ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       const Text(
-                        "Kamis, 26 Februari 2026", 
+                        "Kamis, 26 Februari 2026",
                         style: TextStyle(
-                          color: Color(0xFFFF7F00), 
-                          fontSize: 18, 
-                          fontFamily: 'AlumniSans', 
+                          color: Color(0xFFFF7F00),
+                          fontSize: 18,
+                          fontFamily: 'AlumniSans',
                           fontWeight: FontWeight.w800,
-                        )
+                        ),
                       ),
-                      
+
                       const SizedBox(height: 16),
 
                       // dummy history transaksi
@@ -277,50 +351,53 @@ class SakuUtamaScreen extends StatelessWidget {
                           physics: const BouncingScrollPhysics(),
                           children: [
                             _buildTransactionItem(
-                              icon: Icons.add, 
-                              title: "Dana Masuk dari Ericson Wen", 
-                              subtitle: "Bank BCA", 
-                              amount: "+Rp 250.000", 
-                              time: "11:00 WIB", 
+                              icon: Icons.add,
+                              title: "Dana Masuk dari Ericson Wen",
+                              subtitle: "Bank BCA",
+                              amount: "+Rp 250.000",
+                              time: "11:00 WIB",
                               isIncome: true,
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const RiwayatTransaksiScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RiwayatTransaksiScreen(),
+                                  ),
                                 );
-                              }
+                              },
                             ),
                             _buildTransactionItem(
-                              icon: Icons.arrow_forward, 
-                              title: "Transfer ke Ivan Ibrahim", 
-                              subtitle: "Seabank", 
-                              amount: "-Rp 100.000", 
-                              time: "09:00 WIB", 
-                              isIncome: false
-                            ),
-                            _buildTransactionItem(
-                              imagePath: 'assets/images/deposito.png', 
-                              title: "Penempatan Deposito - Kelvin K", 
-                              subtitle: "Deposito 1 Bulan", 
-                              amount: "-Rp 5.000.000", 
-                              time: "08:00 WIB", 
-                              isIncome: false
+                              icon: Icons.arrow_forward,
+                              title: "Transfer ke Ivan Ibrahim",
+                              subtitle: "Seabank",
+                              amount: "-Rp 100.000",
+                              time: "09:00 WIB",
+                              isIncome: false,
                             ),
                             _buildTransactionItem(
                               imagePath: 'assets/images/deposito.png',
-                              title: "Pencairan Deposito - Kelvin K", 
-                              subtitle: "Deposito 1 Bulan", 
-                              amount: "+Rp 5.000.000", 
-                              time: "04:00 WIB", 
-                              isIncome: true
+                              title: "Penempatan Deposito - Kelvin K",
+                              subtitle: "Deposito 1 Bulan",
+                              amount: "-Rp 5.000.000",
+                              time: "08:00 WIB",
+                              isIncome: false,
                             ),
                             _buildTransactionItem(
-                              imagePath: 'assets/images/bunga.png', 
-                              title: "Bunga Deposito - Kelvin K", 
-                              subtitle: "Bunga", 
-                              amount: "+Rp 16.986", 
-                              time: "04:00 WIB", 
-                              isIncome: true
+                              imagePath: 'assets/images/deposito.png',
+                              title: "Pencairan Deposito - Kelvin K",
+                              subtitle: "Deposito 1 Bulan",
+                              amount: "+Rp 5.000.000",
+                              time: "04:00 WIB",
+                              isIncome: true,
+                            ),
+                            _buildTransactionItem(
+                              imagePath: 'assets/images/bunga.png',
+                              title: "Bunga Deposito - Kelvin K",
+                              subtitle: "Bunga",
+                              amount: "+Rp 16.986",
+                              time: "04:00 WIB",
+                              isIncome: true,
                             ),
                           ],
                         ),
@@ -336,7 +413,12 @@ class SakuUtamaScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({IconData? icon, String? svgPath, required String label, required VoidCallback onTap}) {
+  Widget _buildActionButton({
+    IconData? icon,
+    String? svgPath,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -345,7 +427,7 @@ class SakuUtamaScreen extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: const Color(0x80F69500), 
+              color: const Color(0x80F69500),
               borderRadius: BorderRadius.circular(16),
             ),
             alignment: Alignment.center,
@@ -353,14 +435,21 @@ class SakuUtamaScreen extends StatelessWidget {
                 ? SvgPicture.asset(
                     svgPath,
                     height: 50,
-                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
                   )
-                : Icon(icon, color: Colors.white, size: 28), 
+                : Icon(icon, color: Colors.white, size: 28),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF7F00)),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFFF7F00),
+            ),
           ),
         ],
       ),
@@ -368,66 +457,81 @@ class SakuUtamaScreen extends StatelessWidget {
   }
 
   Widget _buildTransactionItem({
-  IconData? icon, // Sekarang nullable
-  String? imagePath, // Tambahan untuk gambar
-  required String title, 
-  required String subtitle, 
-  required String amount, 
-  required String time, 
-  required bool isIncome,
-  VoidCallback? onTap, // Tambahan agar bisa diklik
-}) {
-  return GestureDetector(
-    onTap: onTap,
-    behavior: HitTestBehavior.opaque,
-    child: Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFCA96).withOpacity(0.5), 
-              borderRadius: BorderRadius.circular(16),
+    IconData? icon, // Sekarang nullable
+    String? imagePath, // Tambahan untuk gambar
+    required String title,
+    required String subtitle,
+    required String amount,
+    required String time,
+    required bool isIncome,
+    VoidCallback? onTap, // Tambahan agar bisa diklik
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20.0),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFCA96).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              // Jika ada imagePath, gunakan gambar. Jika tidak, gunakan Icon.
+              child: imagePath != null
+                  ? Image.asset(imagePath, height: 28, fit: BoxFit.contain)
+                  : Icon(icon, color: Colors.white, size: 28),
             ),
-            alignment: Alignment.center,
-            // Jika ada imagePath, gunakan gambar. Jika tidak, gunakan Icon.
-            child: imagePath != null
-                ? Image.asset(imagePath, height: 28, fit: BoxFit.contain)
-                : Icon(icon, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87)),
+                Text(
+                  amount,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: isIncome
+                        ? const Color(0xFF00B14F)
+                        : Colors.grey.shade600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text(
+                  time,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount, 
-                style: TextStyle(
-                  fontWeight: FontWeight.w600, 
-                  fontSize: 14, 
-                  color: isIncome ? const Color(0xFF00B14F) : Colors.grey.shade600
-                )
-              ),
-              const SizedBox(height: 4),
-              Text(time, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showSakuBottomSheet(BuildContext context) {
     bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
@@ -442,7 +546,7 @@ class SakuUtamaScreen extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min, 
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
@@ -456,18 +560,18 @@ class SakuUtamaScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               const Text(
                 "Saku Saya",
                 style: TextStyle(
-                  fontFamily: 'AlumniSans', 
+                  fontFamily: 'AlumniSans',
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: Colors.black,
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -485,12 +589,26 @@ class SakuUtamaScreen extends StatelessWidget {
                             height: 55,
                             decoration: const BoxDecoration(
                               color: Color(0xFFCCCCFF),
-                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+                              borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(25),
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: isSvg
-                                ? SvgPicture.asset(imageAsset, height: 30, fit: BoxFit.contain)
-                                : Image.asset(imageAsset, height: 30, fit: BoxFit.contain, errorBuilder: (c, e, s) => const Icon(Icons.image, color: Colors.grey)),
+                                ? SvgPicture.asset(
+                                    imageAsset,
+                                    height: 30,
+                                    fit: BoxFit.contain,
+                                  )
+                                : Image.asset(
+                                    imageAsset,
+                                    height: 30,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (c, e, s) => const Icon(
+                                      Icons.image,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -498,13 +616,20 @@ class SakuUtamaScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  title, 
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black)
+                                  title,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  amount, 
-                                  style: const TextStyle(fontSize: 16, color: Colors.black)
+                                  amount,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  ),
                                 ),
                               ],
                             ),
@@ -512,26 +637,34 @@ class SakuUtamaScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     Divider(height: 1, color: Colors.grey.shade400),
-                    
+
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14.0,
+                        vertical: 8.0,
+                      ),
                       decoration: const BoxDecoration(
-                        color: Color(0x1AFFCA96), 
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                        color: Color(0x1AFFCA96),
+                        borderRadius: BorderRadius.vertical(
+                          bottom: Radius.circular(16),
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        "$title - Bunga 0.5% p.a.", 
-                        style: const TextStyle(fontSize: 18, color: Colors.black),
+                        "$title - Bunga 0.5% p.a.",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24), 
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -548,7 +681,12 @@ class SakuUtamaScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 32.0),
+          padding: const EdgeInsets.only(
+            left: 24.0,
+            right: 24.0,
+            top: 16.0,
+            bottom: 32.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +694,8 @@ class SakuUtamaScreen extends StatelessWidget {
               // 1. Drag Handle
               Center(
                 child: Container(
-                  width: 50, height: 5,
+                  width: 50,
+                  height: 5,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(10),
@@ -564,55 +703,64 @@ class SakuUtamaScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               const Text(
                 "Tambah dana dari mana?",
                 style: TextStyle(
-                  fontFamily: 'AlumniSans', 
-                  fontSize: 26, 
-                  fontWeight: FontWeight.w800, 
-                  color: Colors.black
+                  fontFamily: 'AlumniSans',
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 20),
 
-             _buildTambahDanaOption(
-             iconWidget: Container(
-               width: 45, height: 45,
-               decoration: BoxDecoration(
-                 color: const Color(0xFFCCCCFF), 
-                 borderRadius: BorderRadius.circular(12),
-               ),
-               alignment: Alignment.center,
-               child: Image.asset('assets/images/IKEHome.png', height: 24, fit: BoxFit.contain),
-             ),
-             title: "Dari Saku kamu",
-             subtitle: "Pindahkan dari Saku lain",
-             onTap: () {
-               Navigator.pop(context); 
+              _buildTambahDanaOption(
+                iconWidget: Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCCCCFF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/images/IKEHome.png',
+                    height: 24,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                title: "Dari Saku kamu",
+                subtitle: "Pindahkan dari Saku lain",
+                onTap: () {
+                  Navigator.pop(context);
 
-               Navigator.push(
-                 context,
-                 MaterialPageRoute(builder: (context) => const TambahDanaSakuScreen()),
-               );
-             },
-           ),
-              
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TambahDanaSakuScreen(),
+                    ),
+                  );
+                },
+              ),
+
               const SizedBox(height: 16),
 
               _buildTambahDanaOption(
                 iconWidget: SvgPicture.asset(
-                  'assets/images/bank2.svg', 
-                  width: 36, 
+                  'assets/images/bank2.svg',
+                  width: 36,
                 ),
                 title: "Dari luar IKE Bank",
                 subtitle: "Kirim dana dari bank atau aplikasi lain",
                 onTap: () {
-                  Navigator.pop(context); 
-                  
+                  Navigator.pop(context);
+
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TambahDanaScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const TambahDanaScreen(),
+                    ),
                   );
                 },
               ),
@@ -624,19 +772,19 @@ class SakuUtamaScreen extends StatelessWidget {
   }
 
   Widget _buildTambahDanaOption({
-    required Widget iconWidget, 
-    required String title, 
-    required String subtitle, 
-    required VoidCallback onTap
+    required Widget iconWidget,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF8F0), 
+          color: const Color(0xFFFFF8F0),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
+          border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5),
         ),
         child: Row(
           children: [
@@ -646,9 +794,19 @@ class SakuUtamaScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 16, color: Colors.black)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
                 ],
               ),
             ),
@@ -658,7 +816,7 @@ class SakuUtamaScreen extends StatelessWidget {
     );
   }
 
-void _showPindahkanKeBottomSheet(BuildContext context) {
+  void _showPindahkanKeBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -667,30 +825,46 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
       backgroundColor: Colors.white,
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 32.0),
+          padding: const EdgeInsets.only(
+            left: 24.0,
+            right: 24.0,
+            top: 16.0,
+            bottom: 32.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
                 child: Container(
-                  width: 50, height: 5,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
               const Text(
                 "Pindahkan ke",
-                style: TextStyle(fontFamily: 'AlumniSans', fontSize: 26, fontWeight: FontWeight.w800, color: Colors.black),
+                style: TextStyle(
+                  fontFamily: 'AlumniSans',
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 20),
 
               GestureDetector(
                 onTap: () {
-                  Navigator.pop(context); 
-                  Navigator.push( 
+                  Navigator.pop(context);
+                  Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PindahDanaScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const PindahDanaScreen(),
+                    ),
                   );
                 },
                 child: Stack(
@@ -699,46 +873,82 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F0), 
+                        color: const Color(0xFFFFF8F0),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
+                        border: Border.all(
+                          color: const Color(0xFFFFDBB7),
+                          width: 1.5,
+                        ),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 50, height: 55,
+                            width: 50,
+                            height: 55,
                             decoration: const BoxDecoration(
                               color: Color(0xFFD6CFFF),
-                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+                              borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(25),
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: SvgPicture.asset(
-                              'assets/images/bag.svg', 
-                              height: 36, 
-                              colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn)
+                              'assets/images/bag.svg',
+                              height: 36,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFFFF7F00),
+                                BlendMode.srcIn,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
                           const Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Uang Belanja", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                              Text(
+                                "Uang Belanja",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
                               SizedBox(height: 4),
-                              Text("Rp 5.000.000", style: TextStyle(fontSize: 16, color: Colors.black)),
+                              Text(
+                                "Rp 5.000.000",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
                     Positioned(
-                      top: 0, right: 0,
+                      top: 0,
+                      right: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: const BoxDecoration(
                           color: Color(0xFFFF7F00),
-                          borderRadius: BorderRadius.only(topRight: Radius.circular(14), bottomLeft: Radius.circular(12)),
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(14),
+                            bottomLeft: Radius.circular(12),
+                          ),
                         ),
-                        child: const Text("Nabung", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Nabung",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -754,24 +964,26 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
   void _showFilterBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, 
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        String selectedPeriode = ''; 
+        String selectedPeriode = '';
         String selectedJenis = '';
-        
-        String? tanggalDari; 
-        String? tanggalSampai; 
+
+        String? tanggalDari;
+        String? tanggalSampai;
 
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 24.0, right: 24.0, top: 16.0,
-                bottom: MediaQuery.of(context).padding.bottom + 24.0 
+                left: 24.0,
+                right: 24.0,
+                top: 16.0,
+                bottom: MediaQuery.of(context).padding.bottom + 24.0,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -779,21 +991,52 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
                 children: [
                   Center(
                     child: Container(
-                      width: 50, height: 5,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
-                  const Text("Filter transaksi", style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black)),
+
+                  const Text(
+                    "Filter transaksi",
+                    style: TextStyle(
+                      fontFamily: 'AlumniSans',
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
-                  const Text("Periode", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                  const Text(
+                    "Periode",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  
-                  _buildRadioOption("7 hari terakhir", selectedPeriode, (val) => setState(() => selectedPeriode = val)),
-                  _buildRadioOption("30 hari terakhir", selectedPeriode, (val) => setState(() => selectedPeriode = val)),
-                  _buildRadioOption("Pilih tanggal", selectedPeriode, (val) => setState(() => selectedPeriode = val)),
+
+                  _buildRadioOption(
+                    "7 hari terakhir",
+                    selectedPeriode,
+                    (val) => setState(() => selectedPeriode = val),
+                  ),
+                  _buildRadioOption(
+                    "30 hari terakhir",
+                    selectedPeriode,
+                    (val) => setState(() => selectedPeriode = val),
+                  ),
+                  _buildRadioOption(
+                    "Pilih tanggal",
+                    selectedPeriode,
+                    (val) => setState(() => selectedPeriode = val),
+                  ),
 
                   //Dropdown muncul kalo "Pilih tanggal" aktif
                   if (selectedPeriode == "Pilih tanggal") ...[
@@ -801,69 +1044,106 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildDatePickerBox("Dari", tanggalDari, (val) {
+                          child: _buildDatePickerBox("Dari", tanggalDari, (
+                            val,
+                          ) {
                             setState(() {
                               tanggalDari = val;
                             });
-                          })
+                          }),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _buildDatePickerBox("Sampai", tanggalSampai, (val) {
+                          child: _buildDatePickerBox("Sampai", tanggalSampai, (
+                            val,
+                          ) {
                             setState(() {
                               tanggalSampai = val;
                             });
-                          })
+                          }),
                         ),
                       ],
                     ),
                   ],
 
                   const SizedBox(height: 24),
-                  
-                  const Text("Jenis transaksi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+
+                  const Text(
+                    "Jenis transaksi",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
                   const SizedBox(height: 8),
 
-                  _buildRadioOption("Dana masuk", selectedJenis, (val) => setState(() => selectedJenis = val)),
-                  _buildRadioOption("Dana keluar", selectedJenis, (val) => setState(() => selectedJenis = val)),
+                  _buildRadioOption(
+                    "Dana masuk",
+                    selectedJenis,
+                    (val) => setState(() => selectedJenis = val),
+                  ),
+                  _buildRadioOption(
+                    "Dana keluar",
+                    selectedJenis,
+                    (val) => setState(() => selectedJenis = val),
+                  ),
 
                   const SizedBox(height: 32),
-                  
+
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context), 
+                      onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF7F00),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 0,
                       ),
-                      child: const Text("Lihat Hasil", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text(
+                        "Lihat Hasil",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             );
-          }
+          },
         );
       },
     );
   }
 
-  Widget _buildRadioOption(String title, String groupValue, Function(String) onChanged) {
+  Widget _buildRadioOption(
+    String title,
+    String groupValue,
+    Function(String) onChanged,
+  ) {
     bool isSelected = title == groupValue;
     return GestureDetector(
       onTap: () => onChanged(title),
-      behavior: HitTestBehavior.opaque, 
+      behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
             Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               color: isSelected ? const Color(0xFFFF7F00) : Colors.black87,
               size: 22,
             ),
@@ -873,31 +1153,52 @@ void _showPindahkanKeBottomSheet(BuildContext context) {
     );
   }
 
-  Widget _buildDatePickerBox(String title, String? selectedValue, Function(String?) onChanged) {
+  Widget _buildDatePickerBox(
+    String title,
+    String? selectedValue,
+    Function(String?) onChanged,
+  ) {
     List<String> days = List.generate(31, (index) => (index + 1).toString());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8F0), 
+        color: const Color(0xFFFFF8F0),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
+        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFF7F00))),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFFF7F00),
+            ),
+          ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
               isDense: true,
               value: selectedValue,
-              hint: Text("Pilih", style: TextStyle(fontSize: 14, color: Colors.grey.shade400)),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFFF7F00), size: 18),
+              hint: Text(
+                "Pilih",
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+              ),
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFFFF7F00),
+                size: 18,
+              ),
               items: days.map((String day) {
                 return DropdownMenuItem<String>(
                   value: day,
-                  child: Text(day, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                  child: Text(
+                    day,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
                 );
               }).toList(),
               onChanged: onChanged,

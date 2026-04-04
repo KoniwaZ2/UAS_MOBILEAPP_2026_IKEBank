@@ -7,16 +7,13 @@ import 'reward_screen.dart';
 import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'promo_screen.dart';
-<<<<<<< HEAD
 import 'saku_utama/saku_utama_screen.dart';
 import 'layanan/cash_flow_screen.dart';
 import 'layanan/beli_bayar_screen.dart';
-=======
 import '../../api/banking.dart';
 import '../../models/account_detail.dart';
 
 enum HomeEntrySource { register, login }
->>>>>>> feature-saku-backend
 
 class HomeScreen extends StatefulWidget {
   final HomeEntrySource entrySource;
@@ -361,16 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  TambahDanaScreen(
-                                                    accountName:
-                                                        _primaryAccount
-                                                            ?.username ??
-                                                        'Pengguna',
-                                                    accountNumber:
-                                                        _primaryAccount
-                                                            ?.accountnumber ??
-                                                        '-',
-                                                  ),
+                                                  const TambahDanaScreen(),
                                             ),
                                           );
                                         },
@@ -428,44 +416,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           childAspectRatio: 1.3,
                           children: [
                             _buildServiceItem(
-<<<<<<< HEAD
-                              imagePath: 'assets/images/IKEHome.png', 
-                              label: "Saku Utama",
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
-                                );
-                              }
-                            ),
-                            _buildServiceItem(imagePath: 'assets/images/celengan.png', label: "Saku Celengan", iconSize: 38),
-                            _buildServiceItem(imagePath: 'assets/images/deposito.png', label: "Saku Deposito", iconSize: 38),
-                            _buildServiceItem(
-                              imagePath: 'assets/images/CashF.png', 
-                              label: "Cash Flow", 
-                              iconSize: 38,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const CashFlowScreen()),
-                                );
-                              }
-                            ),
-
-                            _buildServiceItem(
-                              imagePath: 'assets/images/bill.png', 
-                              label: "Beli & Bayar",
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const BeliBayarScreen()),
-                                );
-                              }
-                            ),
-                            _buildServiceItem(imagePath: 'assets/images/CS.png', label: "Bantuan CS"),
-=======
                               imagePath: 'assets/images/IKEHome.png',
                               label: "Saku Utama",
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SakuUtamaScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             _buildServiceItem(
                               imagePath: 'assets/images/celengan.png',
@@ -481,16 +442,34 @@ class _HomeScreenState extends State<HomeScreen> {
                               imagePath: 'assets/images/CashF.png',
                               label: "Cash Flow",
                               iconSize: 38,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const CashFlowScreen(),
+                                  ),
+                                );
+                              },
                             ),
+
                             _buildServiceItem(
                               imagePath: 'assets/images/bill.png',
                               label: "Beli & Bayar",
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BeliBayarScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             _buildServiceItem(
                               imagePath: 'assets/images/CS.png',
                               label: "Bantuan CS",
                             ),
->>>>>>> feature-saku-backend
                           ],
                         ),
                       ],
@@ -619,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    )
+    );
   }
 
   // HELPER WIDGETS
@@ -656,8 +635,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-<<<<<<< HEAD
-  Widget GestureDetector _buildServiceItem({required String imagePath, required String label, double iconSize = 28, VoidCallback? onTap}) {
+  Widget _buildServiceItem({
+    required String imagePath,
+    required String label,
+    double iconSize = 28,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -666,33 +649,19 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 50,
             height: 52,
             decoration: const BoxDecoration(
-              color: Color(0xFFDCD6FF), 
+              color: Color(0xFFDCD6FF),
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(10),
                 bottom: Radius.circular(25),
               ),
-=======
-  Widget _buildServiceItem({
-    required String imagePath,
-    required String label,
-    double iconSize = 28,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 52,
-          decoration: const BoxDecoration(
-            color: Color(0xFFDCD6FF),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(10),
-              bottom: Radius.circular(25),
->>>>>>> feature-saku-backend
             ),
             alignment: Alignment.center,
-            child: Image.asset(imagePath, height: iconSize, fit: BoxFit.contain), 
+            child: Image.asset(
+              imagePath,
+              height: iconSize,
+              fit: BoxFit.contain,
+            ),
           ),
-<<<<<<< HEAD
           const SizedBox(height: 4),
           Text(
             label,
@@ -703,20 +672,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-=======
-          alignment: Alignment.center,
-          child: Image.asset(imagePath, height: iconSize, fit: BoxFit.contain),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, color: Colors.black87),
-        ),
-      ],
->>>>>>> feature-saku-backend
     );
   }
 

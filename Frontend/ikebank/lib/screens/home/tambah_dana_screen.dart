@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../api/banking.dart';
+import '../../models/account_detail.dart';
 import '../../../core/colors.dart';
 
-class TambahDanaScreen extends StatelessWidget {
-  final String accountName;
-  final String accountNumber;
+class TambahDanaScreen extends StatefulWidget {
+  const TambahDanaScreen({super.key});
 
-  const TambahDanaScreen({
-    super.key,
-    required this.accountName,
-    required this.accountNumber,
-  });
+  @override
+  State<TambahDanaScreen> createState() => _TambahDanaScreenState();
+}
+
+class _TambahDanaScreenState extends State<TambahDanaScreen> {
+  AccountDetail? _primaryAccount;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrimaryAccount();
+  }
+
+  Future<void> _loadPrimaryAccount() async {
+    try {
+      final accountDetails = await BankingService.fetchAccountDetails();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _primaryAccount = accountDetails.isNotEmpty ? accountDetails.first : null;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,12 +50,12 @@ class TambahDanaScreen extends StatelessWidget {
       fontFamily: 'AlumniSans',
     );
 
-    final safeAccountName = accountName.trim().isEmpty
-        ? 'Pengguna'
-        : accountName;
-    final safeAccountNumber = accountNumber.trim().isEmpty
-        ? '-'
-        : accountNumber;
+    final String safeAccountName = (_primaryAccount?.username.trim().isNotEmpty ?? false)
+      ? _primaryAccount!.username.trim()
+        : 'Pengguna';
+    final String safeAccountNumber = (_primaryAccount?.accountnumber.trim().isNotEmpty ?? false)
+      ? _primaryAccount!.accountnumber.trim()
+        : '-';
 
     return Scaffold(
       backgroundColor: Colors.white,
