@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'riwayat_berhasil.dart';
+import '../../../api/banking.dart';
 
 class RiwayatPinScreen extends StatefulWidget {
   final String namaPenerima;
@@ -24,9 +25,112 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
   final TextEditingController _pinController = TextEditingController();
   final FocusNode _pinFocusNode = FocusNode();
   String _pin = "";
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pinController.addListener(_onPinInputChanged);
+  }
+
+  void _onPinInputChanged() {
+    if (!mounted || _isSubmitting) {
+      return;
+    }
+
+    final value = _pinController.text.trim();
+    if (value == _pin) {
+      return;
+    }
+
+    setState(() {
+      _pin = value;
+    });
+
+    if (value.length == 6) {
+      _submitTransfer(value);
+    }
+  }
+
+  String _extractAmountDigits(String formattedText) {
+    return formattedText.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  Future<void> _submitTransfer(String pinValue) async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    if (pinValue.trim().length != 6) {
+      return;
+    }
+
+    final amountDigits = _extractAmountDigits(widget.jumlah);
+    if (amountDigits.isEmpty || (int.tryParse(amountDigits) ?? 0) <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nominal transfer tidak valid')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await BankingService.transferOut(
+        pin: pinValue,
+        destinationAccount: widget.nomorRekening,
+        amount: amountDigits,
+        description: 'Transfer ke ${widget.namaPenerima}',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RiwayatBerhasilScreen(
+            namaPenerima: widget.namaPenerima,
+            nomorRekening: widget.nomorRekening,
+            jumlah: widget.jumlah,
+            sumberDana: widget.sumberDana,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      final message = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst(RegExp(r'^Failed to transfer out \(HTTP \d+\):\s*'), '');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message.isEmpty ? 'Transfer gagal' : message)),
+      );
+
+      setState(() {
+        _pin = '';
+        _pinController.clear();
+      });
+      FocusScope.of(context).requestFocus(_pinFocusNode);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _pinController.removeListener(_onPinInputChanged);
     _pinController.dispose();
     _pinFocusNode.dispose();
     super.dispose();
@@ -37,7 +141,7 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0x1AFFCA96), 
+        backgroundColor: const Color(0x1AFFCA96),
         elevation: 0,
         toolbarHeight: 70,
         leading: IconButton(
@@ -71,7 +175,7 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -81,32 +185,18 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
                       controller: _pinController,
                       focusNode: _pinFocusNode,
                       keyboardType: TextInputType.number,
-                      autofocus: true, 
+                      autofocus: true,
                       maxLength: 6,
+                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (value) {
-                        setState(() {
-                          _pin = value;
-                        });
-                        
-                        // Jika PIN sudah 6 digit, otomatis proses
-                        if (value.length == 6) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RiwayatBerhasilScreen(
-                                namaPenerima: widget.namaPenerima,
-                                nomorRekening: widget.nomorRekening,
-                                jumlah: widget.jumlah,
-                                sumberDana: widget.sumberDana,
-                              ),
-                            ),
-                          );
+                      onSubmitted: (value) {
+                        if (value.trim().length == 6) {
+                          _submitTransfer(value.trim());
                         }
                       },
                     ),
                   ),
-                  
+
                   GestureDetector(
                     onTap: () {
                       FocusScope.of(context).requestFocus(_pinFocusNode);
@@ -118,7 +208,7 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
                           width: 45,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade200, 
+                            color: Colors.grey.shade200,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
@@ -136,6 +226,10 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
                   ),
                 ],
               ),
+              if (_isSubmitting) ...[
+                const SizedBox(height: 20),
+                const CircularProgressIndicator(),
+              ],
             ],
           ),
         ),

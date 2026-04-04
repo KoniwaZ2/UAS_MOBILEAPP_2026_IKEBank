@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart'; 
 import 'riwayat_pin_screen.dart'; 
+import '../../../api/banking.dart';
 
 class TransferRiwayatScreen extends StatefulWidget {
   final String namaPenerima;
@@ -23,7 +24,103 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
 
   // Variabel State untuk menyimpan Saku yang dipilih
   String _selectedSumberDana = "Saku Utama";
-  String _selectedSumberDanaSaldo = "Rp3.000.000";
+  String _selectedSumberDanaSaldo = "Rp 0";
+  List<Map<String, String>> _availableSourceSakus = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSourceSakuOptions();
+  }
+
+  String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) {
+          return text;
+        }
+      }
+    }
+    return '';
+  }
+
+  String _formatRupiah(String rawBalance) {
+    final digitsOnly = rawBalance.replaceAll(RegExp(r'[^0-9]'), '');
+    final value = int.tryParse(digitsOnly) ?? 0;
+    final text = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return 'Rp ${buffer.toString()}';
+  }
+
+  String _normalizeCategory(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'utama' || normalized == 'main' || normalized.contains('utama')) {
+      return 'utama';
+    }
+    if (normalized == 'transaksi' || normalized == 'transaction' || normalized.contains('transaksi')) {
+      return 'transaksi';
+    }
+    return normalized;
+  }
+
+  Future<void> _loadSourceSakuOptions() async {
+    try {
+      final raw = await BankingService.sakuList();
+      final dynamic payload = raw is Map<String, dynamic>
+          ? (raw['data'] ?? raw['results'] ?? raw['sakus'] ?? raw)
+          : raw;
+
+      if (payload is! List) {
+        return;
+      }
+
+      final options = <Map<String, String>>[];
+      for (final item in payload.whereType<Map<String, dynamic>>()) {
+        final name = _readString(item, const ['saku_name', 'name']);
+        final balance = _formatRupiah(_readString(item, const ['balance']));
+        final categoryRaw = _readString(item, const ['category_name', 'category']);
+        final normalizedCategory = _normalizeCategory(categoryRaw);
+        final isPrimary = (item['is_primary'] == true) || name.toLowerCase().contains('utama');
+        final isAllowed = isPrimary || normalizedCategory == 'transaksi';
+
+        if (!isAllowed || name.isEmpty) {
+          continue;
+        }
+
+        options.add({
+          'name': name,
+          'balance': balance,
+          'category': isPrimary ? 'utama' : normalizedCategory,
+        });
+      }
+
+      if (!mounted || options.isEmpty) {
+        return;
+      }
+
+      final defaultSource = options.firstWhere(
+        (opt) => opt['category'] == 'utama',
+        orElse: () => options.first,
+      );
+
+      setState(() {
+        _availableSourceSakus = options;
+        _selectedSumberDana = defaultSource['name'] ?? _selectedSumberDana;
+        _selectedSumberDanaSaldo = defaultSource['balance'] ?? _selectedSumberDanaSaldo;
+      });
+    } catch (_) {
+      // keep fallback static UI when API fails
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +376,13 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
   }
 
   void _showSumberDanaBottomSheet(BuildContext context) {
+    if (_availableSourceSakus.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sumber dana belum tersedia')),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -304,107 +408,120 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
                 style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black),
               ),
               const SizedBox(height: 20),
+              ..._availableSourceSakus.map((source) {
+                final name = source['name'] ?? '-';
+                final balance = source['balance'] ?? 'Rp 0';
+                final category = source['category'] ?? '';
+                final isUtama = category == 'utama';
 
-              // OPSI 1: SAKU UTAMA
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedSumberDana = "Saku Utama";
-                    _selectedSumberDanaSaldo = "Rp3.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8F0), 
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50, height: 55,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFCCCCFF),
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
-                        ),
-                        alignment: Alignment.center,
-                        child: Image.asset('assets/images/IKEHome.png', height: 24, fit: BoxFit.contain),
-                      ),
-                      const SizedBox(width: 16),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Saku Utama", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-                          SizedBox(height: 4),
-                          Text("Rp 3.000.000", style: TextStyle(fontSize: 14, color: Colors.black87)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // OPSI 2: UANG BELANJA
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedSumberDana = "Uang Belanja";
-                    _selectedSumberDanaSaldo = "Rp5.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-                child: Stack(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F0), 
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50, height: 55,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFD6CFFF),
-                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedSumberDana = name;
+                        _selectedSumberDanaSaldo = balance;
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF8F0),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFFFDBB7),
+                              width: 1.5,
                             ),
-                            alignment: Alignment.center,
-                            child: SvgPicture.asset('assets/images/bag.svg', height: 24, colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn)),
                           ),
-                          const SizedBox(width: 16),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text("Uang Belanja", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-                              SizedBox(height: 4),
-                              Text("Rp 5.000.000", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                              Container(
+                                width: 50,
+                                height: 55,
+                                decoration: BoxDecoration(
+                                  color: isUtama
+                                      ? const Color(0xFFCCCCFF)
+                                      : const Color(0xFFD6CFFF),
+                                  borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(25),
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: isUtama
+                                    ? Image.asset(
+                                        'assets/images/IKEHome.png',
+                                        height: 24,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : SvgPicture.asset(
+                                        'assets/images/bag.svg',
+                                        height: 24,
+                                        colorFilter: const ColorFilter.mode(
+                                          Color(0xFFFF7F00),
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    balance,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    // BADGE TRANSAKSI (WARNA BIRU)
-                    Positioned(
-                      top: 0, right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF3B44F6), 
-                          borderRadius: BorderRadius.only(topRight: Radius.circular(14), bottomLeft: Radius.circular(12)),
                         ),
-                        child: const Text("Transaksi", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
+                        if (category == 'transaksi')
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF3B44F6),
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Transaksi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }),
             ],
           ),
         );

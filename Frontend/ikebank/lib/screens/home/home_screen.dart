@@ -33,6 +33,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isBalanceVisible = true;
   AccountDetail? _primaryAccount;
 
+  Future<void> _refreshIfChanged(dynamic result) async {
+    if (result == true && mounted) {
+      await _runInitialHomeApi();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -418,14 +424,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildServiceItem(
                               imagePath: 'assets/images/IKEHome.png',
                               label: "Saku Utama",
-                              onTap: () {
-                                Navigator.push(
+                              onTap: () async {
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         const SakuUtamaScreen(),
                                   ),
                                 );
+                                await _refreshIfChanged(result);
                               },
                             ),
                             _buildServiceItem(

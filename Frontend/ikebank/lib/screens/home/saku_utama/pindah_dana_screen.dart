@@ -4,7 +4,22 @@ import 'package:flutter/services.dart';
 import '../../../api/banking.dart';
 
 class PindahDanaScreen extends StatefulWidget {
-  const PindahDanaScreen({super.key});
+  final String? initialSourceSakuId;
+  final String? initialSourceSakuName;
+  final String? initialSourceSakuBalance;
+  final String? initialDestinationSakuId;
+  final String? initialDestinationSakuName;
+  final String? initialDestinationSakuBalance;
+
+  const PindahDanaScreen({
+    super.key,
+    this.initialSourceSakuId,
+    this.initialSourceSakuName,
+    this.initialSourceSakuBalance,
+    this.initialDestinationSakuId,
+    this.initialDestinationSakuName,
+    this.initialDestinationSakuBalance,
+  });
 
   @override
   State<PindahDanaScreen> createState() => _PindahDanaScreenState();
@@ -24,6 +39,33 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
   @override
   void initState() {
     super.initState();
+
+    _sourceSakuId = widget.initialSourceSakuId?.trim() ?? '';
+    _selectedTujuanId = widget.initialDestinationSakuId?.trim() ?? '';
+
+    final initialSourceName = widget.initialSourceSakuName?.trim() ?? '';
+    if (initialSourceName.isNotEmpty) {
+      _sourceSakuName = initialSourceName;
+    }
+
+    final initialSourceBalance =
+        widget.initialSourceSakuBalance?.trim() ?? '';
+    if (initialSourceBalance.isNotEmpty) {
+      _sourceSakuSaldo = _formatRupiah(initialSourceBalance);
+    }
+
+    final initialDestinationName =
+        widget.initialDestinationSakuName?.trim() ?? '';
+    if (initialDestinationName.isNotEmpty) {
+      _selectedTujuan = initialDestinationName;
+    }
+
+    final initialDestinationBalance =
+        widget.initialDestinationSakuBalance?.trim() ?? '';
+    if (initialDestinationBalance.isNotEmpty) {
+      _selectedTujuanSaldo = _formatRupiah(initialDestinationBalance);
+    }
+
     _loadSakuData();
   }
 
@@ -52,15 +94,22 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
         return;
       }
 
-      Map<String, dynamic>? primarySaku;
-      for (final saku in sakus) {
-        if (_readBool(saku, 'is_primary')) {
-          primarySaku = saku;
-          break;
-        }
+      Map<String, dynamic>? selectedSourceSaku;
+      if (_sourceSakuId.isNotEmpty) {
+        selectedSourceSaku = sakus
+            .where((s) => _readString(s, const ['id', 'saku_id']) == _sourceSakuId)
+            .cast<Map<String, dynamic>?>()
+            .firstWhere((_) => true, orElse: () => null);
       }
 
-      primarySaku ??= sakus
+      selectedSourceSaku ??= sakus
+          .where(
+            (s) => _readBool(s, 'is_primary'),
+          )
+          .cast<Map<String, dynamic>?>()
+          .firstWhere((_) => true, orElse: () => null);
+
+      selectedSourceSaku ??= sakus
           .where(
             (s) => _readString(s, const ['saku_name', 'name'])
                 .toLowerCase()
@@ -69,10 +118,13 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
           .cast<Map<String, dynamic>?>()
           .firstWhere((_) => true, orElse: () => null);
 
-      primarySaku ??= sakus.first;
+      selectedSourceSaku ??= sakus.first;
 
-      var mergedSourceSaku = primarySaku;
-      final sourceSakuId = _readString(mergedSourceSaku, const ['id', 'saku_id']);
+      var mergedSourceSaku = selectedSourceSaku;
+      final sourceSakuId = _readString(
+        mergedSourceSaku,
+        const ['id', 'saku_id'],
+      );
       if (sourceSakuId.isNotEmpty) {
         try {
           final detail = await BankingService.sakuDetail(sakuId: sourceSakuId);
@@ -225,10 +277,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
         return;
       }
 
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dana berhasil dipindahkan!')),
-      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) {
         return;

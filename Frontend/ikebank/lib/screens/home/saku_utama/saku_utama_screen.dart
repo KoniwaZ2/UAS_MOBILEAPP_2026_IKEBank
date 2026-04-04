@@ -26,6 +26,7 @@ class SakuUtamaScreen extends StatefulWidget {
 
 class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   String _accountNumber = '-';
+  String _currentSakuId = '';
   late String _sakuTitle;
   late String _sakuAmount;
   late String _sakuImageAsset;
@@ -33,6 +34,21 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   List<Map<String, dynamic>> _transactions = [];
   List<Map<String, dynamic>> _destinationSakus = [];
   bool _isLoadingTransactions = false;
+  bool _shouldReturnRefresh = false;
+
+  Future<void> _refreshIfChanged(dynamic result) async {
+    if (result == true && mounted) {
+      _shouldReturnRefresh = true;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Data saku diperbarui')));
+      await _loadSakuUtamaData();
+    }
+  }
+
+  void _popWithRefreshFlag() {
+    Navigator.pop(context, _shouldReturnRefresh);
+  }
 
   @override
   void initState() {
@@ -107,15 +123,23 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
 
       final destinationSakus = sakus.where((saku) {
         final sakuId = _readString(saku, const ['id', 'saku_id']);
-        final sakuName = _readString(saku, const ['saku_name', 'name']).toLowerCase();
-        final category = _readString(saku, const ['category_name', 'category']).toLowerCase();
-        final isDeposito = category.contains('deposito') || sakuName.contains('deposito');
+        final sakuName = _readString(saku, const [
+          'saku_name',
+          'name',
+        ]).toLowerCase();
+        final category = _readString(saku, const [
+          'category_name',
+          'category',
+        ]).toLowerCase();
+        final isDeposito =
+            category.contains('deposito') || sakuName.contains('deposito');
         final isSameAsPrimary = sakuId == targetSakuId;
         return !isDeposito && !isSameAsPrimary;
       }).toList();
 
       setState(() {
         _accountNumber = accountNumber.trim().isEmpty ? '-' : accountNumber;
+        _currentSakuId = targetSakuId;
         _cardNumber = accountCardNumber.trim();
         _sakuTitle = name.isEmpty ? widget.title : name;
         _sakuAmount = balance.isEmpty ? widget.amount : _formatRupiah(balance);
@@ -248,6 +272,155 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
     }
   }
 
+  DateTime? _parseTransactionDate(Map<String, dynamic> transaction) {
+    final raw = _readString(transaction, const [
+      'timestamp',
+      'created_at',
+      'date',
+      'transaction_date',
+    ]);
+
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(raw);
+  }
+
+  String _formatTransactionDateHeader(DateTime date) {
+    const weekdays = <String>[
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
+    const months = <String>[
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    final weekday = weekdays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekday, ${date.day} $month ${date.year}';
+  }
+
+  List<Widget> _buildGroupedTransactionWidgets() {
+    final transactions = List<Map<String, dynamic>>.from(_transactions);
+    transactions.sort((a, b) {
+      final dateA = _parseTransactionDate(a);
+      final dateB = _parseTransactionDate(b);
+      if (dateA == null && dateB == null) {
+        return 0;
+      }
+      if (dateA == null) {
+        return 1;
+      }
+      if (dateB == null) {
+        return -1;
+      }
+      return dateB.compareTo(dateA);
+    });
+
+    final widgets = <Widget>[];
+    DateTime? activeDate;
+    bool hasUntitledDateGroup = false;
+
+    for (final transaction in transactions) {
+      final parsedDate = _parseTransactionDate(transaction);
+      final dateOnly = parsedDate == null
+          ? null
+          : DateUtils.dateOnly(parsedDate);
+
+      final shouldInsertDateHeader = dateOnly == null
+          ? !hasUntitledDateGroup
+          : activeDate == null || activeDate != dateOnly;
+
+      if (shouldInsertDateHeader) {
+        if (dateOnly == null) {
+          hasUntitledDateGroup = true;
+          widgets.add(
+            const Text(
+              'Tanpa tanggal',
+              style: TextStyle(
+                color: Color(0xFFFF7F00),
+                fontSize: 18,
+                fontFamily: 'AlumniSans',
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          );
+        } else {
+          activeDate = dateOnly;
+          widgets.add(
+            Text(
+              _formatTransactionDateHeader(dateOnly),
+              style: const TextStyle(
+                color: Color(0xFFFF7F00),
+                fontSize: 18,
+                fontFamily: 'AlumniSans',
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          );
+        }
+
+        widgets.add(const SizedBox(height: 16));
+      }
+
+      final title = _readString(transaction, const ['description']);
+      final category = _readString(transaction, const [
+        'category',
+        'category_name',
+      ]);
+      final categoryLabel = _formatCategoryLabel(category);
+      final amount = _readString(transaction, const ['amount']);
+      final timestamp = _readString(transaction, const [
+        'timestamp',
+        'created_at',
+      ]);
+      final isIncome = _isTransactionIncome(transaction);
+      final iconPath = _getTransactionIcon(transaction);
+
+      final formattedAmount = isIncome
+          ? '+${_formatRupiah(amount)}'
+          : '-${_formatRupiah(amount)}';
+
+      widgets.add(
+        _buildTransactionItem(
+          imagePath: iconPath,
+          title: title.isEmpty ? 'Transaksi' : title,
+          subtitle: categoryLabel.isEmpty ? 'IKE Bank' : categoryLabel,
+          amount: formattedAmount,
+          time: _formatTransactionTime(timestamp),
+          isIncome: isIncome,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RiwayatTransaksiScreen(),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
   String _formatCategoryLabel(String rawCategory) {
     final normalized = rawCategory.replaceAll('_', ' ').trim();
     if (normalized.isEmpty) {
@@ -270,48 +443,92 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   }
 
   String? _getTransactionIcon(Map<String, dynamic> transaction) {
-    final category = _readString(transaction, const ['category', 'category_name']).toLowerCase();
-    final description = _readString(transaction, const ['description']).toLowerCase();
+    final category = _readString(transaction, const [
+      'category',
+      'category_name',
+    ]).toLowerCase();
+    final description = _readString(transaction, const [
+      'description',
+    ]).toLowerCase();
 
     if (category.contains('deposit') || description.contains('pencairan')) {
       return 'assets/images/deposito.png';
     }
-    if (category.contains('bunga') || description.contains('bunga') || description.contains('interest')) {
+    if (category.contains('bunga') ||
+        description.contains('bunga') ||
+        description.contains('interest')) {
       return 'assets/images/bunga.png';
     }
-    if (category.contains('income') || category.contains('transfer_in') || description.contains('masuk') || description.contains('terima')) {
+    if (category.contains('income') ||
+        category.contains('transfer_in') ||
+        description.contains('masuk') ||
+        description.contains('terima')) {
       return null; // Use default icon (add)
     }
     return null; // Use default icon (arrow_forward)
   }
 
   bool _isTransactionIncome(Map<String, dynamic> transaction) {
-    final category = _readString(transaction, const ['category', 'category_name']).toLowerCase();
-    
+    final category = _readString(transaction, const [
+      'category',
+      'category_name',
+    ]).toLowerCase();
+
     // Income categories
-    if (category.contains('income') || 
-        category.contains('deposit') || 
+    if (category.contains('income') ||
+        category.contains('deposit') ||
         category.contains('transfer_in') ||
         category.contains('bunga') ||
         category.contains('interest') ||
         category.contains('credit')) {
       return true;
     }
-    
+
     // Expense categories (payment, transfer, withdraw, etc)
-    if (category.contains('payment') || 
-        category.contains('transfer') || 
+    if (category.contains('payment') ||
+        category.contains('transfer_out') ||
         category.contains('withdraw') ||
         category.contains('expense')) {
       return false;
     }
-    
-    // Default: check description for hints
-    final description = _readString(transaction, const ['description']).toLowerCase();
-    if (description.contains('masuk') || description.contains('terima') || description.contains('pencairan')) {
+
+    // For generic category like `other`, infer direction from text fields.
+    // `source_funds` from backend is the most reliable marker:
+    // - Internal transfer to <Saku>   => expense
+    // - Internal transfer from <Saku> => income
+    final description = _readString(transaction, const [
+      'description',
+    ]).toLowerCase();
+    final sourceFunds = _readString(transaction, const [
+      'source_funds',
+    ]).toLowerCase();
+
+    if (sourceFunds.contains('internal transfer to')) {
+      return false;
+    }
+    if (sourceFunds.contains('internal transfer from')) {
       return true;
     }
-    
+
+    if (description.contains('transfer to')) {
+      return false;
+    }
+    if (description.contains('transfer from')) {
+      return true;
+    }
+
+    final hints = '$description $sourceFunds';
+
+    if (hints.contains('masuk') ||
+        hints.contains('terima') ||
+        hints.contains('pencairan')) {
+      return true;
+    }
+
+    if (hints.contains('keluar') || hints.contains('bayar')) {
+      return false;
+    }
+
     return false;
   }
 
@@ -337,7 +554,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _popWithRefreshFlag,
           ),
           actions: [
             IconButton(
@@ -478,14 +695,15 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                               _buildActionButton(
                                 icon: Icons.arrow_forward,
                                 label: "Kirim & bayar",
-                                onTap: () {
-                                  Navigator.push(
+                                onTap: () async {
+                                  final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
                                           const TransferDanaScreen(),
                                     ),
                                   );
+                                  await _refreshIfChanged(result);
                                 },
                               ),
                             ],
@@ -554,7 +772,10 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                         _cardNumber.isEmpty
                             ? "Belum ada kartu debit yang terhubung"
                             : "Kartu debit terhubung: $_cardNumber",
-                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
                     Icon(
@@ -629,18 +850,6 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
 
                       const SizedBox(height: 24),
 
-                      const Text(
-                        "Kamis, 26 Februari 2026",
-                        style: TextStyle(
-                          color: Color(0xFFFF7F00),
-                          fontSize: 18,
-                          fontFamily: 'AlumniSans',
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
                       // dummy history transaksi
                       Expanded(
                         child: _isLoadingTransactions
@@ -652,50 +861,19 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                                 ),
                               )
                             : _transactions.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      'Belum ada transaksi',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  )
-                                : ListView(
-                                    physics: const BouncingScrollPhysics(),
-                                    children: _transactions.map((transaction) {
-                                      final title = _readString(transaction, const ['description']);
-                                      final category = _readString(transaction, const ['category', 'category_name']);
-                                      final categoryLabel = _formatCategoryLabel(category);
-                                      final amount = _readString(transaction, const ['amount']);
-                                      final timestamp = _readString(transaction, const ['timestamp', 'created_at']);
-                                      final isIncome = _isTransactionIncome(transaction);
-                                      final iconPath = _getTransactionIcon(transaction);
-
-                                      // Format amount with +/- prefix
-                                      final formattedAmount = isIncome
-                                          ? '+${_formatRupiah(amount)}'
-                                          : '-${_formatRupiah(amount)}';
-
-                                      return _buildTransactionItem(
-                                        imagePath: iconPath,
-                                        title: title.isEmpty ? 'Transaksi' : title,
-                                        subtitle: categoryLabel.isEmpty ? 'IKE Bank' : categoryLabel,
-                                        amount: formattedAmount,
-                                        time: _formatTransactionTime(timestamp),
-                                        isIncome: isIncome,
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const RiwayatTransaksiScreen(),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }).toList(),
+                            ? Center(
+                                child: Text(
+                                  'Belum ada transaksi',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey.shade600,
                                   ),
+                                ),
+                              )
+                            : ListView(
+                                physics: const BouncingScrollPhysics(),
+                                children: _buildGroupedTransactionWidgets(),
+                              ),
                       ),
                     ],
                   ),
@@ -838,7 +1016,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
@@ -975,7 +1153,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.only(
             left: 24.0,
@@ -1028,15 +1206,16 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                 ),
                 title: "Dari Saku kamu",
                 subtitle: "Pindahkan dari Saku lain",
-                onTap: () {
-                  Navigator.pop(context);
+                onTap: () async {
+                  Navigator.pop(sheetContext);
 
-                  Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const TambahDanaSakuScreen(),
                     ),
                   );
+                  await _refreshIfChanged(result);
                 },
               ),
 
@@ -1049,15 +1228,16 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                 ),
                 title: "Dari luar IKE Bank",
                 subtitle: "Kirim dana dari bank atau aplikasi lain",
-                onTap: () {
-                  Navigator.pop(context);
+                onTap: () async {
+                  Navigator.pop(sheetContext);
 
-                  Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const TambahDanaScreen(),
                     ),
                   );
+                  await _refreshIfChanged(result);
                 },
               ),
             ],
@@ -1126,7 +1306,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
-      builder: (context) {
+      builder: (sheetContext) {
         return Padding(
           padding: const EdgeInsets.only(
             left: 24.0,
@@ -1160,22 +1340,41 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
               ),
               const SizedBox(height: 20),
               ..._destinationSakus.map((saku) {
-                final destinationName = _readString(saku, const ['saku_name', 'name']);
-                final destinationBalance = _formatRupiah(_readString(saku, const ['balance']));
-                final isPrimary = _readBool(saku, 'is_primary') || destinationName.toLowerCase().contains('utama');
+                final destinationId = _readString(saku, const [
+                  'id',
+                  'saku_id',
+                ]);
+                final destinationName = _readString(saku, const [
+                  'saku_name',
+                  'name',
+                ]);
+                final destinationBalance = _formatRupiah(
+                  _readString(saku, const ['balance']),
+                );
+                final isPrimary =
+                    _readBool(saku, 'is_primary') ||
+                    destinationName.toLowerCase().contains('utama');
                 final categoryLabel = _buildSakuCategoryLabel(saku);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PindahDanaScreen(),
+                          builder: (context) => PindahDanaScreen(
+                            initialSourceSakuId: _currentSakuId,
+                            initialSourceSakuName: _sakuTitle,
+                            initialSourceSakuBalance: _sakuAmount,
+                            initialDestinationSakuId: destinationId,
+                            initialDestinationSakuName: destinationName,
+                            initialDestinationSakuBalance: destinationBalance,
+                          ),
                         ),
                       );
+                      await _refreshIfChanged(result);
                     },
                     child: Stack(
                       children: [

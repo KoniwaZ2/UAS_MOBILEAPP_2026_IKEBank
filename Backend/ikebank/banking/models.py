@@ -81,6 +81,13 @@ class Qris(models.Model):
         return f"{self.merchant_name} - {self.qris_number}"
     
 class CardDetails(models.Model):
+    CARD_STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('blocked', 'Blocked'),
+        ('delivered', 'Delivered'),
+        ('requested', 'Requested'),
+        ('none', 'None'),
+    ]
     account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='card_details')
     cardholder_name = models.CharField(max_length=255, null=False, blank=False)
     pin = models.CharField(max_length=6, null=False, blank=False)
@@ -90,6 +97,7 @@ class CardDetails(models.Model):
     daily_transaction_limit = models.IntegerField(default=100000000)
     daily_single_transaction_limit = models.IntegerField(default=50000000)
     daily_withdrawal_limit = models.IntegerField(default=15000000)
+    card_status = models.CharField(max_length=20, choices=CARD_STATUS_CHOICES, default='none')
     expiry_date = models.DateField(null=False, blank=False)
 
     def __str__(self):

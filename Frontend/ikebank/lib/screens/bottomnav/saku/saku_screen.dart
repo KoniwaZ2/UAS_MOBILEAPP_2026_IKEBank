@@ -19,6 +19,12 @@ class _SakuScreenState extends State<SakuScreen> {
   String? _sakuError;
   List<WalletSource> _wallets = [];
 
+  Future<void> _refreshIfChanged(dynamic result) async {
+    if (result == true && mounted) {
+      await _loadSakuList();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -586,14 +592,14 @@ class _SakuScreenState extends State<SakuScreen> {
   Widget _buildTambahSakuCard() {
     return GestureDetector(
       onTap: () async {
-        await Navigator.push(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const TambahSakuScreen()),
         );
 
         if (!context.mounted) return;
 
-        _loadSakuList();
+        await _refreshIfChanged(result);
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,14 +647,15 @@ class _SakuScreenState extends State<SakuScreen> {
   }) {
     bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        dynamic result;
         if (_isSakuUtama(title)) {
-          Navigator.push(
+          result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
           );
         } else {
-          Navigator.push(
+          result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => HistoryTransaksiScreen(
@@ -659,6 +666,8 @@ class _SakuScreenState extends State<SakuScreen> {
             ),
           );
         }
+
+        await _refreshIfChanged(result);
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

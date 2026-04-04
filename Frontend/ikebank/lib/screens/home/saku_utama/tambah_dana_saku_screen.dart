@@ -207,11 +207,14 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
       return 'Saku tidak ditemukan. Silakan refresh dan coba lagi';
     }
 
-    if (errorLower.contains('socket') || errorLower.contains('connection') || errorLower.contains('timeout')) {
+    if (errorLower.contains('socket') ||
+        errorLower.contains('connection') ||
+        errorLower.contains('timeout')) {
       return 'Koneksi internet bermasalah. Silakan coba lagi';
     }
 
-    if (errorLower.contains('unauthorized') || errorLower.contains('unauthenticated')) {
+    if (errorLower.contains('unauthorized') ||
+        errorLower.contains('unauthenticated')) {
       return 'Sesi Anda telah habis. Silakan login kembali';
     }
 
@@ -282,19 +285,16 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
         return;
       }
 
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dana berhasil ditambahkan!')),
-      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) {
         return;
       }
 
       String errorMessage = _parseErrorMessage(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
     } finally {
       if (mounted) {
         setState(() {
