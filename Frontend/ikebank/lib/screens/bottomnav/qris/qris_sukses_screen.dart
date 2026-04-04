@@ -12,8 +12,6 @@ class QrisSuksesScreen extends StatelessWidget {
   final String amount;
   final String walletName;
   final String walletBalance;
-  final String transactionId;
-  final String transactionTime;
 
   const QrisSuksesScreen({
     super.key,
@@ -26,8 +24,6 @@ class QrisSuksesScreen extends StatelessWidget {
     required this.panId,
     required this.walletName,
     required this.walletBalance,
-    required this.transactionId,
-    required this.transactionTime,
   });
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -107,7 +103,9 @@ class QrisSuksesScreen extends StatelessWidget {
     final merchantSubtitle = location;
     final displayAmount = _formatAmount(amount);
     final sourceName = walletName;
-    final sourceBalance = walletBalance;
+    final sourceBalance = _formatAmount(
+      payload['saku_balance'] ?? walletBalance,
+    );
     final acquirerName = aquirer;
     final merchantPanId = panId;
     final transactionId = _firstString([

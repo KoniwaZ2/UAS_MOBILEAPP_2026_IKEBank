@@ -164,14 +164,6 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                               panId: widget.panId,
                               walletName: widget.walletName,
                               walletBalance: widget.walletBalance,
-                              transactionId:
-                                  paymentResponse['transaction_id']
-                                      ?.toString() ??
-                                  'Unknown Transaction ID',
-                              transactionTime:
-                                  paymentResponse['transaction_time']
-                                      ?.toString() ??
-                                  'Unknown Transaction Time',
                             ),
                           ),
                         );
