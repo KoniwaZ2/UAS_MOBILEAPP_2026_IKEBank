@@ -14,8 +14,10 @@ class CheckPhoneEmailSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
 
     def validate(self, data):
-        phone_number = data.get('phone_number')
-        email = data.get('email')
+        raw_phone_number = data.get('phone_number')
+        raw_email = data.get('email')
+        phone_number = raw_phone_number.strip() if isinstance(raw_phone_number, str) else raw_phone_number
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else raw_email
 
         if not phone_number and not email:
             raise serializers.ValidationError("Either phone number or email must be provided.")
@@ -33,6 +35,8 @@ class CheckPhoneEmailSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Invalid email format.")
             if User.objects.filter(email=email).exists():
                 raise serializers.ValidationError("Email is already in use.")
+        data['phone_number'] = phone_number
+        data['email'] = email
         return data
 
 
@@ -42,8 +46,10 @@ class OtpRequestSerializer(serializers.Serializer):
     purpose = serializers.ChoiceField(choices=['registration', 'login'], required=True)
 
     def validate(self, data):
-        phone_number = data.get('phone_number')
-        email = data.get('email')
+        raw_phone_number = data.get('phone_number')
+        raw_email = data.get('email')
+        phone_number = raw_phone_number.strip() if isinstance(raw_phone_number, str) else raw_phone_number
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else raw_email
         purpose = data.get('purpose')
 
         if not phone_number and not email:
@@ -109,8 +115,10 @@ class CheckLoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
 
     def validate(self, data):
-        phone_number = data.get('phone_number')
-        email = data.get('email')
+        raw_phone_number = data.get('phone_number')
+        raw_email = data.get('email')
+        phone_number = raw_phone_number.strip() if isinstance(raw_phone_number, str) else raw_phone_number
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else raw_email
 
         if not phone_number and not email:
             raise serializers.ValidationError("Either phone number or email must be provided.")
@@ -128,6 +136,8 @@ class CheckLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Invalid email format.")
             if not User.objects.filter(email=email).exists():
                 raise PermissionDenied("Email is not registered.")
+        data['phone_number'] = phone_number
+        data['email'] = email
         return data
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -340,7 +350,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
     def validate(self, data):
         otp_reference = data.get('otp_reference')
-        email = data.get('email')
+        raw_email = data.get('email')
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else raw_email
         password = data.get('password')
         password_confirmation = data.get('password_confirmation')
 
@@ -359,4 +370,5 @@ class ForgotPasswordSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Invalid email format.")
             if not User.objects.filter(email=email).exists():
                 raise PermissionDenied("Email is not registered.")
+        data['email'] = email
         return data

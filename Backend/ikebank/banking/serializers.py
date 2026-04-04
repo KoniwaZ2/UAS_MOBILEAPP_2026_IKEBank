@@ -53,8 +53,8 @@ class TambahDanaSerializer(serializers.Serializer):
     source = serializers.CharField(required=False, allow_blank=True)  # ATM, Transfer In, etc
 
 class InternalTransferSerializer(serializers.Serializer):
-    """Transfer between Sakus - only between Saku Utama and other Sakus"""
-    source_saku_id = serializers.IntegerField(required=True)  # From Saku (should be Utama)
+    """Transfer between Sakus - only between Saku Utama and non-deposito Sakus"""
+    source_saku_id = serializers.IntegerField(required=True)  # From Saku
     destination_saku_id = serializers.IntegerField(required=True)  # To Saku
     amount = serializers.IntegerField(required=True)
     description = serializers.CharField(required=False, allow_blank=True)
@@ -70,3 +70,7 @@ class QRISCheckSerializer(serializers.Serializer):
 
 class SakuDetailSerializer(serializers.ModelSerializer):
     saku_id = serializers.IntegerField(source='id')
+
+class TambahRekeningSerializer(serializers.Serializer):
+    account_number = serializers.CharField(required=True)
+    bank_name = serializers.CharField(required=False, default='IKE Bank')

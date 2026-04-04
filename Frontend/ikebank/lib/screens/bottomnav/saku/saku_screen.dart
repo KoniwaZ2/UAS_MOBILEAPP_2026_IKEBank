@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'tambah_saku_screen.dart';
 import '../../home/saku_utama/saku_utama_screen.dart';
 import 'history_transaksi_screen.dart';
+import '../../../api/banking.dart';
+import '../../../models/wallet_source.dart';
 
 class SakuScreen extends StatefulWidget {
   const SakuScreen({super.key});
@@ -13,14 +15,120 @@ class SakuScreen extends StatefulWidget {
 
 class _SakuScreenState extends State<SakuScreen> {
   int _selectedTab = 0;
+  bool _isLoadingSakus = true;
+  String? _sakuError;
+  List<WalletSource> _wallets = [];
 
-  List<Map<String, String>> customSakus = [];
+  @override
+  void initState() {
+    super.initState();
+    _loadSakuList();
+  }
+
+  Future<void> _loadSakuList() async {
+    setState(() {
+      _isLoadingSakus = true;
+      _sakuError = null;
+    });
+
+    try {
+      final raw = await BankingService.sakuList();
+      final fetchedWallets = _parseWalletsFromSakuList(raw);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _wallets = fetchedWallets;
+        _isLoadingSakus = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _sakuError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingSakus = false;
+      });
+    }
+  }
+
+  List<WalletSource> _parseWalletsFromSakuList(dynamic raw) {
+    final dynamic payload = raw is Map<String, dynamic>
+        ? (raw['data'] ?? raw['results'] ?? raw['sakus'] ?? raw)
+        : raw;
+
+    if (payload is! List) {
+      return <WalletSource>[];
+    }
+
+    return payload
+        .whereType<Map<String, dynamic>>()
+        .map(WalletSource.fromJson)
+        .where((wallet) => wallet.name.trim().isNotEmpty)
+        .toList();
+  }
+
+  List<WalletSource> _filteredWallets() {
+    if (_selectedTab == 2) {
+      return _wallets
+          .where((wallet) => wallet.category == WalletCategory.transaksi)
+          .toList();
+    }
+
+    if (_selectedTab == 0) {
+      return _wallets;
+    }
+
+    if (_selectedTab == 1) {
+      return _wallets
+          .where((wallet) => wallet.category == WalletCategory.nabung)
+          .toList();
+    }
+
+    return _wallets;
+  }
+
+  bool _isSakuUtama(String title) {
+    return title.trim().toLowerCase() == 'saku utama';
+  }
+
+  int _parseBalanceToInt(String rawBalance) {
+    final normalized = rawBalance
+        .replaceAll('Rp', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '')
+        .replaceAll(RegExp(r'\s+'), '')
+        .trim();
+    return int.tryParse(normalized) ?? 0;
+  }
+
+  String _formatRupiah(int amount) {
+    final digits = amount.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      final remaining = digits.length - i;
+      buffer.write(digits[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return 'Rp ${buffer.toString()}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final TextStyle alumniSansBold = const TextStyle(
       fontWeight: FontWeight.w800,
       fontFamily: 'AlumniSans',
+    );
+
+    final visibleWallets = _filteredWallets();
+    final totalAmount = visibleWallets.fold<int>(
+      0,
+      (sum, wallet) => sum + _parseBalanceToInt(wallet.balance),
     );
 
     String bannerTitle = "Total dana";
@@ -130,7 +238,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                             fit: BoxFit.scaleDown,
                                             alignment: Alignment.centerLeft,
                                             child: Text(
-                                              "Rp 200.000.000",
+                                              _formatRupiah(totalAmount),
                                               style: alumniSansBold.copyWith(
                                                 fontSize: 24,
                                                 color: Colors.black,
@@ -225,7 +333,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                       fit: BoxFit.scaleDown,
                                       alignment: Alignment.centerLeft,
                                       child: Text(
-                                        "Rp 200.000.000",
+                                        _formatRupiah(totalAmount),
                                         style: alumniSansBold.copyWith(
                                           fontSize: 24,
                                           color: Colors.black,
@@ -304,6 +412,35 @@ class _SakuScreenState extends State<SakuScreen> {
   }
 
   Widget _buildWhiteBoxContent() {
+    if (_isLoadingSakus) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_sakuError != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _sakuError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadSakuList,
+              child: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_selectedTab == 2) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -315,13 +452,7 @@ class _SakuScreenState extends State<SakuScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             childAspectRatio: 0.90,
-            children: [
-              _buildSakuCard(
-                title: "Saku Belanja",
-                amount: "Rp5.000.000",
-                imageAsset: 'assets/images/belanja.svg',
-              ),
-            ],
+            children: _buildWalletCards(includeTambahCard: false),
           ),
           const SizedBox(height: 0.5),
           const Text(
@@ -404,72 +535,26 @@ class _SakuScreenState extends State<SakuScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         childAspectRatio: 0.90,
-        children: _getSakuCards(),
+        children: _buildWalletCards(includeTambahCard: true),
       );
     }
   }
 
-  List<Widget> _getSakuCards() {
-    // 1. Siapkan list kosong
-    List<Widget> cards = [];
+  List<Widget> _buildWalletCards({required bool includeTambahCard}) {
+    final cards = <Widget>[];
 
-    // 2. Tombol tambah saku selalu ada di awal
-    cards.add(_buildTambahSakuCard());
+    if (includeTambahCard) {
+      cards.add(_buildTambahSakuCard());
+    }
 
-    if (_selectedTab == 0) {
-      // TAB SEMUA: Masukkan kartu bawaan
+    for (final wallet in _filteredWallets()) {
       cards.add(
         _buildSakuCard(
-          title: "Saku Utama",
-          amount: "Rp3.000.000",
-          imageAsset: 'assets/images/IKEHome.png',
+          title: wallet.name,
+          amount: _formatRupiah(_parseBalanceToInt(wallet.balance)),
+          imageAsset: wallet.imagePath,
         ),
       );
-      cards.add(
-        _buildSakuCard(
-          title: "Saku Celengan",
-          amount: "Rp8.000.000",
-          imageAsset: 'assets/images/celengan.png',
-        ),
-      );
-      cards.add(
-        _buildSakuCard(
-          title: "Saku Deposito",
-          amount: "Rp100.000.000",
-          imageAsset: 'assets/images/deposito.png',
-        ),
-      );
-
-      // TAB SEMUA: Tambahkan SEMUA saku custom yang baru dibuat
-      for (var saku in customSakus) {
-        cards.add(
-          _buildSakuCard(
-            title: saku['title']!,
-            amount: saku['amount']!,
-            imageAsset: saku['imageAsset']!,
-          ),
-        );
-      }
-    } else {
-      // TAB NABUNG: Masukkan kartu bawaan
-      cards.add(
-        _buildSakuCard(
-          title: "Saku Deposito",
-          amount: "Rp100.000.000",
-          imageAsset: 'assets/images/deposito.png',
-        ),
-      );
-
-      // TAB NABUNG: Filter & tambahkan HANYA saku tipe "Nabung"
-      for (var saku in customSakus.where((s) => s['type'] == 'Nabung')) {
-        cards.add(
-          _buildSakuCard(
-            title: saku['title']!,
-            amount: saku['amount']!,
-            imageAsset: saku['imageAsset']!,
-          ),
-        );
-      }
     }
 
     return cards;
@@ -501,18 +586,14 @@ class _SakuScreenState extends State<SakuScreen> {
   Widget _buildTambahSakuCard() {
     return GestureDetector(
       onTap: () async {
-        final result = await Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const TambahSakuScreen()),
         );
 
         if (!context.mounted) return;
 
-        if (result != null) {
-          setState(() {
-            customSakus.add(Map<String, String>.from(result as Map));
-          });
-        }
+        _loadSakuList();
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,21 +642,12 @@ class _SakuScreenState extends State<SakuScreen> {
     bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
     return GestureDetector(
       onTap: () {
-        if (title == "Saku Utama") {
-          // 1. Saku Utama -> Masuk ke layar Saku Utama
+        if (_isSakuUtama(title)) {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
           );
-        } else if (title == "Saku Celengan" || title == "Saku Deposito") {
-          // 2. Saku Bawaan Lainnya -> Tampilkan Notifikasi (karena akan dibuat di menu Layanan nanti)
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Menu $title akan diarahkan ke Layanan Utama!"),
-            ),
-          );
         } else {
-          // 3. Saku Tambahan (Custom) -> Masuk ke layar History Transaksi Saku
           Navigator.push(
             context,
             MaterialPageRoute(

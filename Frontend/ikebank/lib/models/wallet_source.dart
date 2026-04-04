@@ -1,17 +1,14 @@
-enum WalletCategory { utama, transaksi, lainnya }
+enum WalletCategory { utama, nabung, transaksi, lainnya }
 
 WalletCategory walletCategoryFromValue(String value) {
   final normalized = value.trim().toLowerCase();
-  if (
-      normalized == 'utama' ||
-      normalized == 'main' ||
-      normalized == 'saku utama') {
+  if (normalized == 'utama') {
     return WalletCategory.utama;
   }
-  if (
-      normalized == 'transaksi' ||
-      normalized == 'transaction' ||
-      normalized == 'saku transaksi') {
+  if (normalized == 'nabung') {
+    return WalletCategory.nabung;
+  }
+  if (normalized == 'transaksi') {
     return WalletCategory.transaksi;
   }
   return WalletCategory.lainnya;
@@ -115,6 +112,9 @@ class WalletSource {
   static String _imageForCategory(WalletCategory category) {
     if (category == WalletCategory.utama) {
       return 'assets/images/IKEHome.png';
+    }
+    if (category == WalletCategory.nabung) {
+      return 'assets/images/celengan.png';
     }
     if (category == WalletCategory.transaksi) {
       return 'assets/images/celengan.png';

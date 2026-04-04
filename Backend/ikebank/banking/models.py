@@ -31,12 +31,14 @@ class Transaction(models.Model):
     transaction_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transactions')
     saku = models.ForeignKey('Saku', on_delete=models.CASCADE, null=True, blank=True, related_name='transactions')
+    qris = models.ForeignKey('Qris', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, null=False, blank=False)
     amount = models.IntegerField(null=False, blank=False)
     balance_after = models.IntegerField(null=False, blank=False)
     timestamp = models.DateTimeField(auto_now_add=True)
     description = models.TextField(blank=True, null=True)
     source_funds = models.CharField(max_length=255, blank=True, null=True)
+    merchant_name_snapshot = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.saku.saku_name if self.saku else 'No Saku'} - {self.category} - {self.amount}"
@@ -95,8 +97,10 @@ class CardDetails(models.Model):
 
 class Saku(models.Model):
     CATEGORY_CHOICES = [
+        ("utama", "Utama"),
         ("nabung", "Nabung"),
         ("transaksi", "Transaksi"),
+        ("celengan", "Celengan"),
         ("lainnya", "Lainnya"),
     ]
     id = models.BigAutoField(primary_key=True)
@@ -128,3 +132,48 @@ class SakuDetails(models.Model):
 
     def __str__(self):
         return f"{self.saku.saku_name} - {self.name}"
+
+class Beneficiaries(models.Model):
+    account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='beneficiaries') #pemilik daftar
+    destination_account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='as_beneficiary_destination',
+    )
+    account_number = models.CharField(max_length=20, null=False, blank=False) #nomor rekening tujuan
+    bank_name = models.CharField(max_length=255, null=False, blank=False, default='IKE Bank')
+    account_holder_name = models.CharField(max_length=255, null=True, blank=True) #nama pemilik rekening tujuan
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['account_id', 'account_number'],
+                name='unique_beneficiary_per_account_number',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['account_id', 'added_at']),
+        ]
+
+    def save(self, *args, **kwargs):
+        normalized_number = (self.account_number or '').strip()
+        self.account_number = normalized_number
+
+        linked_destination = BankAccount.objects.filter(
+            account_number=normalized_number,
+        ).first()
+
+        self.destination_account = linked_destination
+
+        if linked_destination is not None:
+            self.bank_name = 'IKE Bank'
+            if not self.account_holder_name:
+                self.account_holder_name = linked_destination.user.name
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.account_holder_name or f"Beneficiary {self.account_id.id}"

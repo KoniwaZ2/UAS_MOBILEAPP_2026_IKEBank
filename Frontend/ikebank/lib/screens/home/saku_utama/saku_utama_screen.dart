@@ -6,8 +6,9 @@ import '../tambah_dana_screen.dart';
 import 'tambah_dana_saku_screen.dart';
 import 'pindah_dana_screen.dart';
 import 'transfer_dana_screen.dart';
+import '../../../api/banking.dart';
 
-class SakuUtamaScreen extends StatelessWidget {
+class SakuUtamaScreen extends StatefulWidget {
   final String title;
   final String amount;
   final String imageAsset;
@@ -20,8 +21,303 @@ class SakuUtamaScreen extends StatelessWidget {
   });
 
   @override
+  State<SakuUtamaScreen> createState() => _SakuUtamaScreenState();
+}
+
+class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
+  String _accountNumber = '-';
+  late String _sakuTitle;
+  late String _sakuAmount;
+  late String _sakuImageAsset;
+  String _cardNumber = '';
+  List<Map<String, dynamic>> _transactions = [];
+  List<Map<String, dynamic>> _destinationSakus = [];
+  bool _isLoadingTransactions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sakuTitle = widget.title;
+    _sakuAmount = widget.amount;
+    _sakuImageAsset = widget.imageAsset;
+    _cardNumber = '';
+    _loadSakuUtamaData();
+  }
+
+  Future<void> _loadSakuUtamaData() async {
+    try {
+      final accountDetails = await BankingService.fetchAccountDetails();
+      final accountNumber = accountDetails.isNotEmpty
+          ? accountDetails.first.accountnumber
+          : '-';
+      final accountCardNumber = accountDetails.isNotEmpty
+          ? accountDetails.first.cardnumber
+          : '';
+
+      final rawSakuList = await BankingService.sakuList();
+      final dynamic payload = rawSakuList is Map<String, dynamic>
+          ? (rawSakuList['data'] ??
+                rawSakuList['results'] ??
+                rawSakuList['sakus'] ??
+                rawSakuList)
+          : rawSakuList;
+
+      List<Map<String, dynamic>> sakus = [];
+
+      Map<String, dynamic>? primarySaku;
+      if (payload is List) {
+        sakus = payload.whereType<Map<String, dynamic>>().toList();
+
+        for (final saku in sakus) {
+          if (_readBool(saku, 'is_primary')) {
+            primarySaku = saku;
+            break;
+          }
+        }
+
+        primarySaku ??= sakus.cast<Map<String, dynamic>?>().firstWhere(
+          (s) => _readString(s ?? const {}, const [
+            'saku_name',
+            'name',
+          ]).toLowerCase().contains('utama'),
+          orElse: () => null,
+        );
+
+        primarySaku ??= sakus.isNotEmpty ? sakus.first : null;
+      }
+
+      var mergedSaku = primarySaku ?? <String, dynamic>{};
+      final sakuId = _readString(mergedSaku, const ['id', 'saku_id']);
+      if (sakuId.isNotEmpty) {
+        try {
+          final detail = await BankingService.sakuDetail(sakuId: sakuId);
+          mergedSaku = {...mergedSaku, ...detail};
+        } catch (_) {
+          // Keep fallback data from saku-list when saku-detail is unavailable.
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      final name = _readString(mergedSaku, const ['saku_name', 'name']);
+      final balance = _readString(mergedSaku, const ['balance']);
+      final targetSakuId = _readString(mergedSaku, const ['id', 'saku_id']);
+
+      final destinationSakus = sakus.where((saku) {
+        final sakuId = _readString(saku, const ['id', 'saku_id']);
+        final sakuName = _readString(saku, const ['saku_name', 'name']).toLowerCase();
+        final category = _readString(saku, const ['category_name', 'category']).toLowerCase();
+        final isDeposito = category.contains('deposito') || sakuName.contains('deposito');
+        final isSameAsPrimary = sakuId == targetSakuId;
+        return !isDeposito && !isSameAsPrimary;
+      }).toList();
+
+      setState(() {
+        _accountNumber = accountNumber.trim().isEmpty ? '-' : accountNumber;
+        _cardNumber = accountCardNumber.trim();
+        _sakuTitle = name.isEmpty ? widget.title : name;
+        _sakuAmount = balance.isEmpty ? widget.amount : _formatRupiah(balance);
+        _sakuImageAsset = _resolveSakuImage(mergedSaku);
+        _destinationSakus = destinationSakus;
+      });
+
+      // Fetch transaction history for this saku
+      if (targetSakuId.isNotEmpty) {
+        _loadTransactionHistory(targetSakuId);
+      }
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadTransactionHistory(String sakuId) async {
+    setState(() {
+      _isLoadingTransactions = true;
+    });
+
+    try {
+      final transactions = await BankingService.transactionHistory(
+        sakuId: sakuId,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _transactions = transactions;
+        _isLoadingTransactions = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoadingTransactions = false;
+      });
+
+      // Silent fail - show empty list if transaction load fails
+      debugPrint('Error loading transactions: $e');
+    }
+  }
+
+  String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null) {
+        final text = value.toString().trim();
+        if (text.isNotEmpty) {
+          return text;
+        }
+      }
+    }
+    return '';
+  }
+
+  bool _readBool(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == 'true' || normalized == '1';
+    }
+    return false;
+  }
+
+  String _formatRupiah(String rawBalance) {
+    final digitsOnly = rawBalance.replaceAll(RegExp(r'[^0-9]'), '');
+    final value = int.tryParse(digitsOnly) ?? 0;
+    final text = value.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      final remaining = text.length - i;
+      buffer.write(text[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return 'Rp ${buffer.toString()}';
+  }
+
+  String _resolveSakuImage(Map<String, dynamic> saku) {
+    final category = _readString(saku, const [
+      'category_name',
+      'category',
+    ]).toLowerCase();
+    final name = _readString(saku, const ['saku_name', 'name']).toLowerCase();
+
+    if (name.contains('utama')) {
+      return 'assets/images/IKEHome.png';
+    }
+    if (name.contains('deposito') || category.contains('deposito')) {
+      return 'assets/images/deposito.png';
+    }
+    if (name.contains('celengan') || category.contains('celengan')) {
+      return 'assets/images/celengan.png';
+    }
+    return widget.imageAsset;
+  }
+
+  String _formatTransactionTime(String? dateString) {
+    if (dateString == null || dateString.trim().isEmpty) {
+      return '';
+    }
+    try {
+      final date = DateTime.parse(dateString);
+      final hour = date.hour.toString().padLeft(2, '0');
+      final minute = date.minute.toString().padLeft(2, '0');
+      return '$hour:$minute WIB';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  String _formatCategoryLabel(String rawCategory) {
+    final normalized = rawCategory.replaceAll('_', ' ').trim();
+    if (normalized.isEmpty) {
+      return '';
+    }
+
+    return normalized
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .map(
+          (word) =>
+              '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+        )
+        .join(' ');
+  }
+
+  String _buildSakuCategoryLabel(Map<String, dynamic> saku) {
+    final category = _readString(saku, const ['category_name', 'category']);
+    return _formatCategoryLabel(category);
+  }
+
+  String? _getTransactionIcon(Map<String, dynamic> transaction) {
+    final category = _readString(transaction, const ['category', 'category_name']).toLowerCase();
+    final description = _readString(transaction, const ['description']).toLowerCase();
+
+    if (category.contains('deposit') || description.contains('pencairan')) {
+      return 'assets/images/deposito.png';
+    }
+    if (category.contains('bunga') || description.contains('bunga') || description.contains('interest')) {
+      return 'assets/images/bunga.png';
+    }
+    if (category.contains('income') || category.contains('transfer_in') || description.contains('masuk') || description.contains('terima')) {
+      return null; // Use default icon (add)
+    }
+    return null; // Use default icon (arrow_forward)
+  }
+
+  bool _isTransactionIncome(Map<String, dynamic> transaction) {
+    final category = _readString(transaction, const ['category', 'category_name']).toLowerCase();
+    
+    // Income categories
+    if (category.contains('income') || 
+        category.contains('deposit') || 
+        category.contains('transfer_in') ||
+        category.contains('bunga') ||
+        category.contains('interest') ||
+        category.contains('credit')) {
+      return true;
+    }
+    
+    // Expense categories (payment, transfer, withdraw, etc)
+    if (category.contains('payment') || 
+        category.contains('transfer') || 
+        category.contains('withdraw') ||
+        category.contains('expense')) {
+      return false;
+    }
+    
+    // Default: check description for hints
+    final description = _readString(transaction, const ['description']).toLowerCase();
+    if (description.contains('masuk') || description.contains('terima') || description.contains('pencairan')) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
+    bool isSvg = _sakuImageAsset.toLowerCase().endsWith('.svg');
 
     return Container(
       decoration: const BoxDecoration(
@@ -58,7 +354,7 @@ class SakuUtamaScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  title,
+                  _sakuTitle,
                   style: const TextStyle(
                     fontFamily: 'AlumniSans',
                     fontWeight: FontWeight.w800,
@@ -78,9 +374,9 @@ class SakuUtamaScreen extends StatelessWidget {
                         color: Color.fromARGB(255, 107, 107, 107),
                       ),
                     ),
-                    const Text(
-                      "10095653346 ",
-                      style: TextStyle(
+                    Text(
+                      '$_accountNumber ',
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
@@ -88,9 +384,7 @@ class SakuUtamaScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Clipboard.setData(
-                          const ClipboardData(text: "10095653346"),
-                        );
+                        Clipboard.setData(ClipboardData(text: _accountNumber));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("Nomor rekening berhasil disalin!"),
@@ -154,7 +448,7 @@ class SakuUtamaScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            amount,
+                            _sakuAmount,
                             style: const TextStyle(
                               fontFamily: 'AlumniSans',
                               fontSize: 32,
@@ -214,12 +508,12 @@ class SakuUtamaScreen extends StatelessWidget {
                         alignment: Alignment.center,
                         child: isSvg
                             ? SvgPicture.asset(
-                                imageAsset,
+                                _sakuImageAsset,
                                 height: 50,
                                 fit: BoxFit.contain,
                               )
                             : Image.asset(
-                                imageAsset,
+                                _sakuImageAsset,
                                 height: 50,
                                 fit: BoxFit.contain,
                                 errorBuilder: (c, e, s) =>
@@ -255,10 +549,12 @@ class SakuUtamaScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        "**** **** **** 2706",
-                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                        _cardNumber.isEmpty
+                            ? "Belum ada kartu debit yang terhubung"
+                            : "Kartu debit terhubung: $_cardNumber",
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
                       ),
                     ),
                     Icon(
@@ -347,60 +643,59 @@ class SakuUtamaScreen extends StatelessWidget {
 
                       // dummy history transaksi
                       Expanded(
-                        child: ListView(
-                          physics: const BouncingScrollPhysics(),
-                          children: [
-                            _buildTransactionItem(
-                              icon: Icons.add,
-                              title: "Dana Masuk dari Ericson Wen",
-                              subtitle: "Bank BCA",
-                              amount: "+Rp 250.000",
-                              time: "11:00 WIB",
-                              isIncome: true,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RiwayatTransaksiScreen(),
+                        child: _isLoadingTransactions
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFFFF7F00),
                                   ),
-                                );
-                              },
-                            ),
-                            _buildTransactionItem(
-                              icon: Icons.arrow_forward,
-                              title: "Transfer ke Ivan Ibrahim",
-                              subtitle: "Seabank",
-                              amount: "-Rp 100.000",
-                              time: "09:00 WIB",
-                              isIncome: false,
-                            ),
-                            _buildTransactionItem(
-                              imagePath: 'assets/images/deposito.png',
-                              title: "Penempatan Deposito - Kelvin K",
-                              subtitle: "Deposito 1 Bulan",
-                              amount: "-Rp 5.000.000",
-                              time: "08:00 WIB",
-                              isIncome: false,
-                            ),
-                            _buildTransactionItem(
-                              imagePath: 'assets/images/deposito.png',
-                              title: "Pencairan Deposito - Kelvin K",
-                              subtitle: "Deposito 1 Bulan",
-                              amount: "+Rp 5.000.000",
-                              time: "04:00 WIB",
-                              isIncome: true,
-                            ),
-                            _buildTransactionItem(
-                              imagePath: 'assets/images/bunga.png',
-                              title: "Bunga Deposito - Kelvin K",
-                              subtitle: "Bunga",
-                              amount: "+Rp 16.986",
-                              time: "04:00 WIB",
-                              isIncome: true,
-                            ),
-                          ],
-                        ),
+                                ),
+                              )
+                            : _transactions.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      'Belum ada transaksi',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  )
+                                : ListView(
+                                    physics: const BouncingScrollPhysics(),
+                                    children: _transactions.map((transaction) {
+                                      final title = _readString(transaction, const ['description']);
+                                      final category = _readString(transaction, const ['category', 'category_name']);
+                                      final categoryLabel = _formatCategoryLabel(category);
+                                      final amount = _readString(transaction, const ['amount']);
+                                      final timestamp = _readString(transaction, const ['timestamp', 'created_at']);
+                                      final isIncome = _isTransactionIncome(transaction);
+                                      final iconPath = _getTransactionIcon(transaction);
+
+                                      // Format amount with +/- prefix
+                                      final formattedAmount = isIncome
+                                          ? '+${_formatRupiah(amount)}'
+                                          : '-${_formatRupiah(amount)}';
+
+                                      return _buildTransactionItem(
+                                        imagePath: iconPath,
+                                        title: title.isEmpty ? 'Transaksi' : title,
+                                        subtitle: categoryLabel.isEmpty ? 'IKE Bank' : categoryLabel,
+                                        amount: formattedAmount,
+                                        time: _formatTransactionTime(timestamp),
+                                        isIncome: isIncome,
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const RiwayatTransaksiScreen(),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
                       ),
                     ],
                   ),
@@ -534,7 +829,8 @@ class SakuUtamaScreen extends StatelessWidget {
   }
 
   void _showSakuBottomSheet(BuildContext context) {
-    bool isSvg = imageAsset.toLowerCase().endsWith('.svg');
+    final currentImageAsset = _sakuImageAsset;
+    final isSvg = currentImageAsset.toLowerCase().endsWith('.svg');
 
     showModalBottomSheet(
       context: context,
@@ -596,12 +892,12 @@ class SakuUtamaScreen extends StatelessWidget {
                             alignment: Alignment.center,
                             child: isSvg
                                 ? SvgPicture.asset(
-                                    imageAsset,
+                                    currentImageAsset,
                                     height: 30,
                                     fit: BoxFit.contain,
                                   )
                                 : Image.asset(
-                                    imageAsset,
+                                    currentImageAsset,
                                     height: 30,
                                     fit: BoxFit.contain,
                                     errorBuilder: (c, e, s) => const Icon(
@@ -616,7 +912,7 @@ class SakuUtamaScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  title,
+                                  _sakuTitle,
                                   style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -625,7 +921,7 @@ class SakuUtamaScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  amount,
+                                  _sakuAmount,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.black,
@@ -654,7 +950,7 @@ class SakuUtamaScreen extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        "$title - Bunga 0.5% p.a.",
+                        "$_sakuTitle - Bunga 0.5% p.a.",
                         style: const TextStyle(
                           fontSize: 18,
                           color: Colors.black,
@@ -817,6 +1113,13 @@ class SakuUtamaScreen extends StatelessWidget {
   }
 
   void _showPindahkanKeBottomSheet(BuildContext context) {
+    if (_destinationSakus.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak ada saku tujuan yang tersedia')),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -856,104 +1159,124 @@ class SakuUtamaScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              ..._destinationSakus.map((saku) {
+                final destinationName = _readString(saku, const ['saku_name', 'name']);
+                final destinationBalance = _formatRupiah(_readString(saku, const ['balance']));
+                final isPrimary = _readBool(saku, 'is_primary') || destinationName.toLowerCase().contains('utama');
+                final categoryLabel = _buildSakuCategoryLabel(saku);
 
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PindahDanaScreen(),
-                    ),
-                  );
-                },
-                child: Stack(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F0),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFFFDBB7),
-                          width: 1.5,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PindahDanaScreen(),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 55,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFD6CFFF),
-                              borderRadius: BorderRadius.vertical(
-                                bottom: Radius.circular(25),
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: SvgPicture.asset(
-                              'assets/images/bag.svg',
-                              height: 36,
-                              colorFilter: const ColorFilter.mode(
-                                Color(0xFFFF7F00),
-                                BlendMode.srcIn,
-                              ),
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF8F0),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFFFDBB7),
+                              width: 1.5,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                "Uang Belanja",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                              Container(
+                                width: 50,
+                                height: 55,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFD6CFFF),
+                                  borderRadius: BorderRadius.vertical(
+                                    bottom: Radius.circular(25),
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: SvgPicture.asset(
+                                  'assets/images/bag.svg',
+                                  height: 36,
+                                  colorFilter: const ColorFilter.mode(
+                                    Color(0xFFFF7F00),
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text(
-                                "Rp 5.000.000",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    destinationName,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    destinationBalance,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  if (categoryLabel.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      categoryLabel,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
                         ),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF7F00),
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(14),
-                            bottomLeft: Radius.circular(12),
+                        if (isPrimary)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF7F00),
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                "Utama",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          "Nabung",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }),
             ],
           ),
         );

@@ -35,3 +35,8 @@ class SakuAdmin(admin.ModelAdmin):
 class QrisAdmin(admin.ModelAdmin):
     list_display = ('merchant_name', 'qris_number')
     search_fields = ('merchant_name', 'qris_number')
+
+class BeneficiariesAdmin(admin.ModelAdmin):
+    list_display = ('account_id', 'bank_name', 'alias', 'added_at')
+    search_fields = ('account_id__account_number', 'alias')
+    list_filter = ('added_at',)

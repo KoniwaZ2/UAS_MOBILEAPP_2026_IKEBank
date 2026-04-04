@@ -2,12 +2,13 @@ import secrets
 
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
+from django.utils.dateparse import parse_date
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, Qris, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer
+from .models import BankAccount, Beneficiaries, Qris, Saku, Transaction
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -50,6 +51,14 @@ class RegisterBankAccountView(APIView):
             category_name="nabung",
             balance=0,
             is_primary=True
+        )
+
+        saku_celengan = Saku.objects.create(
+            saku_name="Saku Celengan",
+            account=bank_account,
+            category_name="celengan",
+            balance=0,
+            is_primary=False
         )
 
         return Response({
@@ -139,6 +148,7 @@ class TransactionCreateView(APIView):
         destination_account_number = validated_data.get('destination_account', '')
         merchant_qris = validated_data.get('merchant_qris', '')
         pin = validated_data['pin']
+        qris_merchant = None
 
         if not request.user.pin:
             return Response(
@@ -153,8 +163,8 @@ class TransactionCreateView(APIView):
             )
 
         if category == 'payment':
-            merchant_exists = Qris.objects.filter(qris_number=merchant_qris).exists()
-            if not merchant_exists:
+            qris_merchant = Qris.objects.filter(qris_number=merchant_qris).first()
+            if qris_merchant is None:
                 return Response(
                     {'detail': 'QRIS merchant not found.'},
                 status=status.HTTP_404_NOT_FOUND,
@@ -203,14 +213,25 @@ class TransactionCreateView(APIView):
                 account.save()
 
                 # Buat transaction record pengirim
+                source_funds = destination_account_number or merchant_qris
+                if category == 'payment' and qris_merchant is not None:
+                    source_funds = qris_merchant.merchant_name
+
+                description = (validated_data.get('description') or '').strip()
+                if category == 'payment' and qris_merchant is not None:
+                    if not description or merchant_qris in description:
+                        description = f'Pembayaran QRIS ke {qris_merchant.merchant_name}'
+
                 sender_transaction = Transaction.objects.create(
                     account_id=account,
                     saku=saku_utama,
+                    qris=qris_merchant if category == 'payment' else None,
                     category=category,
                     amount=amount,
                     balance_after=account.balance,
-                    description=validated_data.get('description', ''),
-                    source_funds=destination_account_number or merchant_qris,
+                    description=description,
+                    source_funds=source_funds,
+                    merchant_name_snapshot=qris_merchant.merchant_name if category == 'payment' and qris_merchant is not None else None,
                 )
 
                 # Jika transfer ke rekening lain, kredit rekening tujuan
@@ -229,6 +250,16 @@ class TransactionCreateView(APIView):
                         balance_after=destination_account.balance,
                         description=validated_data.get('description', ''),
                         source_funds=account.account_number,
+                    )
+
+                    Beneficiaries.objects.update_or_create(
+                        account_id=account,
+                        account_number=destination_account.account_number,
+                        defaults={
+                            'destination_account': destination_account,
+                            'bank_name': 'IKE Bank',
+                            'account_holder_name': destination_account.user.name,
+                        },
                     )
 
                 # Update cashflow untuk bulan ini
@@ -330,11 +361,13 @@ class TambahDanaView(APIView):
 
 class InternalTransferView(APIView):
     """
-    Internal transfer between Sakus
-    Restrictions:
-    - Saku Nabung can ONLY receive from Saku Utama
-    - Cannot transfer FROM Saku Nabung to anywhere
-    - All other transfers between Sakus are allowed
+    Internal transfer between Sakus.
+    Allowed routes:
+    - Any non-deposito Saku -> Saku Utama
+    - Saku Utama -> any non-deposito Saku
+    Not allowed:
+    - Transfers involving deposito Sakus
+    - Non-primary -> non-primary
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -376,25 +409,39 @@ class InternalTransferView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # VALIDATION: Saku Nabung restrictions
-        # 1. Cannot transfer FROM Saku Nabung
-        if source_saku.category_name == "nabung":
+        # Prevent self-transfer to avoid duplicate records without real balance movement.
+        if source_saku.id == destination_saku.id:
             return Response(
-                {'detail': 'Cannot transfer FROM Saku Nabung. Saku Nabung is for savings only.'},
+                {'detail': 'Source and destination Saku must be different.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 2. Only Saku Utama can send to other Sakus
-        if not source_saku.is_primary:
+        def _is_deposito_saku(saku):
+            category = (saku.category_name or '').strip().lower()
+            name = (saku.saku_name or '').strip().lower()
+            return category == 'deposito' or 'deposito' in name
+
+        # Deposito is excluded from internal transfer policy.
+        if _is_deposito_saku(source_saku) or _is_deposito_saku(destination_saku):
             return Response(
-                {'detail': 'Only Saku Utama can transfer to other Sakus.'},
+                {'detail': 'Internal transfer tidak berlaku untuk deposito.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 3. If destination is Saku Nabung, source must be Saku Utama (already checked above)
-        if destination_saku.category_name == "nabung" and not source_saku.is_primary:
+        # Allowed paths only:
+        # 1) any Saku -> Saku Utama
+        # 2) Saku Utama -> any Saku
+        # Therefore, non-primary -> non-primary is forbidden.
+        if not source_saku.is_primary and not destination_saku.is_primary:
             return Response(
-                {'detail': 'Can only transfer TO Saku Nabung from Saku Utama.'},
+                {'detail': 'Transfer hanya boleh antara Saku Utama dan saku lainnya.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Saku Nabung can only receive funds from Saku Utama.
+        if destination_saku.category_name == 'nabung' and not source_saku.is_primary:
+            return Response(
+                {'detail': 'Saku Nabung hanya bisa menerima dana dari Saku Utama.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -586,17 +633,108 @@ class HistoryTransactionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        transactions = Transaction.objects.filter(account_id=account).order_by('-timestamp')
+        transactions = Transaction.objects.filter(account_id=account).select_related('qris', 'saku')
+
+        saku_id_raw = request.query_params.get('saku_id')
+        if saku_id_raw:
+            try:
+                saku_id = int(saku_id_raw)
+            except (TypeError, ValueError):
+                return Response(
+                    {'detail': 'Invalid saku_id.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            transactions = transactions.filter(saku_id=saku_id)
+
+        saku_name = (request.query_params.get('saku_name') or '').strip()
+        if saku_name:
+            transactions = transactions.filter(saku__saku_name__iexact=saku_name)
+
+        category = (request.query_params.get('category') or '').strip()
+        if category:
+            transactions = transactions.filter(category=category)
+
+        start_date_raw = (request.query_params.get('start_date') or '').strip()
+        if start_date_raw:
+            start_date = parse_date(start_date_raw)
+            if start_date is None:
+                return Response(
+                    {'detail': 'Invalid start_date. Use YYYY-MM-DD.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            transactions = transactions.filter(timestamp__date__gte=start_date)
+
+        end_date_raw = (request.query_params.get('end_date') or '').strip()
+        if end_date_raw:
+            end_date = parse_date(end_date_raw)
+            if end_date is None:
+                return Response(
+                    {'detail': 'Invalid end_date. Use YYYY-MM-DD.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            transactions = transactions.filter(timestamp__date__lte=end_date)
+
+        transactions = transactions.order_by('-timestamp')
+
+        offset_raw = request.query_params.get('offset')
+        limit_raw = request.query_params.get('limit')
+        try:
+            offset = int(offset_raw) if offset_raw is not None else 0
+            if offset < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'Invalid offset.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            limit = int(limit_raw) if limit_raw is not None else None
+            if limit is not None and limit < 1:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'Invalid limit.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if limit is None:
+            transactions = transactions[offset:]
+        else:
+            transactions = transactions[offset:offset + limit]
+
+        # Fallback for legacy payment rows that only stored QRIS number in source_funds.
+        legacy_qris_numbers = {
+            (tx.source_funds or '').strip()
+            for tx in transactions
+            if tx.category == 'payment' and tx.qris_id is None and not tx.merchant_name_snapshot and (tx.source_funds or '').strip().isdigit()
+        }
+        legacy_qris_map = {
+            q.qris_number: q.merchant_name
+            for q in Qris.objects.filter(qris_number__in=legacy_qris_numbers)
+        }
+
         data = []
         for tx in transactions:
+            fallback_qris_number = (tx.source_funds or '').strip() if tx.category == 'payment' and (tx.source_funds or '').strip().isdigit() else None
+            qris_number = tx.qris.qris_number if tx.qris else fallback_qris_number
+            merchant_name = tx.merchant_name_snapshot or (tx.qris.merchant_name if tx.qris else legacy_qris_map.get(fallback_qris_number or ''))
+
+            description = tx.description
+            if tx.category == 'payment' and merchant_name:
+                description = f'Pembayaran QRIS ke {merchant_name}'
+
             data.append({
                 'transaction_id': tx.transaction_id.hex,
+                'saku_id': tx.saku_id,
                 'category': tx.category,
                 'amount': str(tx.amount),
                 'balance_after': str(tx.balance_after),
                 'timestamp': tx.timestamp,
-                'description': tx.description,
+                'description': description,
                 'source_funds': tx.source_funds,
+                'qris_number': qris_number,
+                'merchant_name': merchant_name,
                 'saku_name': tx.saku.saku_name if tx.saku else None,
             })
         return Response(data, status=status.HTTP_200_OK)
@@ -628,7 +766,26 @@ class SakuDetailView(APIView):
     serializer_class = SakuDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, pk):
+    @staticmethod
+    def _parse_saku_id(raw_id):
+        if raw_id is None:
+            return None
+        try:
+            return int(raw_id)
+        except (TypeError, ValueError):
+            return 'invalid'
+
+    @staticmethod
+    def _build_saku_response(saku):
+        return {
+            'id': saku.id,
+            'saku_name': saku.saku_name,
+            'category_name': saku.category_name,
+            'balance': str(saku.balance),
+            'is_primary': saku.is_primary,
+        }
+
+    def get(self, request, pk=None):
         account = get_user_bank_account(request.user)
         if account is None:
             return Response(
@@ -636,18 +793,132 @@ class SakuDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        saku = Saku.objects.filter(account=account, id=pk).first()
+        if pk is None:
+            parsed_id = self._parse_saku_id(
+                request.query_params.get('id') or request.query_params.get('pk')
+            )
+            if parsed_id == 'invalid':
+                return Response(
+                    {'detail': 'Invalid saku id.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            pk = parsed_id
+
+        if pk is None:
+            saku = Saku.objects.filter(account=account, is_primary=True).first()
+        else:
+            saku = Saku.objects.filter(account=account, id=pk).first()
+
         if saku is None:
             return Response(
                 {'detail': 'Saku not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        data = {
-            'id': saku.id,
-            'saku_name': saku.saku_name,
-            'category_name': saku.category_name,
-            'balance': str(saku.balance),
-            'is_primary': saku.is_primary,
-        }
+        return Response(self._build_saku_response(saku), status=status.HTTP_200_OK)
+
+    def post(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        parsed_id = self._parse_saku_id(request.data.get('id') or request.data.get('pk'))
+        if parsed_id == 'invalid':
+            return Response(
+                {'detail': 'Invalid saku id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if parsed_id is None:
+            saku = Saku.objects.filter(account=account, is_primary=True).first()
+        else:
+            saku = Saku.objects.filter(account=account, id=parsed_id).first()
+
+        if saku is None:
+            return Response(
+                {'detail': 'Saku not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(self._build_saku_response(saku), status=status.HTTP_200_OK)
+    
+class RekeningListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        beneficiaries = Beneficiaries.objects.filter(account_id=account).select_related('destination_account')
+        data = []
+        for beneficiary in beneficiaries:
+            data.append({
+                'id': beneficiary.id,
+                'account_number': beneficiary.account_number,
+                'bank_name': beneficiary.bank_name,
+                'account_holder_name': beneficiary.account_holder_name,
+                'added_at': beneficiary.added_at,
+            })
         return Response(data, status=status.HTTP_200_OK)
+
+class TambahRekeningView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = TambahRekeningSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        account_number = validated_data['account_number'].strip()
+        bank_name = (validated_data.get('bank_name') or 'IKE Bank').strip()
+
+        if not account_number or not bank_name:
+            return Response(
+                {'detail': 'account_number and bank_name are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        destination_account = BankAccount.objects.filter(account_number=account_number).first()
+        if destination_account is None:
+            return Response(
+                {'detail': 'Destination account not found in BankAccount.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        account_holder_name = destination_account.user.name
+
+        if Beneficiaries.objects.filter(account_id=account, account_number=account_number).exists():
+            return Response(
+                {'detail': 'Beneficiary with this account number already exists.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        beneficiary = Beneficiaries.objects.create(
+            account_id=account,
+            destination_account=destination_account,
+            account_number=account_number,
+            bank_name=bank_name,
+            account_holder_name=account_holder_name,
+        )
+
+        return Response({
+            'id': beneficiary.id,
+            'account_number': beneficiary.account_number,
+            'bank_name': beneficiary.bank_name,
+            'account_holder_name': beneficiary.account_holder_name,
+            'added_at': beneficiary.added_at,
+        }, status=status.HTTP_201_CREATED)
