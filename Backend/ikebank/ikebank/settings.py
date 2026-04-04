@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'user',
     'django_filters',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'banking',
 ]

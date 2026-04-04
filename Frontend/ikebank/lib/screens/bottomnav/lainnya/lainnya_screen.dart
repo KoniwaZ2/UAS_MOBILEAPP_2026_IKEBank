@@ -5,6 +5,7 @@ import 'laporan_keuangan_screen.dart';
 import 'pengaturan_screen.dart';
 import 'undang_teman_screen.dart';
 import 'about_us_screen.dart';
+import '../../../api/auth.dart';
 
 class LainnyaScreen extends StatelessWidget {
   const LainnyaScreen({super.key});
@@ -107,10 +108,27 @@ class LainnyaScreen extends StatelessWidget {
             _buildMenuItem(
               icon: Icons.logout,
               title: "Keluar dari akun",
-              onTap: () {
+              onTap: () async {
+                final lastEmail = await AuthService.getLastEmail();
+
+                try {
+                  await AuthService.logout();
+                } catch (_) {
+                  // Continue navigation even when logout API fails.
+                }
+
+                if (!context.mounted) {
+                  return;
+                }
+
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  MaterialPageRoute(
+                    builder: (context) => LoginPage(
+                      key: UniqueKey(),
+                      prefilledEmail: lastEmail,
+                    ),
+                  ),
                   (Route<dynamic> route) => false,
                 );
               },

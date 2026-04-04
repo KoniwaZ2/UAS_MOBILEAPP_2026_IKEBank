@@ -15,7 +15,6 @@ class _MasukScreenState extends State<MasukScreen> {
 
   String? _errorMessage;
   bool _isCheckingLogin = false;
-  final bool _isLoading = false;
 
   Future<void> _validasiDanLanjut() async {
     final email = _emailController.text.trim();
@@ -44,6 +43,8 @@ class _MasukScreenState extends State<MasukScreen> {
     });
 
     try {
+      await AuthService.saveLastEmail(email);
+
       final result = await AuthService.checkLogin(email: email);
       final exists = result['exists'] == true;
 

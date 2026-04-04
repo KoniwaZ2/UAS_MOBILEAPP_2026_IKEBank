@@ -66,12 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Berhasil memuat data akun"),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
     } catch (e) {
       if (!mounted) {

@@ -6,12 +6,22 @@ class QrisPinScreen extends StatefulWidget {
   final String qrisNumber;
   final String merchantName;
   final String amount;
+  final String location;
+  final String aquirer;
+  final String panId;
+  final String walletName;
+  final String walletBalance;
 
   const QrisPinScreen({
     super.key,
     required this.qrisNumber,
     required this.merchantName,
     required this.amount,
+    required this.location,
+    required this.aquirer,
+    required this.panId,
+    required this.walletName,
+    required this.walletBalance,
   });
 
   @override
@@ -30,18 +40,18 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
     super.dispose();
   }
 
-  Future<bool> _processPayment() async {
+  Future<Map<String, dynamic>?> _processPayment() async {
     final pin = _pinController.text;
 
     if (pin.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('PIN harus terdiri dari 6 digit')),
       );
-      return false;
+      return null;
     }
 
     if (_isProcessing) {
-      return false;
+      return null;
     }
 
     setState(() {
@@ -49,7 +59,7 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
     });
 
     try {
-      await BankingService.bayarQris(
+      final response = await BankingService.bayarQris(
         pin: pin,
         qrisNumber: widget.qrisNumber,
         amount: widget.amount,
@@ -58,17 +68,17 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
       );
 
       if (!mounted) {
-        return false;
+        return null;
       }
-      return true;
+      return response;
     } catch (e) {
       if (!mounted) {
-        return false;
+        return null;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal memproses pembayaran')),
       );
-      return false;
+      return null;
     } finally {
       if (mounted) {
         setState(() {
@@ -136,15 +146,25 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                           return;
                         }
 
-                        final success = await _processPayment();
-                        if (!success || !context.mounted) {
+                        final paymentResponse = await _processPayment();
+                        if (paymentResponse == null || !context.mounted) {
                           return;
                         }
 
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const QrisSuksesScreen(),
+                            builder: (context) => QrisSuksesScreen(
+                              paymentResponse: paymentResponse,
+                              qrisNumber: widget.qrisNumber,
+                              merchantName: widget.merchantName,
+                              amount: widget.amount,
+                              location: widget.location,
+                              aquirer: widget.aquirer,
+                              panId: widget.panId,
+                              walletName: widget.walletName,
+                              walletBalance: widget.walletBalance,
+                            ),
                           ),
                         );
                       },

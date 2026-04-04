@@ -31,6 +31,37 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.prefilledEmail ?? '');
+    _loadLastEmailIfNeeded();
+  }
+
+  Future<void> _loadLastEmailIfNeeded() async {
+    if ((widget.prefilledEmail ?? '').isNotEmpty) {
+      return;
+    }
+
+    final savedEmail = await AuthService.getLastEmail();
+    if (!mounted || savedEmail == null || savedEmail.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _emailController.text = savedEmail;
+      _emailController.selection = TextSelection.collapsed(
+        offset: savedEmail.length,
+      );
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant LoginPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.prefilledEmail != widget.prefilledEmail) {
+      _emailController
+        ..text = widget.prefilledEmail ?? ''
+        ..selection = TextSelection.collapsed(
+          offset: (widget.prefilledEmail ?? '').length,
+        );
+    }
   }
 
   @override
@@ -156,51 +187,30 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 110),
 
-                  if ((widget.prefilledEmail ?? '').isNotEmpty)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        widget.prefilledEmail!,
-                        style: const TextStyle(
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(fontSize: 18),
+                      decoration: const InputDecoration(
+                        hintText: "Email",
+                        hintStyle: TextStyle(
+                          color: Colors.black,
                           fontSize: 16,
-                          color: Colors.black87,
                         ),
-                      ),
-                    )
-                  else
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(fontSize: 18),
-                        decoration: const InputDecoration(
-                          hintText: "Email",
-                          hintStyle: TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
                         ),
                       ),
                     ),
+                  ),
 
                   Container(
                     decoration: BoxDecoration(

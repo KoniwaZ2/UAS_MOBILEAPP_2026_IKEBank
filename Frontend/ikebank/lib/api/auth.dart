@@ -9,6 +9,7 @@ class AuthService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
+  static const String _lastEmailKey = 'auth_last_email';
   static const Duration _refreshBuffer = Duration(minutes: 2);
   static const Duration _activityRefreshThrottle = Duration(minutes: 3);
   static DateTime? _lastActivityRefreshAttempt;
@@ -20,6 +21,21 @@ class AuthService {
   }) async {
     await _secureStorage.write(key: _accessTokenKey, value: accessToken);
     await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
+  }
+
+  static Future<void> saveLastEmail(String email) async {
+    final normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
+      return;
+    }
+
+    await _secureStorage.write(key: _lastEmailKey, value: normalizedEmail);
+  }
+
+  static Future<String?> getLastEmail() async {
+    final value = await _secureStorage.read(key: _lastEmailKey);
+    final normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
   }
 
   static Future<String?> getAccessToken() async {
@@ -108,7 +124,9 @@ class AuthService {
     if (response.statusCode == 401) {
       final refreshed = await _refreshAccessTokenIfNeeded(force: true);
       if (refreshed) {
-        final retryHeaders = await buildAuthHeaders(includeJsonContentType: true);
+        final retryHeaders = await buildAuthHeaders(
+          includeJsonContentType: true,
+        );
         response = await http.post(
           url,
           headers: <String, String>{...retryHeaders, ...?headers},
@@ -208,7 +226,8 @@ class AuthService {
       }
     }
 
-    final direct = decoded['access']?.toString() ?? decoded['access_token']?.toString();
+    final direct =
+        decoded['access']?.toString() ?? decoded['access_token']?.toString();
     if (direct == null || direct.isEmpty) {
       return null;
     }
@@ -222,7 +241,9 @@ class AuthService {
         return true;
       }
 
-      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
       final decoded = jsonDecode(payload);
       if (decoded is! Map<String, dynamic>) {
         return true;
@@ -515,6 +536,8 @@ class AuthService {
         );
       }
 
+      await saveLastEmail(email);
+
       return decoded;
     } else {
       throw Exception(_extractErrorMessage(response, 'Login failed'));
@@ -588,5 +611,24 @@ class AuthService {
     } else {
       throw Exception(_extractErrorMessage(response, 'Failed to check data'));
     }
+  }
+
+  static Future<void> logout() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await clearTokens();
+      return;
+    }
+
+    try {
+      await authorizedPost(
+        Uri.parse('$baseUrl/logout/'),
+        body: jsonEncode({'refresh': refreshToken}),
+      );
+    } catch (_) {
+      // Ignore API logout failure and continue to local token cleanup.
+    }
+
+    await clearTokens();
   }
 }

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Qris, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -47,7 +47,7 @@ class RegisterBankAccountView(APIView):
         saku_utama = Saku.objects.create(
             saku_name="Saku Utama",
             account=bank_account,
-            category_name="Nabung",
+            category_name="nabung",
             balance=0,
             is_primary=True
         )
@@ -241,9 +241,10 @@ class TransactionCreateView(APIView):
 
             return Response({
                 'detail': 'Transaction completed successfully.',
-                'transaction_id': sender_transaction.id,
+                'transaction_id': sender_transaction.transaction_id.hex,
                 'new_balance': account.balance,
-                'saku_balance': saku_utama.balance
+                'saku_balance': saku_utama.balance,
+                'transaction_time': sender_transaction.timestamp,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -315,7 +316,7 @@ class TambahDanaView(APIView):
 
             return Response({
                 'detail': 'Funds added successfully to Saku Utama.',
-                'transaction_id': transaction.id,
+                'transaction_id': transaction.transaction_id.hex,
                 'new_balance': account.balance,
                 'saku_utama_balance': saku_utama.balance
             }, status=status.HTTP_200_OK)
@@ -377,7 +378,7 @@ class InternalTransferView(APIView):
 
         # VALIDATION: Saku Nabung restrictions
         # 1. Cannot transfer FROM Saku Nabung
-        if source_saku.category_name == "Nabung":
+        if source_saku.category_name == "nabung":
             return Response(
                 {'detail': 'Cannot transfer FROM Saku Nabung. Saku Nabung is for savings only.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -391,7 +392,7 @@ class InternalTransferView(APIView):
             )
 
         # 3. If destination is Saku Nabung, source must be Saku Utama (already checked above)
-        if destination_saku.category_name == "Nabung" and not source_saku.is_primary:
+        if destination_saku.category_name == "nabung" and not source_saku.is_primary:
             return Response(
                 {'detail': 'Can only transfer TO Saku Nabung from Saku Utama.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -439,7 +440,7 @@ class InternalTransferView(APIView):
 
             return Response({
                 'detail': 'Internal transfer completed successfully.',
-                'transaction_id': transaction_out.id,
+                'transaction_id': transaction_out.transaction_id.hex,
                 'source_saku': {
                     'id': source_saku.id,
                     'name': source_saku.saku_name,
@@ -484,7 +485,7 @@ class TambahSakuView(APIView):
 
         if category_name not in dict(Saku.CATEGORY_CHOICES):
             return Response(
-                {'detail': 'Invalid category_name. Use Nabung, Transaksi, or Lainnya.'},
+                {'detail': 'Invalid category_name. Use nabung, transaksi, or lainnya.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -567,6 +568,9 @@ class QrisCheckView(APIView):
             {
                 'qris_number': qris.qris_number,
                 'merchant_name': qris.merchant_name,
+                'location': qris.location,
+                'aquirer': qris.aquirer,
+                'PAN_id': qris.PAN_id,
             },
             status=status.HTTP_200_OK,
         )
@@ -586,7 +590,7 @@ class HistoryTransactionView(APIView):
         data = []
         for tx in transactions:
             data.append({
-                'id': tx.id,
+                'transaction_id': tx.transaction_id.hex,
                 'category': tx.category,
                 'amount': str(tx.amount),
                 'balance_after': str(tx.balance_after),
@@ -618,4 +622,32 @@ class SakuView(APIView):
                 'balance': str(saku.balance),
                 'is_primary': saku.is_primary,
             })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class SakuDetailView(APIView):
+    serializer_class = SakuDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        saku = Saku.objects.filter(account=account, id=pk).first()
+        if saku is None:
+            return Response(
+                {'detail': 'Saku not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = {
+            'id': saku.id,
+            'saku_name': saku.saku_name,
+            'category_name': saku.category_name,
+            'balance': str(saku.balance),
+            'is_primary': saku.is_primary,
+        }
         return Response(data, status=status.HTTP_200_OK)

@@ -7,11 +7,17 @@ import 'qris_pin_screen.dart';
 class QrisKonfirmasiScreen extends StatefulWidget {
   final String qrisNumber;
   final String merchantName;
+  final String location;
+  final String aquirer;
+  final String panId;
 
   const QrisKonfirmasiScreen({
     super.key,
     required this.qrisNumber,
     required this.merchantName,
+    required this.location,
+    required this.aquirer,
+    required this.panId,
   });
 
   @override
@@ -446,7 +452,9 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                     if (amount.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Masukkan jumlah pembayaran terlebih dahulu.'),
+                          content: Text(
+                            'Masukkan jumlah pembayaran terlebih dahulu.',
+                          ),
                         ),
                       );
                       return;
@@ -459,6 +467,11 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                           qrisNumber: widget.qrisNumber,
                           amount: amount,
                           merchantName: widget.merchantName,
+                          location: widget.location,
+                          aquirer: widget.aquirer,
+                          panId: widget.panId,
+                          walletName: _selectedSource?.name ?? 'Saku Utama',
+                          walletBalance: _selectedSource?.balance ?? 'Rp0',
                         ),
                       ),
                     );

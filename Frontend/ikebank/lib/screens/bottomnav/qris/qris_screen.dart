@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
     as ml;
@@ -104,6 +103,9 @@ class _QrisScreenState extends State<QrisScreen> {
         builder: (context) => QrisKonfirmasiScreen(
           qrisNumber: qrisValue,
           merchantName: qrisDetail['merchant_name'] ?? 'Unknown Merchant',
+          location: qrisDetail['location'] ?? 'Unknown Location',
+          aquirer: qrisDetail['aquirer'] ?? 'Unknown Acquirer',
+          panId: qrisDetail['PAN_id'] ?? 'Unknown PAN ID',
         ),
       ),
     ).then((_) async {

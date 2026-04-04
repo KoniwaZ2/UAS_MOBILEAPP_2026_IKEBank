@@ -17,6 +17,7 @@ from .serializers import (
 from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -536,4 +537,22 @@ class ForgotPasswordView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+class LogoutView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
 
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh') or request.data.get('refresh_token') or request.data.get('token')
+
+        if not refresh_token:
+            return Response({'detail': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if isinstance(refresh_token, str) and refresh_token.startswith('Bearer '):
+            refresh_token = refresh_token.removeprefix('Bearer ').strip()
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError as exc:
+            return Response({'detail': f'Invalid refresh token: {exc}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
