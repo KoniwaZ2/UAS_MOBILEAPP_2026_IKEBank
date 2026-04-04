@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../auth/login/login_page.dart';
 import '../../auth/signin.dart';
-import 'laporan_keuangan_screen.dart ';
+import 'laporan_keuangan_screen.dart';
 import 'pengaturan_screen.dart';
 import 'undang_teman_screen.dart';
 import 'about_us_screen.dart';
+import '../../../api/auth.dart';
 
 class LainnyaScreen extends StatelessWidget {
   const LainnyaScreen({super.key});
@@ -21,10 +22,10 @@ class LainnyaScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF8F5), 
+        backgroundColor: const Color(0xFFFAF8F5),
         elevation: 0,
         title: Text("Lainnya", style: titleStyle),
-        centerTitle: false, 
+        centerTitle: false,
         toolbarHeight: 80,
       ),
       body: SingleChildScrollView(
@@ -34,15 +35,19 @@ class LainnyaScreen extends StatelessWidget {
 
             // 1. Laporan Keuangan
             _buildMenuItem(
-              icon: Icons.assessment, 
+              icon: Icons.assessment,
               title: "Laporan Keuangan",
               subtitle: "Klik disini untuk melihat",
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const LaporanKeuanganScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const LaporanKeuanganScreen(),
+                  ),
                 );
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Menu Laporan Keuangan")));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Menu Laporan Keuangan")),
+                );
               },
             ),
 
@@ -54,7 +59,9 @@ class LainnyaScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PengaturanScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const PengaturanScreen(),
+                  ),
                 );
               },
             ),
@@ -67,7 +74,9 @@ class LainnyaScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const UndangTemanScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const UndangTemanScreen(),
+                  ),
                 );
               },
             ),
@@ -83,13 +92,15 @@ class LainnyaScreen extends StatelessWidget {
             ),
 
             _buildMenuItem(
-              icon: Icons.phone, 
+              icon: Icons.phone,
               title: "About Us",
               subtitle: "Info tentang Kami",
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AboutUsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const AboutUsScreen(),
+                  ),
                 );
               },
             ),
@@ -97,10 +108,27 @@ class LainnyaScreen extends StatelessWidget {
             _buildMenuItem(
               icon: Icons.logout,
               title: "Keluar dari akun",
-              onTap: () {
+              onTap: () async {
+                final lastEmail = await AuthService.getLastEmail();
+
+                try {
+                  await AuthService.logout();
+                } catch (_) {
+                  // Continue navigation even when logout API fails.
+                }
+
+                if (!context.mounted) {
+                  return;
+                }
+
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  MaterialPageRoute(
+                    builder: (context) => LoginPage(
+                      key: UniqueKey(),
+                      prefilledEmail: lastEmail,
+                    ),
+                  ),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -117,8 +145,8 @@ class LainnyaScreen extends StatelessWidget {
                 );
               },
             ),
-            
-            const SizedBox(height: 100), 
+
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -128,7 +156,7 @@ class LainnyaScreen extends StatelessWidget {
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
-    String? subtitle, 
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -136,12 +164,15 @@ class LainnyaScreen extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Row(
               children: [
                 Icon(icon, color: const Color(0xFFFF7F00), size: 35),
                 const SizedBox(width: 16),
-                
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,17 +189,18 @@ class LainnyaScreen extends StatelessWidget {
                         const SizedBox(height: 0.5),
                         Text(
                           subtitle,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black,
-                          ),
+                          style: TextStyle(fontSize: 18, color: Colors.black),
                         ),
                       ],
                     ],
                   ),
                 ),
-                
-                const Icon(Icons.arrow_forward_ios, color: Color(0xFFFF7F00), size: 20),
+
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(0xFFFF7F00),
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -176,8 +208,8 @@ class LainnyaScreen extends StatelessWidget {
             height: 1,
             thickness: 1,
             color: Color.fromARGB(255, 71, 71, 71),
-            indent: 24, 
-            endIndent: 24, 
+            indent: 24,
+            endIndent: 24,
           ),
         ],
       ),

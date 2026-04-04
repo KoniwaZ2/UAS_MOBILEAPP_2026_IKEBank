@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
+import '../../../models/register_flow_data.dart';
 import 'face_recog_screen.dart';
 
 class VerifikasiWajahScreen extends StatelessWidget {
-  // 1. Tangkap sinyal dari Isi Data
   final bool isFromRegister;
+  final String? email;
+  final String? reference;
+  final RegisterFlowData? flowData;
 
-  // 2. Beri nilai default false agar fitur Login yang lama tidak error
-  const VerifikasiWajahScreen({super.key, this.isFromRegister = false});
+  const VerifikasiWajahScreen({
+    super.key,
+    this.isFromRegister = false,
+    this.email,
+    this.reference,
+    this.flowData,
+  });
 
   @override
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
 
     return Scaffold(
-      backgroundColor: AppColors.primaryOrange, 
+      backgroundColor: AppColors.primaryOrange,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -36,12 +44,13 @@ class VerifikasiWajahScreen extends StatelessWidget {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -54,7 +63,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         const Text(
-                          "Yuk, ikuti panduan di bawah sebelum verifikasi\nwajahmu", 
+                          "Yuk, ikuti panduan di bawah sebelum verifikasi\nwajahmu",
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.textBlack,
@@ -73,38 +82,41 @@ class VerifikasiWajahScreen extends StatelessWidget {
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 24,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFEDD8), 
+                            color: const Color(0xFFFFEDD8),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildGuidelineItem(
-                                mainIcon: Icons.masks_outlined, 
-                                hasRedSlash: true, 
-                                text: "Wajahmu tidak tertutup apa pun"
+                                mainIcon: Icons.masks_outlined,
+                                hasRedSlash: true,
+                                text: "Wajahmu tidak tertutup apa pun",
                               ),
                               const SizedBox(height: 20),
-                              
+
                               _buildGuidelineItem(
-                                mainIcon: Icons.wb_sunny_outlined, 
-                                hasRedSlash: false, 
-                                text: "Kamu ada di tempat yang terang"
+                                mainIcon: Icons.wb_sunny_outlined,
+                                hasRedSlash: false,
+                                text: "Kamu ada di tempat yang terang",
                               ),
                               const SizedBox(height: 20),
-                              
+
                               _buildGuidelineItem(
-                                mainIcon: Icons.group_outlined, 
-                                hasRedSlash: true, 
-                                text: "Tidak ada orang lain di dalam foto"
+                                mainIcon: Icons.group_outlined,
+                                hasRedSlash: true,
+                                text: "Tidak ada orang lain di dalam foto",
                               ),
                             ],
                           ),
                         ),
 
-                        const Spacer(), 
+                        const Spacer(),
 
                         SizedBox(
                           width: double.infinity,
@@ -118,12 +130,14 @@ class VerifikasiWajahScreen extends StatelessWidget {
                               ),
                             ),
                             onPressed: () {
-                              // 3. Oper sinyalnya ke Face Recog Screen!
                               Navigator.push(
-                                context, 
+                                context,
                                 MaterialPageRoute(
                                   builder: (context) => FaceRecogScreen(
-                                    isFromRegister: isFromRegister, // Oper ke sini
+                                    isFromRegister: isFromRegister,
+                                    email: email,
+                                    reference: reference,
+                                    flowData: flowData,
                                   ),
                                 ),
                               );
@@ -151,9 +165,9 @@ class VerifikasiWajahScreen extends StatelessWidget {
   }
 
   Widget _buildGuidelineItem({
-    required IconData mainIcon, 
-    required bool hasRedSlash, 
-    required String text
+    required IconData mainIcon,
+    required bool hasRedSlash,
+    required String text,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,10 +189,11 @@ class VerifikasiWajahScreen extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12), 
+        const SizedBox(width: 12),
+
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(top: 4.0), 
+            padding: const EdgeInsets.only(top: 4.0),
             child: Text(
               text,
               style: const TextStyle(

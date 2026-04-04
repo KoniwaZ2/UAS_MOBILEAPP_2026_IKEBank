@@ -1,0 +1,23 @@
+$kind: http-request
+url: http://localhost:8000/api/banking/transactions/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"account_id\": 1,\r
+
+    \  \"category\": \"transfer_out\",\r
+
+    \  \"amount\": 100000,\r
+
+    \  \"description\": \"Transfer ke teman\",\r
+
+    \  \"destination_account\": \"638043680202\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc1MTM3ODI0LCJpYXQiOjE3NzUxMzc1MjQsImp0aSI6ImJiNTBlMjU2YTU2NTQxYTJhM2FkYmIwZWQ3MGE5ODQ5IiwidXNlcl9pZCI6IjIwIiwicGhvbmVfbnVtYmVyIjoiMDg1MjE4NDM3MDc3IiwiZW1haWwiOiJ2aWN0b3JtYXJsaW5vc2Vrb2xhaEBnbWFpbC5jb20iLCJuYW1lIjoiVmljdG9yIn0.eFeAFddEqsIWVaQEb3px4uxl0_CyBzfGIDoi1pEmo1A
+order: 4329840102005000
