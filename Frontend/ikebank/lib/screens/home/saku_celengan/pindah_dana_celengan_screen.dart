@@ -236,8 +236,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(content: Text("Dana berhasil dipindahkan!")),
                     );
                   },
