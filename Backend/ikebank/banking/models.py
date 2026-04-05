@@ -4,7 +4,7 @@ import uuid
 class BankAccount(models.Model):
     user = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='bank_accounts')
     account_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
-    card_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
+    card_number = models.CharField(max_length=20, unique=True, null=False, blank=True)
     balance = models.IntegerField(default=0)
     block = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -84,11 +84,17 @@ class CardDetails(models.Model):
     CARD_STATUS_CHOICES = [
         ('active', 'Active'),
         ('blocked', 'Blocked'),
-        ('delivered', 'Delivered'),
         ('requested', 'Requested'),
         ('none', 'None'),
     ]
-    account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='card_details')
+    account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.CASCADE,
+        related_name='card_details_history',
+        null=True,
+        blank=True,
+    )
+    card_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
     cardholder_name = models.CharField(max_length=255, null=False, blank=False)
     pin = models.CharField(max_length=6, null=False, blank=False)
     ccv = models.CharField(max_length=4, null=False, blank=False)
@@ -99,9 +105,11 @@ class CardDetails(models.Model):
     daily_withdrawal_limit = models.IntegerField(default=15000000)
     card_status = models.CharField(max_length=20, choices=CARD_STATUS_CHOICES, default='none')
     expiry_date = models.DateField(null=False, blank=False)
+    added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.cardholder_name} - {self.account_id.card_number}"
+        return f"{self.cardholder_name} - {self.card_number}"
 
 class Saku(models.Model):
     CATEGORY_CHOICES = [

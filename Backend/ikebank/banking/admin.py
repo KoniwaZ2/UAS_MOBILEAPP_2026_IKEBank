@@ -21,8 +21,8 @@ class CashFlowAdmin(admin.ModelAdmin):
 
 @admin.register(CardDetails)
 class CardDetailsAdmin(admin.ModelAdmin):
-    list_display = ('account_id', 'cardholder_name', 'ccv', 'expiry_date', 'block_permanent', 'block_temporary')
-    search_fields = ('account_id__account_number', 'account_id__card_number', 'cardholder_name')
+    list_display = ('account', 'card_number', 'cardholder_name', 'ccv', 'expiry_date', 'block_permanent', 'block_temporary')
+    search_fields = ('account__account_number', 'card_number', 'cardholder_name')
     list_filter = ('block_permanent', 'block_temporary', 'expiry_date')
 
 @admin.register(Saku)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import BankAccount, CashFlow, Saku, Transaction
+from .models import BankAccount, CardDetails, CashFlow, Saku, Transaction
 
 
 class RegisterBankAccountSerializer(serializers.Serializer):
@@ -74,3 +74,53 @@ class SakuDetailSerializer(serializers.ModelSerializer):
 class TambahRekeningSerializer(serializers.Serializer):
     account_number = serializers.CharField(required=True)
     bank_name = serializers.CharField(required=False, default='IKE Bank')
+
+class CardRequestSerializer(serializers.Serializer):
+    pin = serializers.CharField(max_length=6, min_length=6, required=True)
+    cardholder_name = serializers.CharField(required=False, allow_blank=False)
+
+class CardEditSerializer(serializers.Serializer):
+    ACTION_BLOCK_TEMPORARY = 'BLOCK_TEMPORARY'
+    ACTION_UNBLOCK_TEMPORARY = 'UNBLOCK_TEMPORARY'
+    ACTION_BLOCK_PERMANENT = 'BLOCK_PERMANENT'
+    ACTION_SET_DAILY_LIMIT = 'SET_DAILY_LIMIT'
+    ACTION_CHANGE_CARD_PIN = 'CHANGE_CARD_PIN'
+    ACTION_CHANGE_STATUS = 'CHANGE_STATUS'
+
+    ACTION_CHOICES = [
+        (ACTION_BLOCK_TEMPORARY, ACTION_BLOCK_TEMPORARY),
+        (ACTION_UNBLOCK_TEMPORARY, ACTION_UNBLOCK_TEMPORARY),
+        (ACTION_BLOCK_PERMANENT, ACTION_BLOCK_PERMANENT),
+        (ACTION_SET_DAILY_LIMIT, ACTION_SET_DAILY_LIMIT),
+        (ACTION_CHANGE_CARD_PIN, ACTION_CHANGE_CARD_PIN),
+        (ACTION_CHANGE_STATUS, ACTION_CHANGE_STATUS),
+    ]
+
+    action = serializers.ChoiceField(choices=ACTION_CHOICES, required=True)
+    old_pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    new_pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    daily_withdrawal_limit = serializers.IntegerField(required=False, min_value=0)
+    daily_transaction_limit = serializers.IntegerField(required=False, min_value=0)
+    daily_single_transaction_limit = serializers.IntegerField(required=False, min_value=0)
+    status = serializers.ChoiceField(choices=CardDetails.CARD_STATUS_CHOICES, required=False)
+    card_last6_digits = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        action = attrs.get('action')
+
+        if action == self.ACTION_CHANGE_CARD_PIN:
+            if not attrs.get('old_pin') or not attrs.get('new_pin'):
+                raise serializers.ValidationError({'detail': 'old_pin and new_pin are required for CHANGE_CARD_PIN.'})
+
+        if action == self.ACTION_SET_DAILY_LIMIT:
+            has_any_limit = any(
+                key in attrs
+                for key in ('daily_withdrawal_limit', 'daily_transaction_limit', 'daily_single_transaction_limit')
+            )
+            if not has_any_limit:
+                raise serializers.ValidationError({'detail': 'At least one limit value is required for SET_DAILY_LIMIT.'})
+
+        if action == self.ACTION_CHANGE_STATUS and not attrs.get('status'):
+            raise serializers.ValidationError({'detail': 'status is required for CHANGE_STATUS.'})
+
+        return attrs

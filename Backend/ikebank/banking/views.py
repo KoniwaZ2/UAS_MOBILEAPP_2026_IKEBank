@@ -1,6 +1,6 @@
 import secrets
 
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.utils.dateparse import parse_date
 from django.utils import timezone
@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardDetails, Qris, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer
 from .services import upsert_cashflow_for_account
 
 
@@ -21,12 +21,39 @@ def _generate_card_ccv():
     return f'{secrets.randbelow(1000):03d}'
 
 
+def _generate_unique_card_number(prefix='4000', total_length=16, max_attempts=50):
+    suffix_length = total_length - len(prefix)
+    if suffix_length < 1:
+        raise ValueError('prefix is too long for the requested total_length.')
+
+    upper = (10 ** suffix_length) - 1
+
+    for _ in range(max_attempts):
+        suffix = str(secrets.randbelow(upper + 1)).zfill(suffix_length)
+        card_number = f'{prefix}{suffix}'
+        if not BankAccount.objects.filter(card_number=card_number).exists() and not CardDetails.objects.filter(card_number=card_number).exists():
+            return card_number
+
+    raise RuntimeError('Unable to generate unique card number at this time.')
+
+
 def _generate_card_expiry_date(years_valid=5):
     expiry_date = timezone.localdate()
     try:
         return expiry_date.replace(year=expiry_date.year + years_valid)
     except ValueError:
         return expiry_date.replace(month=2, day=28, year=expiry_date.year + years_valid)
+
+
+def _get_current_card_details(account):
+    if account is None or not account.card_number:
+        return None
+
+    card_details = CardDetails.objects.filter(account=account, card_number=account.card_number).first()
+    if card_details is not None:
+        return card_details
+
+    return CardDetails.objects.filter(account=account).order_by('-updated_at').first()
 
 
 class RegisterBankAccountView(APIView):
@@ -49,13 +76,11 @@ class RegisterBankAccountView(APIView):
         serializer.is_valid(raise_exception=True)
 
         account_number = self._generate_unique_account_number()
-        card_number = f"4000{account_number[-12:]}"  # Contoh format kartu
 
         with transaction.atomic():
             bank_account = BankAccount.objects.create(
                 user=request.user,
                 account_number=account_number,
-                card_number=card_number,
                 balance=0.00,
             )
 
@@ -75,19 +100,9 @@ class RegisterBankAccountView(APIView):
                 is_primary=False
             )
 
-            CardDetails.objects.create(
-                account_id=bank_account,
-                cardholder_name=request.user.name,
-                pin=f'{secrets.randbelow(1000000):06d}',
-                ccv=_generate_card_ccv(),
-                card_status='active',
-                expiry_date=_generate_card_expiry_date(),
-            )
-
         return Response({
             'id': bank_account.id,
             'account_number': bank_account.account_number,
-            'card_number': bank_account.card_number,
             'balance': str(bank_account.balance),
             'created_at': bank_account.created_at,
             'updated_at': bank_account.updated_at,
@@ -946,6 +961,59 @@ class TambahRekeningView(APIView):
             'added_at': beneficiary.added_at,
         }, status=status.HTTP_201_CREATED)
     
+class CardRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = CardRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        pin = validated_data['pin']
+        cardholder_name = (validated_data.get('cardholder_name') or request.user.name).strip()
+        pin = pin.strip()
+
+        current_card_details = _get_current_card_details(account)
+        if current_card_details is not None and not current_card_details.block_permanent:
+            return Response({
+                'detail': 'Card already exists.',
+                'card_number': account.card_number,
+                'expiry_date': current_card_details.expiry_date,
+                'ccv': current_card_details.ccv,
+                'card_status': current_card_details.card_status,
+            }, status=status.HTTP_200_OK)
+
+        new_card_number = _generate_unique_card_number()
+        account.card_number = new_card_number
+        account.save(update_fields=['card_number'])
+
+        card_details = CardDetails.objects.create(
+            account=account,
+            card_number=new_card_number,
+            cardholder_name=cardholder_name,
+            pin=make_password(pin),
+            ccv=_generate_card_ccv(),
+            card_status='requested',
+            expiry_date=_generate_card_expiry_date(),
+        )
+
+        return Response({
+            'card_number': account.card_number,
+            'expiry_date': card_details.expiry_date,
+            'ccv': card_details.ccv,
+            'added_at': card_details.added_at,
+            'updated_at': card_details.updated_at,
+            'detail': 'Card requested successfully.',
+        }, status=status.HTTP_201_CREATED)
+
+
 class CardDetailsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -963,19 +1031,191 @@ class CardDetailsView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        card_details, _ = CardDetails.objects.get_or_create(
-            account_id=account,
-            defaults={
-                'cardholder_name': request.user.name,
-                'pin': f'{secrets.randbelow(1000000):06d}',
-                'ccv': _generate_card_ccv(),
-                'card_status': 'active',
-                'expiry_date': _generate_card_expiry_date(),
-            },
-        )
+        card_details = _get_current_card_details(account)
+        if card_details is None:
+            return Response(
+                {'detail': 'Card details not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if card_details.card_status != 'active':
+            return Response(
+                {
+                    'detail': 'Card is not active. Activate card first.',
+                    'card_status': card_details.card_status,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        return Response({
+            'card_number': account.card_number,
+            'expiry_date': card_details.expiry_date,
+            'ccv': card_details.ccv,
+        }, status=status.HTTP_200_OK)
+    
+class CardEditView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = CardEditSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not account.card_number:
+            return Response(
+                {'detail': 'No card associated with this account.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        card_details = _get_current_card_details(account)
+        if card_details is None:
+            return Response(
+                {'detail': 'Card details not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        action = validated_data['action']
+        update_fields = []
+
+        if action == CardEditSerializer.ACTION_BLOCK_TEMPORARY:
+            if card_details.card_status != 'active':
+                return Response(
+                    {'detail': 'Only active card can be blocked temporarily.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if card_details.block_permanent:
+                return Response(
+                    {'detail': 'Card is permanently blocked and cannot be temporarily blocked/unblocked.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            card_details.block_temporary = True
+            card_details.card_status = 'blocked'
+            update_fields.extend(['block_temporary', 'card_status'])
+
+        elif action == CardEditSerializer.ACTION_UNBLOCK_TEMPORARY:
+            if card_details.block_permanent:
+                return Response(
+                    {'detail': 'Card is permanently blocked and cannot be unblocked.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            card_details.block_temporary = False
+            card_details.card_status = 'active'
+            update_fields.extend(['block_temporary', 'card_status'])
+
+        elif action == CardEditSerializer.ACTION_BLOCK_PERMANENT:
+            if card_details.card_status != 'active':
+                return Response(
+                    {'detail': 'Only active card can be blocked permanently.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            card_details.block_permanent = True
+            card_details.block_temporary = True
+            card_details.card_status = 'blocked'
+            update_fields.extend(['block_permanent', 'block_temporary', 'card_status'])
+
+        elif action == CardEditSerializer.ACTION_SET_DAILY_LIMIT:
+            if card_details.card_status != 'active':
+                return Response(
+                    {'detail': 'Only active card can change limits.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if card_details.block_permanent:
+                return Response(
+                    {'detail': 'Permanent blocked card cannot change limits.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for field_name in (
+                'daily_withdrawal_limit',
+                'daily_transaction_limit',
+                'daily_single_transaction_limit',
+            ):
+                if field_name in validated_data:
+                    setattr(card_details, field_name, validated_data[field_name])
+                    update_fields.append(field_name)
+
+        elif action == CardEditSerializer.ACTION_CHANGE_CARD_PIN:
+            if card_details.block_permanent:
+                return Response(
+                    {'detail': 'Permanent blocked card cannot change PIN.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            old_pin = validated_data['old_pin'].strip()
+            new_pin = validated_data['new_pin'].strip()
+
+            is_old_pin_valid = card_details.pin == old_pin or check_password(old_pin, card_details.pin)
+            if not is_old_pin_valid:
+                return Response(
+                    {'detail': 'Old PIN is invalid.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if old_pin == new_pin:
+                return Response(
+                    {'detail': 'New PIN must be different from old PIN.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            card_details.pin = make_password(new_pin)
+            update_fields.append('pin')
+
+        elif action == CardEditSerializer.ACTION_CHANGE_STATUS:
+            target_status = validated_data['status']
+            if target_status not in dict(CardDetails.CARD_STATUS_CHOICES):
+                return Response(
+                    {'detail': 'Invalid card status.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if target_status == 'blocked' and card_details.card_status != 'active':
+                return Response(
+                    {'detail': 'Only active card can be changed to blocked status.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if card_details.block_permanent and target_status != 'blocked':
+                return Response(
+                    {'detail': 'Permanent blocked card status cannot be changed to non-blocked.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if target_status == 'active':
+                submitted_last6 = (validated_data.get('card_last6_digits') or '').strip()
+                expected_last6 = (account.card_number or '')[-6:]
+                if not submitted_last6:
+                    return Response(
+                        {'detail': 'card_last6_digits is required to activate card.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if submitted_last6 != expected_last6:
+                    return Response(
+                        {'detail': 'Last 6 card digits do not match.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            card_details.card_status = target_status
+            update_fields.append('card_status')
+
+
+        if update_fields:
+            card_details.save(update_fields=update_fields)
 
         return Response({
-            'card_number':account.card_number,
+            'detail': 'Card details updated successfully.',
+            'action': action,
+            'card_number': account.card_number,
+            'card_status': card_details.card_status,
+            'block_temporary': card_details.block_temporary,
+            'block_permanent': card_details.block_permanent,
+            'daily_withdrawal_limit': card_details.daily_withdrawal_limit,
+            'daily_transaction_limit': card_details.daily_transaction_limit,
+            'daily_single_transaction_limit': card_details.daily_single_transaction_limit,
             'expiry_date': card_details.expiry_date,
             'ccv': card_details.ccv,
         }, status=status.HTTP_200_OK)
