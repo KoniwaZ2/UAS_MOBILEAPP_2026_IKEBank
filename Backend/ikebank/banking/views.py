@@ -976,9 +976,15 @@ class CardRequestView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        pin = validated_data['pin']
+        card_pin = validated_data['card_pin'].strip()
         cardholder_name = (validated_data.get('cardholder_name') or request.user.name).strip()
-        pin = pin.strip()
+        pin = validated_data['pin'].strip()
+
+        if not check_password(pin, request.user.pin):
+            return Response(
+                {'detail': 'Invalid PIN.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         current_card_details = _get_current_card_details(account)
         if current_card_details is not None and not current_card_details.block_permanent:
@@ -998,7 +1004,7 @@ class CardRequestView(APIView):
             account=account,
             card_number=new_card_number,
             cardholder_name=cardholder_name,
-            pin=make_password(pin),
+            pin=make_password(card_pin),
             ccv=_generate_card_ccv(),
             card_status='requested',
             expiry_date=_generate_card_expiry_date(),

@@ -76,8 +76,17 @@ class TambahRekeningSerializer(serializers.Serializer):
     bank_name = serializers.CharField(required=False, default='IKE Bank')
 
 class CardRequestSerializer(serializers.Serializer):
-    pin = serializers.CharField(max_length=6, min_length=6, required=True)
+    card_pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
     cardholder_name = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        card_pin = attrs.get('card_pin') or attrs.get('pin')
+        if not card_pin:
+            raise serializers.ValidationError({'card_pin': 'card_pin is required for card request.'})
+
+        attrs['card_pin'] = card_pin
+        return attrs
 
 class CardEditSerializer(serializers.Serializer):
     ACTION_BLOCK_TEMPORARY = 'BLOCK_TEMPORARY'
