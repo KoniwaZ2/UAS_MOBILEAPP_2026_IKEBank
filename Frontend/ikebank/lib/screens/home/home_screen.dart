@@ -8,6 +8,7 @@ import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'promo_screen.dart';
 import 'saku_utama/saku_utama_screen.dart';
+import 'saku_celengan/saku_celengan_screen.dart';
 import 'layanan/cash_flow_screen.dart';
 import 'layanan/beli_bayar_screen.dart';
 
@@ -249,10 +250,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         icon: Icons.arrow_forward, 
                                         label: "Transfer & Bayar",
                                         onTap: () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text("Menuju Transfer & Bayar...")),
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const BeliBayarScreen()),
                                           );
-                                        },
+                                        }
                                       ),
                                     ),
                                   ],
@@ -292,7 +294,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               }
                             ),
-                            _buildServiceItem(imagePath: 'assets/images/celengan.png', label: "Saku Celengan", iconSize: 38),
+                            _buildServiceItem(
+                              imagePath: 'assets/images/celengan.png', 
+                              label: "Saku Celengan", 
+                              iconSize: 38,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SakuCelenganScreen()),
+                                );
+                              }
+                            ),
+
                             _buildServiceItem(imagePath: 'assets/images/deposito.png', label: "Saku Deposito", iconSize: 38),
                             _buildServiceItem(
                               imagePath: 'assets/images/CashF.png', 
