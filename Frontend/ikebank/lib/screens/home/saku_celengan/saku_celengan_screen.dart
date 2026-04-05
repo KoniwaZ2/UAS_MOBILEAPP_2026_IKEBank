@@ -239,11 +239,15 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(builder: (context) => const TambahDanaNabungAiScreen()),
-                                        ).then((_) {
+                                        ).then((result) {
+                                          if (!mounted) return;
                                           // KETIKA KEMBALI DARI LAYAR TAMBAH DANA, UBAH STATE JADI TRUE
-                                          setState(() {
-                                            hasAddedFund = true;
-                                          });
+                                          // HANYA JIKA LAYAR TAMBAH DANA MENGEMBALIKAN `true`
+                                          if (result == true) {
+                                            setState(() {
+                                              hasAddedFund = true;
+                                            });
+                                          }
                                         });
                                       },
                                       style: ElevatedButton.styleFrom(
