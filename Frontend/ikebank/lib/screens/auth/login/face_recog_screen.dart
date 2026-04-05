@@ -6,9 +6,13 @@ import '../register/buat_pass_screen.dart';
 class FaceRecogScreen extends StatelessWidget {
   // 1. Tangkap sinyal dari Verifikasi Wajah
   final bool isFromRegister;
+  final bool isFromCS;
 
   // 2. Beri default false
-  const FaceRecogScreen({super.key, this.isFromRegister = false});
+  const FaceRecogScreen({super.key, 
+  this.isFromRegister = false,
+  this.isFromCS = false, 
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +48,15 @@ class FaceRecogScreen extends StatelessWidget {
             // WADAH KAMERA (DUMMY FACE)
             GestureDetector(
               onTap: () {
-                // LOGIKA PERCABANGAN (JALAN TOL)
-                if (isFromRegister) {
+                // LOGIKA PERCABANGAN TIGA JALUR
+                if (isFromCS) {
+                  // JIKA DARI CS: Cukup kembali (pop) ke halaman chat!
+                  Navigator.pop(context);
+                } else if (isFromRegister) {
                   // JIKA DARI REGISTER: Lari ke Buat Password!
                   Navigator.push(
                     context, 
                     MaterialPageRoute(
-                      // Pastikan nama class di file buat_pass_screen.dart adalah BuatPassScreen
                       builder: (context) => const BuatPassScreen() 
                     )
                   );

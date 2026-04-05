@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import '../bottomnav/qris/qris_screen.dart';
+import 'saku_deposito/saku_deposito_screen.dart';
 
 class RewardScreen extends StatelessWidget {
   const RewardScreen({super.key});
@@ -57,8 +58,9 @@ class RewardScreen extends StatelessWidget {
             titleStyle: alumniSansBold,
             onTapMisi: () {
               if (reward['target'] == 'deposito') {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Menuju Saku Deposito... (Segera Hadir)")),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SakuDepositoScreen()),
                 );
               } else if (reward['target'] == 'qris') {
                 Navigator.push(

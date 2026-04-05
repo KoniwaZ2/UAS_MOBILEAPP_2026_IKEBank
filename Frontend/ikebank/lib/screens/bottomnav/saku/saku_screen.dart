@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'tambah_saku_screen.dart';
 import '../../home/saku_utama/saku_utama_screen.dart';
+import '../../home/saku_celengan/saku_celengan_screen.dart';
+import '../../home/saku_deposito/saku_deposito_screen.dart';
 import 'history_transaksi_screen.dart';
+import '../../home/layanan/bantuan_cs_screen.dart';
 
 class SakuScreen extends StatefulWidget {
   const SakuScreen({super.key});
@@ -251,7 +254,12 @@ class _SakuScreenState extends State<SakuScreen> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {}, 
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                );
+              }, 
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF7F00),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -394,9 +402,11 @@ class _SakuScreenState extends State<SakuScreen> {
           );
         } 
         else if (title == "Saku Celengan" || title == "Saku Deposito") {
-          // 2. Saku Bawaan Lainnya -> Tampilkan Notifikasi (karena akan dibuat di menu Layanan nanti)
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Menu $title akan diarahkan ke Layanan Utama!")),
+          // 2. Saku Celengan & Deposito -> Masuk ke layar detail masing-masing
+          Widget targetScreen = title == "Saku Celengan" ? const SakuCelenganScreen() : const SakuDepositoScreen();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => targetScreen),
           );
         } 
         else {
