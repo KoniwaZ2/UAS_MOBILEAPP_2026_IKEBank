@@ -3,17 +3,30 @@ import secrets
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, Beneficiaries, Qris, Saku, Transaction
+from .models import BankAccount, Beneficiaries, CardDetails, Qris, Saku, Transaction
 from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer
 from .services import upsert_cashflow_for_account
 
 
 def get_user_bank_account(user):
     return BankAccount.objects.filter(user=user).first()
+
+
+def _generate_card_ccv():
+    return f'{secrets.randbelow(1000):03d}'
+
+
+def _generate_card_expiry_date(years_valid=5):
+    expiry_date = timezone.localdate()
+    try:
+        return expiry_date.replace(year=expiry_date.year + years_valid)
+    except ValueError:
+        return expiry_date.replace(month=2, day=28, year=expiry_date.year + years_valid)
 
 
 class RegisterBankAccountView(APIView):
@@ -38,28 +51,38 @@ class RegisterBankAccountView(APIView):
         account_number = self._generate_unique_account_number()
         card_number = f"4000{account_number[-12:]}"  # Contoh format kartu
 
-        bank_account = BankAccount.objects.create(
-            user=request.user,
-            account_number=account_number,
-            card_number=card_number,
-            balance=0.00,
-        )
+        with transaction.atomic():
+            bank_account = BankAccount.objects.create(
+                user=request.user,
+                account_number=account_number,
+                card_number=card_number,
+                balance=0.00,
+            )
 
-        saku_utama = Saku.objects.create(
-            saku_name="Saku Utama",
-            account=bank_account,
-            category_name="nabung",
-            balance=0,
-            is_primary=True
-        )
+            Saku.objects.create(
+                saku_name="Saku Utama",
+                account=bank_account,
+                category_name="nabung",
+                balance=0,
+                is_primary=True
+            )
 
-        saku_celengan = Saku.objects.create(
-            saku_name="Saku Celengan",
-            account=bank_account,
-            category_name="celengan",
-            balance=0,
-            is_primary=False
-        )
+            Saku.objects.create(
+                saku_name="Saku Celengan",
+                account=bank_account,
+                category_name="celengan",
+                balance=0,
+                is_primary=False
+            )
+
+            CardDetails.objects.create(
+                account_id=bank_account,
+                cardholder_name=request.user.name,
+                pin=f'{secrets.randbelow(1000000):06d}',
+                ccv=_generate_card_ccv(),
+                card_status='active',
+                expiry_date=_generate_card_expiry_date(),
+            )
 
         return Response({
             'id': bank_account.id,
@@ -922,3 +945,37 @@ class TambahRekeningView(APIView):
             'account_holder_name': beneficiary.account_holder_name,
             'added_at': beneficiary.added_at,
         }, status=status.HTTP_201_CREATED)
+    
+class CardDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not account.card_number:
+            return Response(
+                {'detail': 'No card associated with this account.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        card_details, _ = CardDetails.objects.get_or_create(
+            account_id=account,
+            defaults={
+                'cardholder_name': request.user.name,
+                'pin': f'{secrets.randbelow(1000000):06d}',
+                'ccv': _generate_card_ccv(),
+                'card_status': 'active',
+                'expiry_date': _generate_card_expiry_date(),
+            },
+        )
+
+        return Response({
+            'card_number':account.card_number,
+            'expiry_date': card_details.expiry_date,
+            'ccv': card_details.ccv,
+        }, status=status.HTTP_200_OK)
