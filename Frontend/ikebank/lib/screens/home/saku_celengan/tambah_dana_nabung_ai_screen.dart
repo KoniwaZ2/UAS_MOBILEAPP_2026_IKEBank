@@ -16,6 +16,12 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
   String _selectedSumberSaldo = "Rp 3.000.000";
 
   @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), 
