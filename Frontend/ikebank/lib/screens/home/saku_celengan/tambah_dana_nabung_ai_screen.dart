@@ -212,8 +212,9 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context, true); 
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+                    Navigator.pop(context, true);
+                    scaffoldMessenger?.showSnackBar(
                       const SnackBar(content: Text("Dana berhasil ditambahkan ke Saku Celengan!")),
                     );
                   },
