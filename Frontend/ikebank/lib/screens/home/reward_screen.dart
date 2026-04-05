@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
+import '../bottomnav/qris/qris_screen.dart';
 
 class RewardScreen extends StatelessWidget {
   const RewardScreen({super.key});
@@ -11,14 +12,16 @@ class RewardScreen extends StatelessWidget {
       fontFamily: 'AlumniSans',
     );
 
-    // Data Dummy untuk Reward
+    // Data Dummy 
     final List<Map<String, dynamic>> rewards = [
       {
+        'target': 'deposito',
         'title': 'Cashback Rp50.000',
         'desc': 'Buka Deposito dengan tenor 3 Bulan minimum penempatan Rp100.000.000 dan tahan investasimu hingga jatuh tempo.',
         'badge': '1x',
       },
       {
+        'target': 'qris',
         'title': 'Cashback Rp1.500',
         'desc': 'Transaksi dengan QRIS minimal Rp50.000 dan dapatkan cashback Rp1.500.\nMaksimal 1x/hari dan 3x/bulan',
         'badge': '3x',
@@ -52,6 +55,18 @@ class RewardScreen extends StatelessWidget {
             desc: reward['desc'],
             badge: reward['badge'],
             titleStyle: alumniSansBold,
+            onTapMisi: () {
+              if (reward['target'] == 'deposito') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Menuju Saku Deposito... (Segera Hadir)")),
+                );
+              } else if (reward['target'] == 'qris') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const QrisScreen()),
+                );
+              }
+            },
           );
         },
       ),
@@ -64,6 +79,7 @@ class RewardScreen extends StatelessWidget {
     required String desc,
     required String badge,
     required TextStyle titleStyle,
+    required VoidCallback onTapMisi,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -100,11 +116,7 @@ class RewardScreen extends StatelessWidget {
                     Expanded(
                       flex: 1,
                       child: GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Menuju Saku Deposito... (Segera Hadir)")),
-                          );
-                        },
+                        onTap: onTapMisi, 
                         child: const Text(
                           "Ikuti Misi",
                           textAlign: TextAlign.right,
