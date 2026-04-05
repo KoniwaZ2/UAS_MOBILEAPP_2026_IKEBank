@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardDetails, Qris, Saku, Transaction
 from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer
-from .services import upsert_cashflow_for_account
+from .services import get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
 def get_user_bank_account(user):
@@ -799,6 +799,21 @@ class SakuView(APIView):
                 'is_primary': saku.is_primary,
             })
         return Response(data, status=status.HTTP_200_OK)
+
+
+class SavingsRecommendationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank account found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        recommendation = get_weekly_savings_recommendation(account=account)
+        return Response(recommendation, status=status.HTTP_200_OK)
     
 class SakuDetailView(APIView):
     serializer_class = SakuDetailSerializer

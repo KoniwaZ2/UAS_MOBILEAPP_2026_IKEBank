@@ -90,7 +90,7 @@ class _SakuScreenState extends State<SakuScreen> {
 
     if (_selectedTab == 1) {
       return _wallets
-          .where((wallet) => wallet.category == WalletCategory.nabung)
+          .where((wallet) => wallet.category == WalletCategory.deposito)
           .toList();
     }
 

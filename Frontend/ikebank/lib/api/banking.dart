@@ -364,4 +364,15 @@ class BankingService {
       );
     }
   }
+
+  static Future<dynamic> savingRecommendation() async {
+    final url = Uri.parse("$baseUrl/savings-recommendation/");
+    final response = await AuthService.authorizedGet(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to get saving recommendation');
+    }
+  }
 }

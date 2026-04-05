@@ -6,6 +6,7 @@ import '../tambah_dana_screen.dart';
 import 'tambah_dana_saku_screen.dart';
 import 'pindah_dana_screen.dart';
 import 'transfer_dana_screen.dart';
+import '../../bottomnav/kartu/buat_kartu_screen.dart';
 import '../../../api/banking.dart';
 
 class SakuUtamaScreen extends StatefulWidget {
@@ -745,45 +746,63 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
 
               const SizedBox(height: 16),
 
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24.0),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 16.0,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/images/kartu.svg',
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFFF7F00),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        _cardNumber.isEmpty
-                            ? "Belum ada kartu debit yang terhubung"
-                            : "Kartu debit terhubung: $_cardNumber",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+              GestureDetector(
+                onTap: _cardNumber.isEmpty
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BuatKartuScreen(),
+                          ),
+                        );
+                      }
+                    : null,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 16.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/images/kartu.svg',
+                        height: 24,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFFFF7F00),
+                          BlendMode.srcIn,
                         ),
                       ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: const Color(0xFFFF7F00).withOpacity(0.7),
-                      size: 18,
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          _cardNumber.isEmpty
+                              ? 'Request kartu'
+                              : 'Kartu debit terhubung: $_cardNumber',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _cardNumber.isEmpty
+                                ? const Color(0xFFFF7F00)
+                                : Colors.black87,
+                            fontWeight: _cardNumber.isEmpty
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: const Color(0xFFFF7F00).withOpacity(0.7),
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 

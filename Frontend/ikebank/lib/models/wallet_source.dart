@@ -1,4 +1,4 @@
-enum WalletCategory { utama, nabung, transaksi, lainnya }
+enum WalletCategory { utama, nabung, transaksi, lainnya, deposito }
 
 WalletCategory walletCategoryFromValue(String value) {
   final normalized = value.trim().toLowerCase();
@@ -10,6 +10,9 @@ WalletCategory walletCategoryFromValue(String value) {
   }
   if (normalized == 'transaksi') {
     return WalletCategory.transaksi;
+  }
+  if (normalized == 'deposito') {
+    return WalletCategory.deposito;
   }
   return WalletCategory.lainnya;
 }
