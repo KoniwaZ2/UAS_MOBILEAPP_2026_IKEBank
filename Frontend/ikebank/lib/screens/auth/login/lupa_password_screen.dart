@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-import 'face_recog_screen.dart'; 
+import 'face_recog_screen.dart';
+import '../../../api/auth.dart';
 
 class LupaPasswordScreen extends StatefulWidget {
-  const LupaPasswordScreen({super.key});
+  final String email;
+  final String reference;
+
+  const LupaPasswordScreen({
+    super.key,
+    required this.email,
+    required this.reference,
+  });
 
   @override
   State<LupaPasswordScreen> createState() => _LupaPasswordScreenState();
@@ -12,13 +20,90 @@ class LupaPasswordScreen extends StatefulWidget {
 class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
   bool _isPasswordVisible1 = false;
   bool _isPasswordVisible2 = false;
+  bool _isSubmitting = false;
+  late final TextEditingController _passwordController1;
+  late final TextEditingController _passwordController2;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController1 = TextEditingController();
+    _passwordController2 = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _passwordController1.dispose();
+    _passwordController2.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitResetPassword() async {
+    final password1 = _passwordController1.text.trim();
+    final password2 = _passwordController2.text.trim();
+
+    if (password1.isEmpty || password2.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password tidak boleh kosong")),
+      );
+      return;
+    }
+
+    if (password1 != password2) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Password tidak cocok")));
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await AuthService.forgotPassword(
+        email: widget.email,
+        otpReference: widget.reference,
+        password: password1,
+        passwordConfirmation: password2,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password berhasil direset")),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FaceRecogScreen(
+            isFromLupaPassword: true,
+            reference: widget.reference,
+            email: widget.email,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
 
     return Scaffold(
-      backgroundColor: AppColors.primaryOrange, 
+      backgroundColor: AppColors.primaryOrange,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -30,7 +115,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
         title: const Text(
           "Lupa Password",
           style: TextStyle(
-            fontWeight: FontWeight.w700, 
+            fontWeight: FontWeight.w700,
             color: Colors.white,
             fontSize: 26,
           ),
@@ -49,14 +134,15 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center, 
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           "Masukkan Password Baru",
@@ -102,6 +188,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                         _buildPasswordField(
                           hintText: "Masukan Password baru",
                           isVisible: _isPasswordVisible1,
+                          controller: _passwordController1,
                           onVisibilityToggle: () {
                             setState(() {
                               _isPasswordVisible1 = !_isPasswordVisible1;
@@ -113,6 +200,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                         _buildPasswordField(
                           hintText: "Confrmasi Password baru",
                           isVisible: _isPasswordVisible2,
+                          controller: _passwordController2,
                           onVisibilityToggle: () {
                             setState(() {
                               _isPasswordVisible2 = !_isPasswordVisible2;
@@ -120,7 +208,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                           },
                         ),
 
-                        const Spacer(), 
+                        const Spacer(),
 
                         SizedBox(
                           width: double.infinity,
@@ -134,7 +222,10 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                               ),
                             ),
                             onPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const FaceRecogScreen()));
+                              if (_isSubmitting) {
+                                return;
+                              }
+                              _submitResetPassword();
                             },
                             child: Text(
                               "Lanjut",
@@ -167,7 +258,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w400,
-            color: Colors.grey.shade400, 
+            color: Colors.grey.shade400,
           ),
         ),
         const SizedBox(height: 4),
@@ -186,21 +277,26 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
   Widget _buildPasswordField({
     required String hintText,
     required bool isVisible,
+    required TextEditingController controller,
     required VoidCallback onVisibilityToggle,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5), 
+        color: const Color(0xFFD9D9D9).withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
-        obscureText: !isVisible, 
+        controller: controller,
+        obscureText: !isVisible,
         style: const TextStyle(fontSize: 16),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.black, fontSize: 16),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
           suffixIcon: IconButton(
             icon: Icon(
               isVisible ? Icons.visibility : Icons.visibility_off,

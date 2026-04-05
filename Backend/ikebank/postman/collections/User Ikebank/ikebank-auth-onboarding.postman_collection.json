@@ -1,0 +1,331 @@
+{
+  "info": {
+    "_postman_id": "9c29a55a-4b5e-46f6-b0af-5a3106e65471",
+    "name": "IKEBank Auth Onboarding Flow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "phone_number",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "raw_nik",
+      "value": ""
+    },
+    {
+      "key": "otp_reference",
+      "value": ""
+    },
+    {
+      "key": "debug_otp_code",
+      "value": ""
+    },
+    {
+      "key": "purpose",
+      "value": "registration"
+    }
+  ],
+  "item": [
+    {
+      "name": "1) Check Phone and Email",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const now = new Date();",
+              "const hh = String(now.getHours()).padStart(2, '0');",
+              "const mm = String(now.getMinutes()).padStart(2, '0');",
+              "const ss = String(now.getSeconds()).padStart(2, '0');",
+              "const phone = `0812${hh}${mm}${ss}45`;",
+              "const email = `${phone}@example.com`;",
+              "const nikSeed = `${now.getMonth() + 1}${now.getDate()}${hh}${mm}${ss}`.padStart(10, '1');",
+              "const nik = (`123456${nikSeed}`).slice(0, 16);",
+              "pm.collectionVariables.set('phone_number', phone);",
+              "pm.collectionVariables.set('email', email);",
+              "pm.collectionVariables.set('raw_nik', nik);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone_number\": \"{{phone_number}}\",\n  \"email\": \"{{email}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/check/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "check", ""]
+        }
+      }
+    },
+    {
+      "name": "2) OTP Request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "const smsItem = (body.otp_requests || []).find(x => x.channel === 'sms');",
+              "pm.test('SMS OTP item exists', function () {",
+              "  pm.expect(smsItem).to.exist;",
+              "});",
+              "if (smsItem) {",
+              "  pm.collectionVariables.set('otp_reference', smsItem.reference || '');",
+              "  pm.collectionVariables.set('debug_otp_code', smsItem.debug_otp_code || '');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone_number\": \"{{phone_number}}\",\n  \"email\": \"{{email}}\",\n  \"purpose\": \"{{purpose}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/otp/request/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "otp", "request", ""]
+        }
+      }
+    },
+    {
+      "name": "3) OTP Verify",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.test('OTP verified', function () {",
+              "  pm.expect(body.verified).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reference\": \"{{otp_reference}}\",\n  \"otp_code\": \"{{debug_otp_code}}\",\n  \"purpose\": \"{{purpose}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/otp/verify/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "otp", "verify", ""]
+        }
+      }
+    },
+    {
+      "name": "4) KTP Upload (Prefill)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "reference",
+              "value": "{{otp_reference}}",
+              "type": "text"
+            },
+            {
+              "key": "purpose",
+              "value": "{{purpose}}",
+              "type": "text"
+            },
+            {
+              "key": "ktp",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/ktp/upload/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "ktp", "upload", ""]
+        }
+      }
+    },
+    {
+      "name": "5) Final Register",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "otp_reference",
+              "value": "{{otp_reference}}",
+              "type": "text"
+            },
+            {
+              "key": "purpose",
+              "value": "{{purpose}}",
+              "type": "text"
+            },
+            {
+              "key": "phone_number",
+              "value": "{{phone_number}}",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "{{email}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "TestPass123!",
+              "type": "text"
+            },
+            {
+              "key": "password_confirmation",
+              "value": "TestPass123!",
+              "type": "text"
+            },
+            {
+              "key": "name",
+              "value": "Final Register Test",
+              "type": "text"
+            },
+            {
+              "key": "ktp",
+              "type": "file",
+              "src": ""
+            },
+            {
+              "key": "nik",
+              "value": "{{raw_nik}}",
+              "type": "text"
+            },
+            {
+              "key": "born_place",
+              "value": "Jakarta",
+              "type": "text"
+            },
+            {
+              "key": "born_date",
+              "value": "2000-01-01",
+              "type": "text"
+            },
+            {
+              "key": "gender",
+              "value": "Male",
+              "type": "text"
+            },
+            {
+              "key": "address",
+              "value": "Alamat Test",
+              "type": "text"
+            },
+            {
+              "key": "religion",
+              "value": "Islam",
+              "type": "text"
+            },
+            {
+              "key": "mother_name",
+              "value": "Ibu Test",
+              "type": "text"
+            },
+            {
+              "key": "pin",
+              "value": "123456",
+              "type": "text"
+            },
+            {
+              "key": "pin_confirmation",
+              "value": "123456",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register/",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "register", ""]
+        }
+      }
+    }
+  ]
+}

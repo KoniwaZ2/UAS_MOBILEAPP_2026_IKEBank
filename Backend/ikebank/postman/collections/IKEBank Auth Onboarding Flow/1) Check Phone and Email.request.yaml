@@ -1,0 +1,45 @@
+$kind: http-request
+url: "{{base_url}}/api/auth/check/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "phone_number": "{{phone_number}}",
+      "email": "{{email}}"
+    }
+scripts:
+  - type: beforeRequest
+    code: >-
+      const now = new Date();
+
+      const hh = String(now.getHours()).padStart(2, '0');
+
+      const mm = String(now.getMinutes()).padStart(2, '0');
+
+      const ss = String(now.getSeconds()).padStart(2, '0');
+
+      const phone = `0812${hh}${mm}${ss}45`;
+
+      const email = `${phone}@example.com`;
+
+      const nikSeed = `${now.getMonth() +
+      1}${now.getDate()}${hh}${mm}${ss}`.padStart(10, '1');
+
+      const nik = (`123456${nikSeed}`).slice(0, 16);
+
+      pm.collectionVariables.set('phone_number', phone);
+
+      pm.collectionVariables.set('email', email);
+
+      pm.collectionVariables.set('raw_nik', nik);
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', function () {
+        pm.response.to.have.status(200);
+      });
+    language: text/javascript
+order: 1000
