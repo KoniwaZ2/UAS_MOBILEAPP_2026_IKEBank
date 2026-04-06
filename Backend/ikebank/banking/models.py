@@ -193,3 +193,28 @@ class Beneficiaries(models.Model):
 
     def __str__(self):
         return self.account_holder_name or f"Beneficiary {self.account_id.id}"
+    
+class Deposito(models.Model): #list deposito yang tersedia untuk dipilih oleh user saat membuat deposito baru
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    ]
+    deposito_id = models.IntegerField(primary_key=True, auto_created=True)
+    interest_rate = models.FloatField(null=False, blank=False)
+    quota = models.IntegerField(null=True, blank=False)
+    duratuion_months = models.IntegerField(null=False, blank=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+
+class DepositoAccount(models.Model): #setiap deposito yang dibuat oleh user akan masuk ke tabel ini, dan akan terhubung dengan bank account yang dimiliki user
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+    deposito_account_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    deposito_id = models.ForeignKey(Deposito, on_delete=models.CASCADE, related_name='user_depositos', default=1)
+    account_id = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='account_depositos')
+    balance = models.IntegerField(default=0)
+    start_date = models.DateField(null=False, blank=False)
+    end_date = models.DateField(null=False, blank=False)
+    deposito_name = models.CharField(max_length=255, null=False, blank=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active') #active, withdrawn

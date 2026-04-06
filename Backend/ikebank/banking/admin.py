@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BankAccount, Transaction, CashFlow, CardDetails, Saku, Qris
+from .models import BankAccount, Transaction, CashFlow, CardDetails, Saku, Qris, DepositoAccount, Deposito, Beneficiaries
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
@@ -36,7 +36,21 @@ class QrisAdmin(admin.ModelAdmin):
     list_display = ('merchant_name', 'qris_number')
     search_fields = ('merchant_name', 'qris_number')
 
+@admin.register(Deposito)
+class DepositoAdmin(admin.ModelAdmin):
+    list_display = ('deposito_id', 'interest_rate', 'quota', 'duratuion_months', 'status')
+    search_fields = ('deposito_id', 'account__account_number', 'saku__saku_name')
+    list_filter = ('status',)
+
+@admin.register(DepositoAccount)
+class DepositoAccountAdmin(admin.ModelAdmin):
+    list_display = ('deposito_account_id', 'deposito_id', 'account_id', 'balance', 'start_date', 'end_date', 'status')
+    search_fields = ('account__account_number', 'saku__saku_name')
+    list_filter = ('status',)
+
+@admin.register(Beneficiaries)
 class BeneficiariesAdmin(admin.ModelAdmin):
-    list_display = ('account_id', 'bank_name', 'alias', 'added_at')
+    list_display = ('account_id', 'bank_name', 'added_at')
     search_fields = ('account_id__account_number', 'alias')
     list_filter = ('added_at',)
+

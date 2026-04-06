@@ -1,4 +1,7 @@
 import secrets
+import uuid
+from calendar import monthrange
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
@@ -8,8 +11,8 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import BankAccount, Beneficiaries, CardDetails, Qris, Saku, Transaction
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer
+from .models import BankAccount, Beneficiaries, CardDetails, Deposito, Qris, Saku, Transaction, DepositoAccount
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer
 from .services import get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
@@ -54,6 +57,13 @@ def _get_current_card_details(account):
         return card_details
 
     return CardDetails.objects.filter(account=account).order_by('-updated_at').first()
+
+
+def _add_months(base_date, months):
+    year = base_date.year + (base_date.month - 1 + months) // 12
+    month = (base_date.month - 1 + months) % 12 + 1
+    day = min(base_date.day, monthrange(year, month)[1])
+    return base_date.replace(year=year, month=month, day=day)
 
 
 class RegisterBankAccountView(APIView):
@@ -1240,3 +1250,275 @@ class CardEditView(APIView):
             'expiry_date': card_details.expiry_date,
             'ccv': card_details.ccv,
         }, status=status.HTTP_200_OK)
+    
+class DepositoListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        depositos = Deposito.objects.all().order_by('interest_rate')
+        serializer = DepositoSerializer(depositos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DepositoEstimateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DepositoEstimateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito_id = validated_data['deposito_id']
+        source_saku_id = validated_data['source_saku_id']
+        amount = validated_data['amount']
+
+        deposito_type = Deposito.objects.filter(deposito_id=deposito_id).first()
+        if deposito_type is None:
+            return Response(
+                {'detail': 'Deposito menu not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        source_saku = Saku.objects.filter(id=source_saku_id, account=account).first()
+        if source_saku is None:
+            return Response(
+                {'detail': 'Source saku not found.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        source_category = (source_saku.category_name or '').strip().lower()
+        if source_category == 'celengan':
+            return Response(
+                {'detail': 'Saku Celengan tidak bisa digunakan untuk membuat deposito.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        is_allowed_source = source_saku.is_primary or source_category in {'nabung', 'transaksi'}
+        if not is_allowed_source:
+            return Response(
+                {'detail': 'Sumber dana deposito hanya boleh dari Saku Utama, Nabung, atau Transaksi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if amount > 100000000:
+            return Response(
+                {'detail': 'Maximum amount for this deposito type is 100,000,000.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        amount_decimal = Decimal(str(amount))
+        annual_rate = Decimal(str(deposito_type.interest_rate))
+        duration_months = int(deposito_type.duratuion_months)
+
+        gross_interest = (
+            amount_decimal * (annual_rate / Decimal('100')) * (Decimal(duration_months) / Decimal('12'))
+        ).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        tax_amount = (gross_interest * Decimal('0.20')).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        net_interest = gross_interest - tax_amount
+        maturity_estimation = amount_decimal + net_interest
+
+        start_date = timezone.localdate()
+        end_date = _add_months(start_date, duration_months)
+
+        can_create = source_saku.balance >= amount
+
+        return Response(
+            {
+                'deposito_id': deposito_type.deposito_id,
+                'deposito_name': f'Deposito {duration_months} Bulan',
+                'source_saku_id': source_saku.id,
+                'source_saku_name': source_saku.saku_name,
+                'amount': int(amount_decimal),
+                'interest_rate_pa': str(annual_rate),
+                'duration_months': duration_months,
+                'gross_interest': int(gross_interest),
+                'tax_percent': 20,
+                'tax_amount': int(tax_amount),
+                'net_interest': int(net_interest),
+                'maturity_estimation': int(maturity_estimation),
+                'start_date': start_date,
+                'end_date': end_date,
+                'source_saku_balance': source_saku.balance,
+                'can_create': can_create,
+            },
+            status=status.HTTP_200_OK,
+        )
+    
+class DepositoCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DepositoAccountCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito_id = validated_data['deposito_id']
+        source_saku_id = validated_data['source_saku_id']
+        amount = validated_data['amount']
+
+        source_saku = Saku.objects.filter(id=source_saku_id, account=account).first()
+        if source_saku is None:
+            return Response(
+                {'detail': 'Source saku not found.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        source_category = (source_saku.category_name or '').strip().lower()
+        if source_category == 'celengan':
+            return Response(
+                {'detail': 'Saku Celengan tidak bisa digunakan untuk membuat deposito.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        is_allowed_source = source_saku.is_primary or source_category in {'nabung', 'transaksi'}
+        if not is_allowed_source:
+            return Response(
+                {'detail': 'Sumber dana deposito hanya boleh dari Saku Utama, Nabung, atau Transaksi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if amount < 1000000:
+            return Response(
+                {'detail': 'Minimum amount for this deposito type is 1,000,000.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        elif amount > 100000000:
+            return Response(
+                {'detail': 'Maximum amount for this deposito type is 100,000,000.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if source_saku.balance < amount:
+            return Response(
+                {'detail': 'Insufficient balance in source saku.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito_type = Deposito.objects.filter(deposito_id=deposito_id).first()
+        if deposito_type is None:
+            return Response(
+                {'detail': 'Deposito menu not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with transaction.atomic():
+            source_saku.balance -= amount
+            source_saku.save(update_fields=['balance'])
+
+            new_deposito = DepositoAccount.objects.create(
+                deposito_id=deposito_type,
+                account_id=account,
+                balance=amount,
+                start_date=timezone.now().date(),
+                end_date=timezone.now().date() + timezone.timedelta(days=deposito_type.duratuion_months * 30),
+                deposito_name=f'Deposito {deposito_type.duratuion_months} Bulan',
+            )
+
+        return Response(
+            {
+                'deposito_account_id': new_deposito.deposito_account_id,
+                'deposito_id': deposito_type.deposito_id,
+                'source_saku_id': source_saku.id,
+                'amount': new_deposito.balance,
+                'start_date': new_deposito.start_date,
+                'end_date': new_deposito.end_date,
+                'deposito_name': new_deposito.deposito_name,
+                'source_saku_balance': source_saku.balance,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+    
+class DepositoUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        depositos = DepositoAccount.objects.filter(account_id=account).select_related('deposito_id')
+        data = []
+        for deposito in depositos:
+            data.append({
+                'deposito_account_id': deposito.deposito_account_id,
+                'deposito_id': deposito.deposito_id.deposito_id,
+                'interest_rate': deposito.deposito_id.interest_rate,
+                'balance': str(deposito.balance),
+                'start_date': deposito.start_date,
+                'end_date': deposito.end_date,
+                'deposito_name': deposito.deposito_name,
+            })
+        return Response(data, status=status.HTTP_200_OK)
+    
+class DepositoDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito_account_id_raw = request.query_params.get('deposito_account_id')
+        if not deposito_account_id_raw:
+            return Response(
+                {'detail': 'deposito_account_id query parameter is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            deposito_account_id = uuid.UUID(str(deposito_account_id_raw).strip())
+        except (ValueError, TypeError, AttributeError):
+            return Response(
+                {'detail': 'Invalid deposito_account_id format.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito = DepositoAccount.objects.filter(
+            deposito_account_id=deposito_account_id,
+            account_id=account,
+        ).select_related('deposito_id').first()
+
+        if deposito is None:
+            return Response(
+                {'detail': 'Deposito not found for this user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        today = timezone.localdate()
+        remaining_days = max((deposito.end_date - today).days, 0)
+
+        return Response(
+            {
+                'deposito_account_id': deposito.deposito_account_id,
+                'deposito_id': deposito.deposito_id.deposito_id,
+                'deposito_name': deposito.deposito_name,
+                'interest_rate': deposito.deposito_id.interest_rate,
+                'duration_months': deposito.deposito_id.duratuion_months,
+                'balance': str(deposito.balance),
+                'start_date': deposito.start_date,
+                'end_date': deposito.end_date,
+                'remaining_days': remaining_days,
+            },
+            status=status.HTTP_200_OK,
+        )
+        

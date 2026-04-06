@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import BankAccount, CardDetails, CashFlow, Saku, Transaction
+from .models import BankAccount, CardDetails, CashFlow, Deposito, Saku, Transaction
 
 
 class RegisterBankAccountSerializer(serializers.Serializer):
@@ -23,6 +23,17 @@ class CashFlowSerializer(serializers.ModelSerializer):
             'month',
             'year',
             'status',
+        ]
+
+
+class DepositoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Deposito
+        fields = [
+            'deposito_id',
+            'interest_rate',
+            'quota',
+            'duratuion_months',
         ]
 
 class TransactionCreateSerializer(serializers.Serializer):
@@ -133,3 +144,15 @@ class CardEditSerializer(serializers.Serializer):
             raise serializers.ValidationError({'detail': 'status is required for CHANGE_STATUS.'})
 
         return attrs
+    
+class DepositoAccountCreateSerializer(serializers.Serializer):
+    deposito_id = serializers.IntegerField(required=True)
+    source_saku_id = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(min_value=1000000, required=True)
+
+
+class DepositoEstimateSerializer(serializers.Serializer):
+    deposito_id = serializers.IntegerField(required=True)
+    source_saku_id = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(min_value=1000000, required=True)
+    

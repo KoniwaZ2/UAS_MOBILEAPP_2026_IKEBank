@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView
+from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView
 
 
 urlpatterns = [
@@ -21,4 +21,9 @@ urlpatterns = [
     path('card-details/', CardDetailsView.as_view(), name='card-details'),
     path('card-request/', CardRequestView.as_view(), name='card-request'),
     path('card-edit/', CardEditView.as_view(), name='card-edit'),
+    path('deposito-list/', DepositoListView.as_view(), name='deposito-list'),
+    path('deposito-estimate/', DepositoEstimateView.as_view(), name='deposito-estimate'),
+    path('deposito-create/', DepositoCreateView.as_view(), name='deposito-create'),
+    path('deposito-user/', DepositoUserView.as_view(), name='deposito-user'),
+    path('deposito-details/', DepositoDetailsView.as_view(), name='deposito-details'),
 ]
