@@ -59,7 +59,7 @@ class DepositoOfferCard extends StatelessWidget {
                       children: const [
                         Text("Buka Deposito", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A36DF))),
                         SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_ios, size: 1, color: Color(0xFF1A36DF)),
+                        Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF1A36DF)),
                       ],
                     ),
                   ],
