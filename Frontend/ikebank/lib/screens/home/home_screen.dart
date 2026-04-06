@@ -381,9 +381,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         onTap: () {
                                           Navigator.push(
                                             context,
-                                            MaterialPageRoute(builder: (context) => const BeliBayarScreen()),
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const BeliBayarScreen(),
+                                            ),
                                           );
-                                        }
+                                        },
                                       ),
                                     ),
                                   ],
@@ -434,32 +437,33 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                             _buildServiceItem(
-                              imagePath: 'assets/images/celengan.png', 
-                              label: "Saku Celengan", 
+                              imagePath: 'assets/images/celengan.png',
+                              label: "Saku Celengan",
                               iconSize: 38,
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const SakuCelenganScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SakuCelenganScreen(),
+                                  ),
                                 );
-                              }
+                              },
                             ),
 
-                            _buildServiceItem(
-                              imagePath: 'assets/images/deposito.png', 
-                              label: "Saku Deposito", 
-                              iconSize: 38,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SakuDepositoScreen()),
-                                );
-                              }
-                            ),
                             _buildServiceItem(
                               imagePath: 'assets/images/deposito.png',
                               label: "Saku Deposito",
                               iconSize: 38,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SakuDepositoScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             _buildServiceItem(
                               imagePath: 'assets/images/CashF.png',
@@ -492,16 +496,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildServiceItem(
                               imagePath: 'assets/images/CS.png',
                               label: "Bantuan CS",
-                            ),
-                            _buildServiceItem(
-                              imagePath: 'assets/images/CS.png', 
-                              label: "Bantuan CS",
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BantuanCsScreen(),
+                                  ),
                                 );
-                              }
+                              },
                             ),
                           ],
                         ),

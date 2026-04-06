@@ -265,23 +265,27 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     await _navigateToNextPage();
   }
 
-  Future<void> _navigateToNextPage({bool skipFaceValidation = false}) async {
-    if (!mounted || _hasNavigated || _isUploadingFace) return;
-    _hasNavigated = true;
+  Future<void> _routeAfterFaceVerified() async {
+    if (!mounted) return;
 
-    if (skipFaceValidation || _isDevFaceBypassEnabled) {
-      if (widget.isFromRegister) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BuatPassScreen(flowData: widget.flowData),
-          ),
-        );
-        return;
-      }
+    if (widget.isFromCS) {
+      Navigator.pop(context, true);
+      return;
+    }
 
-      final prefilledEmail = widget.email?.trim();
+    if (widget.isFromRegister) {
       Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BuatPassScreen(flowData: widget.flowData),
+        ),
+      );
+      return;
+    }
+
+    final prefilledEmail = widget.email?.trim();
+    if (widget.isFromLupaPassword) {
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => LoginPage(
@@ -293,12 +297,40 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoginPage(
+          prefilledEmail: prefilledEmail,
+          reference: widget.reference,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToNextPage({bool skipFaceValidation = false}) async {
+    if (!mounted || _hasNavigated || _isUploadingFace) return;
+    _hasNavigated = true;
+
+    if (skipFaceValidation || _isDevFaceBypassEnabled) {
+      await _routeAfterFaceVerified();
+      return;
+    }
+
     final controller = _controller;
     if (controller != null && controller.value.isStreamingImages) {
       await controller.stopImageStream();
     }
 
     if (!mounted) return;
+
+    if (widget.isFromCS || widget.isFromLupaPassword) {
+      // Belum ada endpoint khusus CS/lupa password untuk validasi face di backend.
+      // Untuk sementara lanjutkan alur UI agar bisa dites end-to-end.
+      await _routeAfterFaceVerified();
+      return;
+    }
+
     if (widget.isFromRegister) {
       final reference = widget.reference?.trim() ?? '';
       if (reference.isEmpty) {
@@ -357,12 +389,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         });
       }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BuatPassScreen(flowData: widget.flowData),
-        ),
-      );
+      await _routeAfterFaceVerified();
       return;
     }
 
@@ -406,16 +433,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       });
     }
 
-    final prefilledEmail = widget.email?.trim();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LoginPage(
-          prefilledEmail: prefilledEmail,
-          reference: widget.reference,
-        ),
-      ),
-    );
+    await _routeAfterFaceVerified();
   }
 
   @override
@@ -453,46 +471,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       ),
       body: SizedBox(
         width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, 
-          children: [
-            // TEKS INSTRUKSI 
-            Text(
-              "Buka Mulutmu",
-              style: alumniSansBold.copyWith(
-                fontSize: 32,
-                color: AppColors.textBlack,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            
-            const SizedBox(height: 60),
-
-            // WADAH KAMERA (DUMMY FACE)
-            GestureDetector(
-              onTap: () {
-                // LOGIKA PERCABANGAN TIGA JALUR
-                if (isFromCS) {
-                  // JIKA DARI CS: Cukup kembali (pop) ke halaman chat!
-                  Navigator.pop(context);
-                } else if (isFromRegister) {
-                  // JIKA DARI REGISTER: Lari ke Buat Password!
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (context) => const BuatPassScreen() 
-                    )
-                  );
-                } else {
-                  // JIKA DARI LOGIN: Lari ke halaman Login
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const LoginPage())
-                  );
-                }
-              },
-              child: Stack(
-                alignment: Alignment.center,
         child: _isDevFaceBypassEnabled
             ? const Center(child: CircularProgressIndicator())
             : Column(

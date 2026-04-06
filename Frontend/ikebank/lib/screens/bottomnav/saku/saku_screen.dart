@@ -564,6 +564,8 @@ class _SakuScreenState extends State<SakuScreen> {
     for (final wallet in _filteredWallets()) {
       cards.add(
         _buildSakuCard(
+          sakuId: wallet.id,
+          categoryName: wallet.category.name,
           title: wallet.name,
           amount: _formatRupiah(_parseBalanceToInt(wallet.balance)),
           imageAsset: wallet.imagePath,
@@ -649,6 +651,8 @@ class _SakuScreenState extends State<SakuScreen> {
   }
 
   Widget _buildSakuCard({
+    required String sakuId,
+    required String categoryName,
     required String title,
     required String amount,
     required String imageAsset,
@@ -673,10 +677,12 @@ class _SakuScreenState extends State<SakuScreen> {
         } 
         else {
           // 3. Saku Tambahan (Custom) -> Masuk ke layar History Transaksi Saku
-          Navigator.push(
+          result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => HistoryTransaksiScreen(
+                sakuId: sakuId,
+                categoryName: categoryName,
                 title: title,
                 amount: amount,
                 imageAsset: imageAsset,

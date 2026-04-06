@@ -634,7 +634,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                                 child: const Text(
                                   "10% p.a",
                                   style: TextStyle(
-                                    color: const Color(0xFF01008A),
+                                    color: Color(0xFF01008A),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -838,7 +838,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                                             isAutoIsi = val;
                                           });
                                         },
-                                        activeColor: Colors.white,
+                                        activeThumbColor: Colors.white,
                                         activeTrackColor: const Color(
                                           0x80F69500,
                                         ),

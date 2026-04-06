@@ -175,8 +175,11 @@ class BankingService {
       return '$y-$m-$d';
     }
 
+    final normalizedSakuId = sakuId?.trim() ?? '';
+    final parsedSakuId = int.tryParse(normalizedSakuId);
+
     final queryParams = <String, String>{
-      if (sakuId != null && sakuId.trim().isNotEmpty) 'saku_id': sakuId.trim(),
+      if (parsedSakuId != null) 'saku_id': parsedSakuId.toString(),
       if (sakuName != null && sakuName.trim().isNotEmpty)
         'saku_name': sakuName.trim(),
       if (category != null && category.trim().isNotEmpty)
