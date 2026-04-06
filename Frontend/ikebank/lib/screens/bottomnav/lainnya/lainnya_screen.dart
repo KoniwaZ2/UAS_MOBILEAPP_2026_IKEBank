@@ -5,6 +5,7 @@ import 'laporan_keuangan_screen.dart';
 import 'pengaturan_screen.dart';
 import 'undang_teman_screen.dart';
 import 'about_us_screen.dart';
+import '../../home/layanan/bantuan_cs_screen.dart';
 import '../../../api/auth.dart';
 
 class LainnyaScreen extends StatelessWidget {
@@ -87,7 +88,10 @@ class LainnyaScreen extends StatelessWidget {
               title: "Bantuan/Help",
               subtitle: "Ada yang bisa kami bantu?",
               onTap: () {
-                // TODO: Navigasi ke Bantuan
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                );
               },
             ),
 

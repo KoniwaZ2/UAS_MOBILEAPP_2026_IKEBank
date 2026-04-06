@@ -14,6 +14,7 @@ enum LivenessStep { lookLeft, lookRight, smile, blink, done }
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
+  final bool isFromCS;
   final bool isFromLupaPassword;
   final String? email;
   final String? reference;
@@ -26,6 +27,7 @@ class FaceRecogScreen extends StatefulWidget {
     this.email,
     this.reference,
     this.flowData,
+    this.isFromCS = false, 
   });
 
   @override
@@ -451,6 +453,46 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       ),
       body: SizedBox(
         width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, 
+          children: [
+            // TEKS INSTRUKSI 
+            Text(
+              "Buka Mulutmu",
+              style: alumniSansBold.copyWith(
+                fontSize: 32,
+                color: AppColors.textBlack,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 60),
+
+            // WADAH KAMERA (DUMMY FACE)
+            GestureDetector(
+              onTap: () {
+                // LOGIKA PERCABANGAN TIGA JALUR
+                if (isFromCS) {
+                  // JIKA DARI CS: Cukup kembali (pop) ke halaman chat!
+                  Navigator.pop(context);
+                } else if (isFromRegister) {
+                  // JIKA DARI REGISTER: Lari ke Buat Password!
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      builder: (context) => const BuatPassScreen() 
+                    )
+                  );
+                } else {
+                  // JIKA DARI LOGIN: Lari ke halaman Login
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const LoginPage())
+                  );
+                }
+              },
+              child: Stack(
+                alignment: Alignment.center,
         child: _isDevFaceBypassEnabled
             ? const Center(child: CircularProgressIndicator())
             : Column(

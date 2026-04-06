@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'tambah_saku_screen.dart';
 import '../../home/saku_utama/saku_utama_screen.dart';
+import '../../home/saku_celengan/saku_celengan_screen.dart';
+import '../../home/saku_deposito/saku_deposito_screen.dart';
 import 'history_transaksi_screen.dart';
+import '../../home/layanan/bantuan_cs_screen.dart';
 import '../../../api/banking.dart';
 import '../../../models/wallet_source.dart';
 
@@ -482,7 +485,12 @@ class _SakuScreenState extends State<SakuScreen> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                );
+              }, 
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF7F00),
                 shape: RoundedRectangleBorder(
@@ -654,8 +662,18 @@ class _SakuScreenState extends State<SakuScreen> {
             context,
             MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
           );
-        } else {
-          result = await Navigator.push(
+        } 
+        else if (title == "Saku Celengan" || title == "Saku Deposito") {
+          // 2. Saku Celengan & Deposito -> Masuk ke layar detail masing-masing
+          Widget targetScreen = title == "Saku Celengan" ? const SakuCelenganScreen() : const SakuDepositoScreen();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => targetScreen),
+          );
+        } 
+        else {
+          // 3. Saku Tambahan (Custom) -> Masuk ke layar History Transaksi Saku
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => HistoryTransaksiScreen(

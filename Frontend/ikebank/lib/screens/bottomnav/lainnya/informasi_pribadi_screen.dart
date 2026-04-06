@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../home/layanan/bantuan_cs_screen.dart';
 
 class InformasiPribadiScreen extends StatelessWidget {
   const InformasiPribadiScreen({super.key});
@@ -119,10 +120,9 @@ class InformasiPribadiScreen extends StatelessWidget {
 
                     GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Menghubungi Customer Service..."),
-                          ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
                         );
                       },
                       child: const Text(

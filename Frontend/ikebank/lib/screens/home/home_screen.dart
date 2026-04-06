@@ -9,8 +9,10 @@ import 'tips_info_screen.dart';
 import 'promo_screen.dart';
 import 'saku_utama/saku_utama_screen.dart';
 import 'saku_celengan/saku_celengan_screen.dart';
+import 'saku_deposito/saku_deposito_screen.dart';
 import 'layanan/cash_flow_screen.dart';
 import 'layanan/beli_bayar_screen.dart';
+import 'layanan/bantuan_cs_screen.dart';
 import '../../api/banking.dart';
 import '../../models/account_detail.dart';
 
@@ -443,7 +445,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               }
                             ),
 
-                            _buildServiceItem(imagePath: 'assets/images/deposito.png', label: "Saku Deposito", iconSize: 38),
+                            _buildServiceItem(
+                              imagePath: 'assets/images/deposito.png', 
+                              label: "Saku Deposito", 
+                              iconSize: 38,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SakuDepositoScreen()),
+                                );
+                              }
+                            ),
                             _buildServiceItem(
                               imagePath: 'assets/images/deposito.png',
                               label: "Saku Deposito",
@@ -480,6 +492,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildServiceItem(
                               imagePath: 'assets/images/CS.png',
                               label: "Bantuan CS",
+                            ),
+                            _buildServiceItem(
+                              imagePath: 'assets/images/CS.png', 
+                              label: "Bantuan CS",
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                                );
+                              }
                             ),
                           ],
                         ),
