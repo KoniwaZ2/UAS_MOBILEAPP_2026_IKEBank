@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../api/auth.dart';
 import '../../../core/colors.dart';
 import 'foto_ktp_screen.dart'; // Nanti kita buat file ini
 
 class VerifikasiKodeScreen extends StatefulWidget {
   final String email; // Hapus teks dummy-nya
+  final String phone;
+  final String reference;
 
   // Tambahkan 'required this.email' agar wajib diisi saat dipanggil
-  const VerifikasiKodeScreen({super.key, required this.email});
+  const VerifikasiKodeScreen({
+    super.key,
+    required this.email,
+    required this.phone,
+    required this.reference,
+  });
 
   @override
   State<VerifikasiKodeScreen> createState() => _VerifikasiKodeScreenState();
@@ -16,7 +24,19 @@ class VerifikasiKodeScreen extends StatefulWidget {
 class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
   // Membuat 6 FocusNode dan Controller untuk masing-masing kotak OTP
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
-  final List<TextEditingController> _controllers = List.generate(6, (index) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
+  bool _isSubmitting = false;
+  bool _isResending = false;
+  String _reference = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _reference = widget.reference;
+  }
 
   @override
   void dispose() {
@@ -80,7 +100,9 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
       // ==========================================================
       body: Container(
         width: double.infinity,
-        margin: const EdgeInsets.only(top: 16.0), // Perbaikan dari EdgeInsets.top menjadi .only(top:)
+        margin: const EdgeInsets.only(
+          top: 16.0,
+        ), // Perbaikan dari EdgeInsets.top menjadi .only(top:)
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
@@ -92,12 +114,13 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 32.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -120,10 +143,15 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                               height: 1.4,
                             ),
                             children: [
-                              const TextSpan(text: "Masukkan kode yang kami kirim lewat email ke\n"),
+                              const TextSpan(
+                                text:
+                                    "Masukkan kode yang kami kirim lewat email ke\n",
+                              ),
                               TextSpan(
-                                text: widget.email, 
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                text: widget.email,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -132,20 +160,81 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(6, (index) => _buildOtpBox(index)),
+                          children: List.generate(
+                            6,
+                            (index) => _buildOtpBox(index),
+                          ),
                         ),
                         const SizedBox(height: 24),
 
                         // TOMBOL KIRIM ULANG KODE
                         Center(
                           child: TextButton(
-                            onPressed: () {
-                              // TODO: Logika kirim ulang email OTP
-                            },
+                            onPressed: _isResending
+                                ? null
+                                : () async {
+                                    setState(() {
+                                      _isResending = true;
+                                    });
+
+                                    try {
+                                      final otpRes =
+                                          await AuthService.otpRequest(
+                                            email: widget.email,
+                                            purpose: 'registration',
+                                          );
+
+                                      final otpRequests =
+                                          (otpRes['otp_requests'] as List?) ??
+                                          [];
+                                      if (otpRequests.isNotEmpty) {
+                                        _reference =
+                                            (otpRequests.first
+                                                    as Map<
+                                                      String,
+                                                      dynamic
+                                                    >)['reference']
+                                                ?.toString() ??
+                                            _reference;
+                                      }
+
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'OTP berhasil dikirim ulang',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(e.toString()),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } finally {
+                                      if (context.mounted) {
+                                        setState(() {
+                                          _isResending = false;
+                                        });
+                                      }
+                                    }
+                                  },
                             child: const Text(
                               "Kirim ulang kode",
                               style: TextStyle(
-                                color: Color(0xFF0000FF), 
+                                color: Color(0xFF0000FF),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -166,17 +255,95 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            onPressed: () {
-                              String otpCode = _controllers.map((c) => c.text).join();
-                              print("OTP Entered: $otpCode");
-                              
-                              Navigator.push(
-                                context, 
-                                MaterialPageRoute(builder: (context) => const FotoKtpScreen())
-                              );
-                            },
+                            onPressed: _isSubmitting
+                                ? null
+                                : () async {
+                                    final otpCode = _controllers
+                                        .map((c) => c.text)
+                                        .join();
+
+                                    final otpCodeTrimmed = otpCode.trim();
+
+                                    if (_reference.isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Reference OTP tidak ditemukan. Silakan kirim ulang kode.',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (otpCodeTrimmed.length != 6) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Kode OTP harus 6 digit',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    setState(() {
+                                      _isSubmitting = true;
+                                    });
+
+                                    try {
+                                      await AuthService.otpVerify(
+                                        reference: _reference,
+                                        otpcode: otpCodeTrimmed,
+                                        purpose: 'registration',
+                                      );
+
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FotoKtpScreen(
+                                            phone: widget.phone,
+                                            email: widget.email,
+                                            reference: _reference,
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceFirst(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } finally {
+                                      if (context.mounted) {
+                                        setState(() {
+                                          _isSubmitting = false;
+                                        });
+                                      }
+                                    }
+                                  },
                             child: Text(
-                              "Lanjut",
+                              _isSubmitting ? 'Memverifikasi...' : 'Lanjut',
                               style: alumniSansBold.copyWith(
                                 fontSize: 20,
                                 color: Colors.white,
@@ -203,7 +370,7 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
       width: 45,
       height: 55,
       decoration: BoxDecoration(
-        color: AppColors.inputGrey, 
+        color: AppColors.inputGrey,
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
@@ -211,14 +378,12 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
         focusNode: _focusNodes[index],
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
-        maxLength: 1, 
+        maxLength: 1,
         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly, 
-        ],
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: const InputDecoration(
           border: InputBorder.none,
-          counterText: "", 
+          counterText: "",
         ),
         onChanged: (value) => _onOtpChanged(value, index),
       ),
@@ -228,20 +393,18 @@ class _VerifikasiKodeScreenState extends State<VerifikasiKodeScreen> {
   Widget _buildProgressSegment({required bool isActive}) {
     return Expanded(
       child: Container(
-        height: 6, 
-        margin: const EdgeInsets.symmetric(horizontal: 4.0), 
+        height: 6,
+        margin: const EdgeInsets.symmetric(horizontal: 4.0),
         decoration: BoxDecoration(
-          gradient: isActive 
+          gradient: isActive
               ? const LinearGradient(
-                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)], 
+                  colors: [Color(0xFF0000FF), Color(0xFF9999FF)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
               : null,
-              
-          color: isActive 
-              ? null 
-              : Colors.white.withValues(alpha: 0.6), 
+
+          color: isActive ? null : Colors.white.withValues(alpha: 0.6),
         ),
       ),
     );

@@ -1,0 +1,10 @@
+$kind: collection
+name: IKEBank Auth Onboarding Flow
+variables:
+  base_url: http://127.0.0.1:8000
+  phone_number: ""
+  email: ""
+  raw_nik: ""
+  otp_reference: ""
+  debug_otp_code: ""
+  purpose: registration

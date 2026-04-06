@@ -8,10 +8,10 @@ class PengaturanBiFastScreen extends StatefulWidget {
 }
 
 class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
-  bool _isPhoneEnabled = false; 
+  bool _isPhoneEnabled = false;
 
   final TextStyle alumniSansBold = const TextStyle(
-    fontWeight: FontWeight.w800, 
+    fontWeight: FontWeight.w800,
     fontFamily: 'AlumniSans',
   );
 
@@ -20,7 +20,7 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFF7F00), 
+        backgroundColor: const Color(0xFFFF7F00),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
@@ -46,8 +46,8 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
               Text(
                 "Mendaftarkan nomor telepon kamu sebagai Proxy\nID akan memudahkan kamu untuk menerima\npembayaran dan transfer",
                 style: TextStyle(
-                  fontSize: 22, 
-                  color: Colors.grey.shade800, 
+                  fontSize: 22,
+                  color: Colors.grey.shade800,
                   height: 1.2,
                 ),
               ),
@@ -58,11 +58,11 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
                 label: "Alamat email",
                 value: "jacobsins@gmail.com",
                 isRegistered: true,
-                isToggled: true, 
-                isLocked: true, 
-                onToggleChanged: (val) {}, 
+                isToggled: true,
+                isLocked: true,
+                onToggleChanged: (val) {},
               ),
-              
+
               const SizedBox(height: 16),
 
               _buildProxyCard(
@@ -71,7 +71,7 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
                 value: "+6281234567890",
                 isRegistered: _isPhoneEnabled,
                 isToggled: _isPhoneEnabled,
-                isLocked: false, 
+                isLocked: false,
                 onToggleChanged: (val) {
                   setState(() {
                     _isPhoneEnabled = val;
@@ -91,7 +91,7 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
     required String value,
     required bool isRegistered,
     required bool isToggled,
-    bool isLocked = false, 
+    bool isLocked = false,
     required ValueChanged<bool> onToggleChanged,
   }) {
     return Container(
@@ -99,30 +99,45 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black, width: 1.0), 
+        border: Border.all(color: Colors.black, width: 1.0),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, 
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 20.0),
             child: Icon(icon, color: const Color(0xFFFF7F00), size: 32),
           ),
           const SizedBox(width: 16),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 18, color: Colors.black)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 18, color: Colors.black),
+                ),
                 const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w400)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                
+
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 36,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: isRegistered ? const Color(0xFFFF9800) : const Color(0xFFD9D9D9),
+                    color: isRegistered
+                        ? const Color(0xFFFF9800)
+                        : const Color(0xFFD9D9D9),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.black, width: 0.5),
                   ),
@@ -134,18 +149,18 @@ class _PengaturanBiFastScreenState extends State<PengaturanBiFastScreen> {
               ],
             ),
           ),
-          
+
           IgnorePointer(
             ignoring: isLocked,
             child: Opacity(
-              opacity: isLocked ? 0.6 : 1.0, 
+              opacity: isLocked ? 0.6 : 1.0,
               child: Switch(
                 value: isToggled,
                 onChanged: onToggleChanged,
-                activeColor: Colors.white, 
-                activeTrackColor: const Color(0xFFFF7F00), 
-                inactiveThumbColor: Colors.white, 
-                inactiveTrackColor: Colors.grey.shade300, 
+                activeThumbColor: Colors.white,
+                activeTrackColor: const Color(0xFFFF7F00),
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.grey.shade300,
               ),
             ),
           ),

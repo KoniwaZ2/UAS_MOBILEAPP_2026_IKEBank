@@ -1,0 +1,19 @@
+$kind: http-request
+url: http://localhost:8000/api/banking/tambah-dana/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"account_id\" : 20,\r
+
+    \    \"saku_id\" : 2,\r
+
+    \    \"amount\" : 10000\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc1MTM1NzcwLCJpYXQiOjE3NzUxMzU0NzAsImp0aSI6ImVkZTk4MGVkNGQzNzRiZTliNDc5NGJmN2M3NzY3MjIyIiwidXNlcl9pZCI6IjIwIiwicGhvbmVfbnVtYmVyIjoiMDg1MjE4NDM3MDc3IiwiZW1haWwiOiJ2aWN0b3JtYXJsaW5vc2Vrb2xhaEBnbWFpbC5jb20iLCJuYW1lIjoiVmljdG9yIn0.QcmG4oSxoWfMtyb4tukIFNiLkztiGAKy76lC_r2_Rlk
+order: 4324810941706413

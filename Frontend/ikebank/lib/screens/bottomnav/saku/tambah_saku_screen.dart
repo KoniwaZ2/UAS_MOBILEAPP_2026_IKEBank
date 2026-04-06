@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'buat_saku_form_screen.dart'; 
+import 'buat_saku_form_screen.dart';
 
 class TambahSakuScreen extends StatelessWidget {
   const TambahSakuScreen({super.key});
@@ -10,7 +10,7 @@ class TambahSakuScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         toolbarHeight: 80,
-        backgroundColor: const Color(0xFFFF7F00), 
+        backgroundColor: const Color(0xFFFF7F00),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
@@ -22,7 +22,7 @@ class TambahSakuScreen extends StatelessWidget {
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 20,
-            fontFamily: 'AlumniSans', 
+            fontFamily: 'AlumniSans',
           ),
         ),
         centerTitle: false,
@@ -40,14 +40,17 @@ class TambahSakuScreen extends StatelessWidget {
               onTap: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BuatSakuFormScreen(type: "Nabung")), // atau "Transaksi"
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const BuatSakuFormScreen(type: "Nabung"),
+                  ), // atau "Transaksi"
                 );
-                
+
                 // --- TAMBAHKAN PENGAMAN INI ---
-                if (!context.mounted) return; 
-                
+                if (!context.mounted) return;
+
                 if (result != null) {
-                  Navigator.pop(context, result); 
+                  Navigator.pop(context, result);
                 }
               },
             ),
@@ -55,23 +58,28 @@ class TambahSakuScreen extends StatelessWidget {
             _buildSakuOptionCard(
               context: context,
               title: "Saku Deposito",
-              description: "Wujudkan impianmu\ndengan Deposito sebesar\n8.8% p.a.!",
-              imagePath: 'assets/images/deposito.png', 
+              description:
+                  "Wujudkan impianmu\ndengan Deposito sebesar\n8.8% p.a.!",
+              imagePath: 'assets/images/deposito.png',
               isPopOut: false,
-              onTap: null, 
+              onTap: null,
             ),
 
             _buildSakuOptionCard(
               context: context,
               title: "Saku Transaksi",
-              description: "Pisah pengeluaranmu\nsesuai kebutuhan sehari-\nhari",
+              description:
+                  "Pisah pengeluaranmu\nsesuai kebutuhan sehari-\nhari",
               imagePath: 'assets/images/transaksi.png',
-              isPopOut: true, 
+              isPopOut: true,
               onTap: () async {
                 // TUNGGU DATA DARI FORM
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BuatSakuFormScreen(type: "Transaksi")),
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const BuatSakuFormScreen(type: "Transaksi"),
+                  ),
                 );
                 // JIKA ADA DATA
                 if (result != null) {
@@ -104,7 +112,7 @@ class TambahSakuScreen extends StatelessWidget {
             Container(
               height: 160,
               decoration: BoxDecoration(
-                color: const Color(0xFFEBEBEB), 
+                color: const Color(0xFFEBEBEB),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
@@ -119,12 +127,21 @@ class TambahSakuScreen extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(fontFamily: 'AlumniSans', fontWeight: FontWeight.w800, fontSize: 20, color: Colors.black),
+                            style: const TextStyle(
+                              fontFamily: 'AlumniSans',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 20,
+                              color: Colors.black,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             description,
-                            style: const TextStyle(fontSize: 18, color: Colors.black87, height: 1.3),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.black87,
+                              height: 1.3,
+                            ),
                           ),
                         ],
                       ),
@@ -134,7 +151,7 @@ class TambahSakuScreen extends StatelessWidget {
                     flex: 4,
                     child: Container(
                       decoration: const BoxDecoration(
-                        color: Color(0xFF01008A), 
+                        color: Color(0xFF01008A),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.zero,
                           bottomLeft: Radius.circular(24),
@@ -143,13 +160,18 @@ class TambahSakuScreen extends StatelessWidget {
                         ),
                       ),
                       alignment: Alignment.center,
-                      child: isPopOut ? null : Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(imagePath, fit: BoxFit.cover),
-                        ),
-                      ),
+                      child: isPopOut
+                          ? null
+                          : Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.asset(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -159,13 +181,10 @@ class TambahSakuScreen extends StatelessWidget {
             if (isPopOut)
               Positioned(
                 right: 10,
-                top: -20, 
+                top: -20,
                 bottom: 0,
                 child: IgnorePointer(
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.asset(imagePath, fit: BoxFit.contain),
                 ),
               ),
           ],
