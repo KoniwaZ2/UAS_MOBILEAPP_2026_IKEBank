@@ -35,12 +35,32 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
     _kalkulasiDeposito();
   }
 
+  DateTime _tambahBulanDenganClamp(DateTime tanggal, int bulanTambahan) {
+    final int totalBulan = (tanggal.month - 1) + bulanTambahan;
+    final int targetYear = tanggal.year + (totalBulan ~/ 12);
+    final int targetMonth = (totalBulan % 12) + 1;
+    final int hariTerakhirBulanTarget = DateTime(targetYear, targetMonth + 1, 0).day;
+    final int targetDay = tanggal.day > hariTerakhirBulanTarget
+        ? hariTerakhirBulanTarget
+        : tanggal.day;
+
+    return DateTime(
+      targetYear,
+      targetMonth,
+      targetDay,
+      tanggal.hour,
+      tanggal.minute,
+      tanggal.second,
+      tanggal.millisecond,
+      tanggal.microsecond,
+    );
+  }
+
   void _kalkulasiDeposito() {
     tanggalMulai = DateTime.now();
-    tanggalJatuhTempo = DateTime(
-      tanggalMulai.year, 
-      tanggalMulai.month + widget.jangkaWaktuBulan, 
-      tanggalMulai.day
+    tanggalJatuhTempo = _tambahBulanDenganClamp(
+      tanggalMulai,
+      widget.jangkaWaktuBulan,
     );
     jumlahHari = tanggalJatuhTempo.difference(tanggalMulai).inDays;
 
