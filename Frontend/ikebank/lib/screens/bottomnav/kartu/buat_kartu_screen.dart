@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:ikebank/screens/bottomnav/kartu/02_buat_kartu_screen_2.dart';
+import '01.1_saldo_rata_rata.dart';
 
 class BuatKartuScreen extends StatelessWidget {
   const BuatKartuScreen({super.key});
@@ -67,7 +69,7 @@ class BuatKartuScreen extends StatelessWidget {
                             children: [
                               const Text(
                                 "Biaya pembuatan kartu:", 
-                                style: TextStyle(fontSize: 13, color: Colors.black87)
+                                style: TextStyle(fontSize: 22, color: Colors.black87)
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -77,7 +79,12 @@ class BuatKartuScreen extends StatelessWidget {
                             ],
                           ),
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () { 
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const BuatKartuScreen2()),
+                              );
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFFF7F00),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -98,7 +105,12 @@ class BuatKartuScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               InkWell(
-                onTap: () {},
+                onTap: () { 
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SaldoRataRataScreen()),
+                  );
+                },
                 borderRadius: BorderRadius.circular(30),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
