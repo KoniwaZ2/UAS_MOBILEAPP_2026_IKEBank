@@ -201,9 +201,10 @@ class Deposito(models.Model): #list deposito yang tersedia untuk dipilih oleh us
     ]
     deposito_id = models.IntegerField(primary_key=True, auto_created=True)
     interest_rate = models.FloatField(null=False, blank=False)
-    quota = models.IntegerField(null=True, blank=False)
+    quota = models.IntegerField(null=True, blank=True)
     duratuion_months = models.IntegerField(null=False, blank=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    isSpecial = models.BooleanField(default=False) #untuk menandai apakah deposito ini adalah deposito khusus dengan syarat tertentu, misalnya hanya untuk nasabah dengan saldo tertentu, atau hanya untuk nasabah yang sudah memiliki deposito sebelumnya
 
 class DepositoAccount(models.Model): #setiap deposito yang dibuat oleh user akan masuk ke tabel ini, dan akan terhubung dengan bank account yang dimiliki user
     STATUS_CHOICES = [

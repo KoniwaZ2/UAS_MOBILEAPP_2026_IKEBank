@@ -5,7 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -824,6 +824,76 @@ class SavingsRecommendationView(APIView):
 
         recommendation = get_weekly_savings_recommendation(account=account)
         return Response(recommendation, status=status.HTTP_200_OK)
+
+
+class NabungAIStateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        cooldown = request.user.nabung_ai_cooldown_until
+        return Response(
+            {
+                'auto_isi': bool(request.user.nabung_ai_auto_isi),
+                'cooldown_until': cooldown.isoformat() if cooldown else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+        auto_isi = request.data.get('auto_isi', None)
+        cooldown_until = request.data.get('cooldown_until', None)
+        clear_cooldown = request.data.get('clear_cooldown', False)
+
+        update_fields = []
+
+        if auto_isi is not None:
+            if isinstance(auto_isi, bool):
+                parsed_auto_isi = auto_isi
+            elif isinstance(auto_isi, (int, float)):
+                parsed_auto_isi = auto_isi != 0
+            elif isinstance(auto_isi, str):
+                parsed_auto_isi = auto_isi.strip().lower() in ('true', '1', 'yes', 'on')
+            else:
+                return Response(
+                    {'detail': 'Invalid auto_isi value.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            request.user.nabung_ai_auto_isi = parsed_auto_isi
+            update_fields.append('nabung_ai_auto_isi')
+
+        if clear_cooldown:
+            request.user.nabung_ai_cooldown_until = None
+            update_fields.append('nabung_ai_cooldown_until')
+        elif cooldown_until is not None:
+            if cooldown_until in ('', None):
+                request.user.nabung_ai_cooldown_until = None
+                update_fields.append('nabung_ai_cooldown_until')
+            else:
+                parsed_cooldown = parse_datetime(str(cooldown_until))
+                if parsed_cooldown is None:
+                    return Response(
+                        {'detail': 'Invalid cooldown_until datetime format.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if timezone.is_naive(parsed_cooldown):
+                    parsed_cooldown = timezone.make_aware(parsed_cooldown, timezone.get_current_timezone())
+
+                request.user.nabung_ai_cooldown_until = parsed_cooldown
+                update_fields.append('nabung_ai_cooldown_until')
+
+        if update_fields:
+            request.user.save(update_fields=update_fields + ['updated_at'])
+
+        cooldown = request.user.nabung_ai_cooldown_until
+        return Response(
+            {
+                'auto_isi': bool(request.user.nabung_ai_auto_isi),
+                'cooldown_until': cooldown.isoformat() if cooldown else None,
+            },
+            status=status.HTTP_200_OK,
+        )
     
 class SakuDetailView(APIView):
     serializer_class = SakuDetailSerializer
@@ -1408,14 +1478,30 @@ class DepositoCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        deposito_type = Deposito.objects.filter(deposito_id=deposito_id).first()
-        if deposito_type is None:
-            return Response(
-                {'detail': 'Deposito menu not found.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
         with transaction.atomic():
+            deposito_type = Deposito.objects.select_for_update().filter(deposito_id=deposito_id).first()
+            if deposito_type is None:
+                return Response(
+                    {'detail': 'Deposito menu not found.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Special offer or quota-based deposito will consume one quota slot per creation.
+            if deposito_type.isSpecial and deposito_type.quota is None:
+                return Response(
+                    {'detail': 'Special offer deposito quota is not configured.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if deposito_type.quota is not None:
+                if deposito_type.quota <= 0:
+                    return Response(
+                        {'detail': 'Deposito quota is full.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                deposito_type.quota -= 1
+                deposito_type.save(update_fields=['quota'])
+
             source_saku.balance -= amount
             source_saku.save(update_fields=['balance'])
 

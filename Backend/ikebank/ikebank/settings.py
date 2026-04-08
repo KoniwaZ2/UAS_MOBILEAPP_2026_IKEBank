@@ -143,7 +143,8 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:61505",  # sesuaikan port flutter run
+    "http://localhost:61505",
+    "http://10.10.168.130:50656"  # sesuaikan port flutter run
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -161,5 +162,5 @@ EMAIL_HOST_USER = 'victormarlinosekolah@gmail.com'
 EMAIL_HOST_PASSWORD = 'dgid hfxt doud tjpa'
 
 # Face login thresholds (balanced to accept same face with lighting/angle variations).
-FACE_LOGIN_MAX_RMS_DISTANCE = 0.2
-FACE_LOGIN_MIN_COSINE_SIMILARITY = 0.90
+FACE_LOGIN_MAX_RMS_DISTANCE = 0.3
+FACE_LOGIN_MIN_COSINE_SIMILARITY = 0.9

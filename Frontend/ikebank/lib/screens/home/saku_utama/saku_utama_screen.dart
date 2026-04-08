@@ -8,6 +8,7 @@ import 'pindah_dana_screen.dart';
 import 'transfer_dana_screen.dart';
 import '../../bottomnav/kartu/buat_kartu_screen.dart';
 import '../../../api/banking.dart';
+import '../../../widgets/filter_bottom_sheet.dart';
 
 class SakuUtamaScreen extends StatefulWidget {
   final String title;
@@ -36,6 +37,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   List<Map<String, dynamic>> _destinationSakus = [];
   bool _isLoadingTransactions = false;
   bool _shouldReturnRefresh = false;
+  TransactionFilter? _activeFilter;
 
   Future<void> _refreshIfChanged(dynamic result) async {
     if (result == true && mounted) {
@@ -180,7 +182,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
       }
 
       setState(() {
-        _transactions = transactions;
+        _transactions = _applyTransactionFilter(transactions);
         _isLoadingTransactions = false;
       });
     } catch (e) {
@@ -531,6 +533,63 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
     }
 
     return false;
+  }
+
+  List<Map<String, dynamic>> _applyTransactionFilter(
+    List<Map<String, dynamic>> transactions,
+  ) {
+    final filter = _activeFilter;
+    if (filter == null) {
+      return transactions;
+    }
+
+    final now = DateTime.now();
+    DateTime? startDate;
+    DateTime? endDate;
+
+    switch (filter.periode) {
+      case FilterPeriode.last7Days:
+        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 6)));
+        endDate = DateUtils.dateOnly(now);
+        break;
+      case FilterPeriode.last30Days:
+        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 29)));
+        endDate = DateUtils.dateOnly(now);
+        break;
+      case FilterPeriode.customDate:
+        startDate = filter.tanggalDari == null
+            ? null
+            : DateUtils.dateOnly(filter.tanggalDari!);
+        endDate = filter.tanggalSampai == null
+            ? null
+            : DateUtils.dateOnly(filter.tanggalSampai!);
+        break;
+    }
+
+    return transactions.where((transaction) {
+      final parsedDate = _parseTransactionDate(transaction);
+      final dateOnly = parsedDate == null
+          ? null
+          : DateUtils.dateOnly(parsedDate);
+
+      if (startDate != null &&
+          (dateOnly == null || dateOnly.isBefore(startDate))) {
+        return false;
+      }
+      if (endDate != null && (dateOnly == null || dateOnly.isAfter(endDate))) {
+        return false;
+      }
+
+      final isIncome = _isTransactionIncome(transaction);
+      if (filter.jenis == FilterJenisTransaksi.danaMasuk && !isIncome) {
+        return false;
+      }
+      if (filter.jenis == FilterJenisTransaksi.danaKeluar && isIncome) {
+        return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   @override
@@ -1503,250 +1562,18 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   }
 
   void _showFilterBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        String selectedPeriode = '';
-        String selectedJenis = '';
+    showFilterBottomSheet(context, initialFilter: _activeFilter).then((value) {
+      if (value == null || !mounted) {
+        return;
+      }
 
-        String? tanggalDari;
-        String? tanggalSampai;
+      setState(() {
+        _activeFilter = value;
+      });
 
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
-                top: 16.0,
-                bottom: MediaQuery.of(context).padding.bottom + 24.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  const Text(
-                    "Filter transaksi",
-                    style: TextStyle(
-                      fontFamily: 'AlumniSans',
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  const Text(
-                    "Periode",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  _buildRadioOption(
-                    "7 hari terakhir",
-                    selectedPeriode,
-                    (val) => setState(() => selectedPeriode = val),
-                  ),
-                  _buildRadioOption(
-                    "30 hari terakhir",
-                    selectedPeriode,
-                    (val) => setState(() => selectedPeriode = val),
-                  ),
-                  _buildRadioOption(
-                    "Pilih tanggal",
-                    selectedPeriode,
-                    (val) => setState(() => selectedPeriode = val),
-                  ),
-
-                  //Dropdown muncul kalo "Pilih tanggal" aktif
-                  if (selectedPeriode == "Pilih tanggal") ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDatePickerBox("Dari", tanggalDari, (
-                            val,
-                          ) {
-                            setState(() {
-                              tanggalDari = val;
-                            });
-                          }),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildDatePickerBox("Sampai", tanggalSampai, (
-                            val,
-                          ) {
-                            setState(() {
-                              tanggalSampai = val;
-                            });
-                          }),
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  const Text(
-                    "Jenis transaksi",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  _buildRadioOption(
-                    "Dana masuk",
-                    selectedJenis,
-                    (val) => setState(() => selectedJenis = val),
-                  ),
-                  _buildRadioOption(
-                    "Dana keluar",
-                    selectedJenis,
-                    (val) => setState(() => selectedJenis = val),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF7F00),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Lihat Hasil",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildRadioOption(
-    String title,
-    String groupValue,
-    Function(String) onChanged,
-  ) {
-    bool isSelected = title == groupValue;
-    return GestureDetector(
-      onTap: () => onChanged(title),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: isSelected ? const Color(0xFFFF7F00) : Colors.black87,
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDatePickerBox(
-    String title,
-    String? selectedValue,
-    Function(String?) onChanged,
-  ) {
-    List<String> days = List.generate(31, (index) => (index + 1).toString());
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8F0),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFFF7F00),
-            ),
-          ),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              isDense: true,
-              value: selectedValue,
-              hint: Text(
-                "Pilih",
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-              ),
-              icon: const Icon(
-                Icons.keyboard_arrow_down,
-                color: Color(0xFFFF7F00),
-                size: 18,
-              ),
-              items: days.map((String day) {
-                return DropdownMenuItem<String>(
-                  value: day,
-                  child: Text(
-                    day,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
-                );
-              }).toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
+      if (_currentSakuId.isNotEmpty) {
+        _loadTransactionHistory(_currentSakuId);
+      }
+    });
   }
 }

@@ -137,6 +137,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     religion = models.CharField(max_length=50, choices=RELOGION_CHOICES, blank=False, null=False)
     mother_name = models.CharField(max_length=64, blank=False, null=False)
     pin = models.CharField(max_length=128, blank=False, null=False)
+    nabung_ai_auto_isi = models.BooleanField(default=True)
+    nabung_ai_cooldown_until = models.DateTimeField(null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

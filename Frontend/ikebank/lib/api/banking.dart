@@ -6,7 +6,12 @@ import '../models/beneficial_account.dart';
 import '../models/wallet_source.dart';
 
 class BankingService {
-  static String baseUrl = 'http://192.168.1.12:8000/api/banking';
+  static String baseUrl = 'http://10.10.161.245:8000/api/banking';
+  static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
+
+  static void notifyAccountDataChanged() {
+    accountDataRevision.value++;
+  }
 
   static Future<Map<String, dynamic>> registerAccount() async {
     final url = Uri.parse('$baseUrl/register/');
@@ -78,7 +83,9 @@ class BankingService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final result = jsonDecode(response.body);
+      notifyAccountDataChanged();
+      return result;
     } else {
       throw Exception(
         'Failed to process QRIS payment (HTTP ${response.statusCode}): ${response.body}',
@@ -229,7 +236,9 @@ class BankingService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final result = jsonDecode(response.body);
+      notifyAccountDataChanged();
+      return result;
     }
 
     throw Exception(response.body);
@@ -271,8 +280,10 @@ class BankingService {
         if (kDebugMode) {
           debugPrint('transferOut <- success HTTP 200');
         }
+        notifyAccountDataChanged();
         return decoded;
       }
+      notifyAccountDataChanged();
       return <String, dynamic>{};
     }
 
@@ -377,5 +388,142 @@ class BankingService {
     } else {
       throw Exception('Failed to get saving recommendation');
     }
+  }
+
+  static Future<Map<String, dynamic>> fetchNabungAiState() async {
+    final url = Uri.parse('$baseUrl/nabung-ai-state/');
+    final response = await AuthService.authorizedGet(url);
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return <String, dynamic>{};
+    }
+
+    throw Exception(
+      'Failed to get Nabung AI state (HTTP ${response.statusCode}): ${response.body}',
+    );
+  }
+
+  static Future<Map<String, dynamic>> updateNabungAiState({
+    bool? autoIsi,
+    DateTime? cooldownUntil,
+    bool clearCooldown = false,
+  }) async {
+    final url = Uri.parse('$baseUrl/nabung-ai-state/');
+    final payload = <String, dynamic>{
+      if (autoIsi != null) 'auto_isi': autoIsi,
+      if (clearCooldown) 'clear_cooldown': true,
+      if (!clearCooldown && cooldownUntil != null)
+        'cooldown_until': cooldownUntil.toIso8601String(),
+    };
+
+    final response = await AuthService.authorizedPost(
+      url,
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return <String, dynamic>{};
+    }
+
+    throw Exception(
+      'Failed to update Nabung AI state (HTTP ${response.statusCode}): ${response.body}',
+    );
+  }
+
+  // ini untuk liat offer atau jenis deposito apa saja yang tersedia
+  static Future<dynamic> DepositoList() {
+    final url = Uri.parse("$baseUrl/deposito-list/");
+    return AuthService.authorizedGet(url).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to get Deposito List');
+      }
+    });
+  }
+
+  static Future<dynamic> buatDeposito({
+    required int depositoId,
+    required int sourceSakuId,
+    required int amount,
+  }) {
+    final url = Uri.parse("$baseUrl/deposito-create/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({
+        'deposito_id': depositoId,
+        'source_saku_id': sourceSakuId,
+        'amount': amount,
+      }),
+    ).then((response) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final result = jsonDecode(response.body);
+        notifyAccountDataChanged();
+        return result;
+      } else {
+        throw Exception(
+          'Failed to create deposito (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> depositoDetail({required String depositoId}) {
+    final url = Uri.parse("$baseUrl/deposito-detail/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({'pk': depositoId}),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to get deposito detail (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> depositoUser() {
+    final url = Uri.parse("$baseUrl/deposito-user/");
+    return AuthService.authorizedGet(url).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to get user deposito list');
+      }
+    });
+  }
+
+  static Future<dynamic> estimasiDeposito({
+    required int depositoId,
+    required int sourceSakuId,
+    required int amount,
+  }) {
+    final url = Uri.parse("$baseUrl/deposito-estimate/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({
+        'amount': amount,
+        'source_saku_id': sourceSakuId,
+        'deposito_id': depositoId,
+      }),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to get deposito estimation (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
   }
 }

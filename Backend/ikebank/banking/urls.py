@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView
+from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, NabungAIStateView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView
 
 
 urlpatterns = [
@@ -13,6 +13,7 @@ urlpatterns = [
     path('tambah-saku/', TambahSakuView.as_view(), name='tambah-saku'),
     path('saku-list/', SakuView.as_view(), name='saku-list-create'),
     path('savings-recommendation/', SavingsRecommendationView.as_view(), name='savings-recommendation'),
+    path('nabung-ai-state/', NabungAIStateView.as_view(), name='nabung-ai-state'),
     path('saku-detail/', SakuDetailView.as_view(), name='saku-detail'),
     path('qris-check/', QrisCheckView.as_view(), name='qris-check'),
     path('transactions-history/', HistoryTransactionView.as_view(), name='transactions-history'),

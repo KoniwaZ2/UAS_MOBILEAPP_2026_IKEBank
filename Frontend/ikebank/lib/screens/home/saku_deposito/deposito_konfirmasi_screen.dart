@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
+import '../../../api/banking.dart';
 import 'deposito_detail_screen.dart';
 
 class DepositoKonfirmasiScreen extends StatefulWidget {
+  final int depositoId;
+  final int sourceSakuId;
   final double jumlahPenempatan;
-  final double sukuBunga; 
-  final int jangkaWaktuBulan; 
+  final double sukuBunga;
+  final int jangkaWaktuBulan;
 
   const DepositoKonfirmasiScreen({
     super.key,
+    required this.depositoId,
+    required this.sourceSakuId,
     required this.jumlahPenempatan,
     required this.sukuBunga,
     required this.jangkaWaktuBulan,
   });
 
   @override
-  State<DepositoKonfirmasiScreen> createState() => _DepositoKonfirmasiScreenState();
+  State<DepositoKonfirmasiScreen> createState() =>
+      _DepositoKonfirmasiScreenState();
 }
 
 class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
   final double pajakBunga = 20.0;
+  bool _isSubmitting = false;
 
   late DateTime tanggalMulai;
   late DateTime tanggalJatuhTempo;
@@ -39,7 +46,11 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
     final int totalBulan = (tanggal.month - 1) + bulanTambahan;
     final int targetYear = tanggal.year + (totalBulan ~/ 12);
     final int targetMonth = (totalBulan % 12) + 1;
-    final int hariTerakhirBulanTarget = DateTime(targetYear, targetMonth + 1, 0).day;
+    final int hariTerakhirBulanTarget = DateTime(
+      targetYear,
+      targetMonth + 1,
+      0,
+    ).day;
     final int targetDay = tanggal.day > hariTerakhirBulanTarget
         ? hariTerakhirBulanTarget
         : tanggal.day;
@@ -64,7 +75,8 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
     );
     jumlahHari = tanggalJatuhTempo.difference(tanggalMulai).inDays;
 
-    bungaSebelumPajak = (widget.jumlahPenempatan * (widget.sukuBunga / 100) * jumlahHari) / 365;
+    bungaSebelumPajak =
+        (widget.jumlahPenempatan * (widget.sukuBunga / 100) * jumlahHari) / 365;
     nominalPajak = bungaSebelumPajak * (pajakBunga / 100);
     bungaSetelahPajak = bungaSebelumPajak - nominalPajak;
     estimasiTotal = widget.jumlahPenempatan + bungaSetelahPajak;
@@ -86,10 +98,83 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
 
   String _formatTanggal(DateTime date) {
     List<String> namaBulan = [
-      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return "${date.day} ${namaBulan[date.month]} ${date.year}";
+  }
+
+  Future<void> _submitDeposito() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final result = await BankingService.buatDeposito(
+        depositoId: widget.depositoId,
+        sourceSakuId: widget.sourceSakuId,
+        amount: widget.jumlahPenempatan.round(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final namaDeposito = (result['deposito_name'] ?? 'Deposito').toString();
+      final rawStartDate = (result['start_date'] ?? '').toString();
+      final rawEndDate = (result['end_date'] ?? '').toString();
+      final parsedStartDate = DateTime.tryParse(rawStartDate) ?? tanggalMulai;
+      final parsedEndDate = DateTime.tryParse(rawEndDate) ?? tanggalJatuhTempo;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DepositoDetailScreen(
+            namaDeposito: namaDeposito,
+            jumlahPenempatan: widget.jumlahPenempatan,
+            bungaSetelahPajak: bungaSetelahPajak,
+            tanggalMulai: _formatTanggal(parsedStartDate),
+            tanggalJatuhTempo: _formatTanggal(parsedEndDate),
+            sukuBunga: widget.sukuBunga,
+            jangkaWaktuBulan: widget.jangkaWaktuBulan,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   @override
@@ -107,7 +192,12 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
         centerTitle: true,
         title: const Text(
           "Deposito Spesial",
-          style: TextStyle(fontFamily: 'AlumniSans', fontWeight: FontWeight.w800, fontSize: 24, color: Colors.black),
+          style: TextStyle(
+            fontFamily: 'AlumniSans',
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            color: Colors.black,
+          ),
         ),
       ),
       body: SafeArea(
@@ -115,37 +205,80 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Center(
                       child: Text(
                         "Cek lagi sebelum konfirmasi, ya",
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
 
-                    const Text("Estimasi dana saat jatuh tempo", style: TextStyle(fontSize: 24, color: Colors.black)),
+                    const Text(
+                      "Estimasi dana saat jatuh tempo",
+                      style: TextStyle(fontSize: 24, color: Colors.black),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       _formatRp(estimasiTotal),
-                      style: const TextStyle(fontFamily: 'AlumniSans', fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFFFF7F00)),
+                      style: const TextStyle(
+                        fontFamily: 'AlumniSans',
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFF7F00),
+                      ),
                     ),
                     const SizedBox(height: 32),
 
-                    const Text("Rincian Deposito", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+                    const Text(
+                      "Rincian Deposito",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
                     const SizedBox(height: 16),
 
-                    _buildDetailRow("Jumlah penempatan", _formatRp(widget.jumlahPenempatan)),
+                    _buildDetailRow(
+                      "Jumlah penempatan",
+                      _formatRp(widget.jumlahPenempatan),
+                    ),
                     _buildDetailRow("Suku bunga (p.a)", "${widget.sukuBunga}%"),
-                    _buildDetailRow("Bunga sebelum pajak", _formatRp(bungaSebelumPajak)),
-                    _buildDetailRow("Pajak bunga (20%)", "-${_formatRp(nominalPajak)}"),
-                    _buildDetailRow("Bunga setelah pajak", _formatRp(bungaSetelahPajak)),
-                    _buildDetailRow("Jangka waktu", "${widget.jangkaWaktuBulan} Bulan"),
-                    _buildDetailRow("Tanggal mulai", _formatTanggal(tanggalMulai)),
-                    _buildDetailRow("Tanggal jatuh tempo", _formatTanggal(tanggalJatuhTempo)),
+                    _buildDetailRow(
+                      "Bunga sebelum pajak",
+                      _formatRp(bungaSebelumPajak),
+                    ),
+                    _buildDetailRow(
+                      "Pajak bunga (20%)",
+                      "-${_formatRp(nominalPajak)}",
+                    ),
+                    _buildDetailRow(
+                      "Bunga setelah pajak",
+                      _formatRp(bungaSetelahPajak),
+                    ),
+                    _buildDetailRow(
+                      "Jangka waktu",
+                      "${widget.jangkaWaktuBulan} Bulan",
+                    ),
+                    _buildDetailRow(
+                      "Tanggal mulai",
+                      _formatTanggal(tanggalMulai),
+                    ),
+                    _buildDetailRow(
+                      "Tanggal jatuh tempo",
+                      _formatTanggal(tanggalJatuhTempo),
+                    ),
                   ],
                 ),
               ),
@@ -157,25 +290,33 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DepositoDetailScreen(
-                          jumlahPenempatan: widget.jumlahPenempatan,
-                          bungaSetelahPajak: bungaSetelahPajak,
-                          tanggalMulai: _formatTanggal(tanggalMulai),
-                          tanggalJatuhTempo: _formatTanggal(tanggalJatuhTempo),
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _isSubmitting ? null : _submitDeposito,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF7F00),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text("Konfirmasi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          "Konfirmasi",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -191,8 +332,18 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 22, color: Colors.black)),
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: Colors.black)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 22, color: Colors.black),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
     );

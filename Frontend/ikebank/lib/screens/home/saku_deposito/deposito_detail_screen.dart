@@ -11,6 +11,8 @@ class DepositoDetailScreen extends StatefulWidget {
   final String tanggalMulai;
   final String tanggalJatuhTempo;
   final bool isFromPortfolio; 
+  final double sukuBunga;
+  final int jangkaWaktuBulan;
 
   const DepositoDetailScreen({
     super.key,
@@ -20,6 +22,8 @@ class DepositoDetailScreen extends StatefulWidget {
     required this.tanggalMulai,
     required this.tanggalJatuhTempo,
     this.isFromPortfolio = false, 
+    this.sukuBunga = 8.8,
+    this.jangkaWaktuBulan = 1,
   });
 
   @override
@@ -198,9 +202,9 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                     const Text("Rincian Deposito", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     _buildDetailRow("Jumlah penempatan", _formatRp(widget.jumlahPenempatan)), 
-                    _buildDetailRow("Suku bunga (p.a)", "8.80%"),
+                    _buildDetailRow("Suku bunga (p.a)", "${widget.sukuBunga.toStringAsFixed(widget.sukuBunga == widget.sukuBunga.roundToDouble() ? 0 : 2)}%"),
                     _buildDetailRow("Bunga setelah pajak", _formatRp(widget.bungaSetelahPajak)),
-                    _buildDetailRow("Jangka waktu", "1 Bulan"),
+                    _buildDetailRow("Jangka waktu", "${widget.jangkaWaktuBulan} Bulan"),
                     _buildDetailRow("Tanggal mulai", widget.tanggalMulai),
                     _buildDetailRow("Tanggal jatuh tempo", widget.tanggalJatuhTempo),
                     Padding(

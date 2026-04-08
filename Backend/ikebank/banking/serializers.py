@@ -34,6 +34,8 @@ class DepositoSerializer(serializers.ModelSerializer):
             'interest_rate',
             'quota',
             'duratuion_months',
+            'status',
+            'isSpecial',
         ]
 
 class TransactionCreateSerializer(serializers.Serializer):
@@ -60,7 +62,7 @@ class TransactionCreateSerializer(serializers.Serializer):
 class TambahDanaSerializer(serializers.Serializer):
     """External deposits to primary Saku Utama (ATM, incoming transfer)"""
     amount = serializers.IntegerField(required=True)
-    description = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True) # For source description, e.g. "Transfer from BCA", "Deposit via ATM", etc
     source = serializers.CharField(required=False, allow_blank=True)  # ATM, Transfer In, etc
 
 class InternalTransferSerializer(serializers.Serializer):
