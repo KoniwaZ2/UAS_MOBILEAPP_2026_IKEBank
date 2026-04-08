@@ -187,3 +187,90 @@ def upsert_cashflow_for_all_accounts(month, year):
         upsert_cashflow_for_account(account=account, month=month, year=year)
         updated_count += 1
     return updated_count
+
+
+def _get_previous_month_year(month, year):
+    if month == 1:
+        return 12, year - 1
+    return month - 1, year
+
+
+def get_cashflow_highlights(account, month, year):
+    previous_month, previous_year = _get_previous_month_year(month=month, year=year)
+
+    top_transaction_categories = ('transfer_out', 'payment', 'withdrawal')
+
+    previous_month_top_expense = (
+        Transaction.objects.filter(
+            account_id=account,
+            timestamp__year=previous_year,
+            timestamp__month=previous_month,
+            category__in=top_transaction_categories,
+        )
+        .select_related('qris', 'saku')
+        .order_by('-amount', '-timestamp')
+        .first()
+    )
+
+    def _serialize_transaction(tx):
+        if tx is None:
+            return None
+
+        merchant_name = (
+            tx.merchant_name_snapshot
+            or (tx.qris.merchant_name if tx.qris else None)
+        )
+        return {
+            'transaction_id': str(tx.transaction_id),
+            'category': tx.category,
+            'saku_name': tx.saku.saku_name if tx.saku else None,
+            'merchant_name': merchant_name,
+            'description': tx.description,
+            'amount': int(tx.amount),
+        }
+
+    top_transaction_last_month = _serialize_transaction(previous_month_top_expense)
+
+    savings_amount = (
+        Transaction.objects.filter(
+            account_id=account,
+            timestamp__year=previous_year,
+            timestamp__month=previous_month,
+            category='other',
+            saku__is_primary=False,
+            saku__category_name__in=('celengan', 'nabung'),
+            source_funds__istartswith='Internal transfer from',
+        ).aggregate(total=Coalesce(Sum('amount'), Value(0)))
+    )['total']
+
+    interest_aggregate = Transaction.objects.filter(
+        account_id=account,
+        timestamp__year=previous_year,
+        timestamp__month=previous_month,
+        category='interest',
+    ).aggregate(
+        total=Coalesce(Sum('amount'), Value(0)),
+        tabungan=Coalesce(Sum('amount', filter=Q(source_funds__icontains='tabungan')), Value(0)),
+        deposito=Coalesce(Sum('amount', filter=Q(source_funds__icontains='deposito')), Value(0)),
+    )
+
+    total_interest = int(interest_aggregate['total'] or 0)
+    tabungan_interest = int(interest_aggregate['tabungan'] or 0)
+    deposito_interest = int(interest_aggregate['deposito'] or 0)
+
+    return {
+        'top_transaction_last_month': top_transaction_last_month,
+        'monthly_savings': {
+            'month': previous_month,
+            'year': previous_year,
+            'amount': int(savings_amount or 0),
+        },
+        'interest_earnings': {
+            'month': previous_month,
+            'year': previous_year,
+            'tabungan': tabungan_interest,
+            'deposito': deposito_interest,
+            'other': max(total_interest - tabungan_interest - deposito_interest, 0),
+            'total': total_interest,
+        },
+    }

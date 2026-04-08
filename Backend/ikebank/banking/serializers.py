@@ -158,3 +158,13 @@ class DepositoEstimateSerializer(serializers.Serializer):
     source_saku_id = serializers.IntegerField(required=True)
     amount = serializers.IntegerField(min_value=1000000, required=True)
     
+class DepositoEditSerializer(serializers.Serializer):
+    deposito_account_id = serializers.UUIDField(required=False)
+    deposito_id = serializers.IntegerField(required=False)
+    nama_deposito = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs.get('deposito_account_id') and not attrs.get('deposito_id'):
+            raise serializers.ValidationError({'detail': 'deposito_account_id or deposito_id is required.'})
+
+        return attrs

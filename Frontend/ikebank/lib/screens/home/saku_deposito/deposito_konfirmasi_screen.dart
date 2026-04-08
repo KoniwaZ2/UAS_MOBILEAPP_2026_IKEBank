@@ -152,6 +152,7 @@ class _DepositoKonfirmasiScreenState extends State<DepositoKonfirmasiScreen> {
             tanggalJatuhTempo: _formatTanggal(parsedEndDate),
             sukuBunga: widget.sukuBunga,
             jangkaWaktuBulan: widget.jangkaWaktuBulan,
+            depositoUUID: result['deposito_account_id']?.toString() ?? '',
           ),
         ),
       );

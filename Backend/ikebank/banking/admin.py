@@ -44,7 +44,7 @@ class DepositoAdmin(admin.ModelAdmin):
 
 @admin.register(DepositoAccount)
 class DepositoAccountAdmin(admin.ModelAdmin):
-    list_display = ('deposito_account_id', 'deposito_id', 'account_id', 'balance', 'start_date', 'end_date', 'status')
+    list_display = ('id','deposito_account_id', 'deposito_id', 'account_id', 'balance', 'start_date', 'end_date', 'status')
     search_fields = ('account__account_number', 'saku__saku_name')
     list_filter = ('status',)
 

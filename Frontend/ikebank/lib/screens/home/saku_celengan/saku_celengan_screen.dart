@@ -40,15 +40,25 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
   String _savingRecommendationAmount = 'Rp 500.000';
   int _savingRecommendationValue = 0;
   bool _isLoadingSavingRecommendation = true;
-  TransactionFilter _activeFilter = const TransactionFilter.initial();
+  TransactionFilter _activeFilter = const TransactionFilter.noFilter();
   String _celenganSakuId = '';
   String _autoIsiSourceSakuId = '';
   bool _isAutoIsiProcessing = false;
+
+  void _handleAccountDataChanged() {
+    if (!mounted) {
+      return;
+    }
+    _loadCelenganData();
+    _loadSavingRecommendation();
+    _loadTransactionHistory();
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    BankingService.accountDataRevision.addListener(_handleAccountDataChanged);
     _loadAutoIsiPreference();
     _loadNabungAiStateFromServer();
     _loadCelenganData();
@@ -63,7 +73,6 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
       _loadNabungAiStateFromServer();
       _loadCelenganData();
       _loadSavingRecommendation();
-      _loadCooldownState();
       _loadTransactionHistory();
     }
   }
@@ -71,6 +80,9 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    BankingService.accountDataRevision.removeListener(
+      _handleAccountDataChanged,
+    );
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -164,46 +176,55 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
         _startCooldownTimer();
       }
 
-      await _saveAutoIsiPreference(remoteAutoIsi);
-      await _saveCooldownState();
+      await _saveAutoIsiPreference(remoteAutoIsi, syncServer: false);
+      await _saveCooldownState(syncServer: false);
     } catch (_) {
       // Keep local state if remote state fetch fails.
     }
   }
 
-  Future<void> _saveAutoIsiPreference(bool value) async {
+  Future<void> _saveAutoIsiPreference(
+    bool value, {
+    bool syncServer = true,
+  }) async {
     try {
       await _secureStorage.write(key: _autoIsiKey, value: value.toString());
-      try {
-        await BankingService.updateNabungAiState(autoIsi: value);
-      } catch (_) {
-        // Keep local state if remote save fails.
+      if (syncServer) {
+        try {
+          await BankingService.updateNabungAiState(autoIsi: value);
+        } catch (_) {
+          // Keep local state if remote save fails.
+        }
       }
     } catch (_) {
       // Ignore storage write issues.
     }
   }
 
-  Future<void> _saveCooldownState() async {
+  Future<void> _saveCooldownState({bool syncServer = true}) async {
     try {
       if (_nextNabungAt != null) {
         await _secureStorage.write(
           key: _cooldownKey,
           value: _nextNabungAt!.toIso8601String(),
         );
-        try {
-          await BankingService.updateNabungAiState(
-            cooldownUntil: _nextNabungAt,
-          );
-        } catch (_) {
-          // Keep local state if remote save fails.
+        if (syncServer) {
+          try {
+            await BankingService.updateNabungAiState(
+              cooldownUntil: _nextNabungAt,
+            );
+          } catch (_) {
+            // Keep local state if remote save fails.
+          }
         }
       } else {
         await _secureStorage.delete(key: _cooldownKey);
-        try {
-          await BankingService.updateNabungAiState(clearCooldown: true);
-        } catch (_) {
-          // Keep local state if remote save fails.
+        if (syncServer) {
+          try {
+            await BankingService.updateNabungAiState(clearCooldown: true);
+          } catch (_) {
+            // Keep local state if remote save fails.
+          }
         }
       }
     } catch (_) {}
@@ -442,6 +463,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
 
   Future<void> _loadCelenganData() async {
     try {
+      final previousCelenganSakuId = _celenganSakuId;
       final raw = await BankingService.sakuList();
       final dynamic payload = raw is Map<String, dynamic>
           ? (raw['data'] ?? raw['results'] ?? raw['sakus'] ?? raw)
@@ -534,6 +556,11 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
         // Progress tetap mengikuti saldo API, target tampilan masih 10 jt.
         _celenganProgress = progress;
       });
+
+      if (celenganSakuId.isNotEmpty &&
+          celenganSakuId != previousCelenganSakuId) {
+        await _loadTransactionHistory();
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -602,7 +629,9 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
     });
 
     try {
-      final transactions = await BankingService.transactionHistory();
+      final transactions = await BankingService.transactionHistory(
+        sakuId: _celenganSakuId.isEmpty ? null : _celenganSakuId,
+      );
       final filteredTransactions = _applyTransactionFilter(
         transactions,
         _activeFilter,
@@ -633,50 +662,66 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
     List<Map<String, dynamic>> transactions,
     TransactionFilter filter,
   ) {
+    if (filter.periode == FilterPeriode.all &&
+        filter.jenis == FilterJenisTransaksi.all) {
+      return transactions;
+    }
+
     DateTime now = DateTime.now();
     DateTime? startDate;
     DateTime? endDate;
 
-    switch (filter.periode) {
-      case FilterPeriode.last7Days:
-        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 6)));
-        endDate = DateUtils.dateOnly(now);
-        break;
-      case FilterPeriode.last30Days:
-        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 29)));
-        endDate = DateUtils.dateOnly(now);
-        break;
-      case FilterPeriode.customDate:
-        startDate = filter.tanggalDari == null
-            ? null
-            : DateUtils.dateOnly(filter.tanggalDari!);
-        endDate = filter.tanggalSampai == null
-            ? null
-            : DateUtils.dateOnly(filter.tanggalSampai!);
-        break;
+    if (filter.periode != FilterPeriode.all) {
+      switch (filter.periode) {
+        case FilterPeriode.all:
+          break;
+        case FilterPeriode.last7Days:
+          startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 6)));
+          endDate = DateUtils.dateOnly(now);
+          break;
+        case FilterPeriode.last30Days:
+          startDate = DateUtils.dateOnly(
+            now.subtract(const Duration(days: 29)),
+          );
+          endDate = DateUtils.dateOnly(now);
+          break;
+        case FilterPeriode.customDate:
+          startDate = filter.tanggalDari == null
+              ? null
+              : DateUtils.dateOnly(filter.tanggalDari!);
+          endDate = filter.tanggalSampai == null
+              ? null
+              : DateUtils.dateOnly(filter.tanggalSampai!);
+          break;
+      }
     }
 
     return transactions.where((tx) {
-      final parsedDate = _parseTransactionDate(tx);
-      final dateOnly = parsedDate == null
-          ? null
-          : DateUtils.dateOnly(parsedDate);
+      if (filter.periode != FilterPeriode.all) {
+        final parsedDate = _parseTransactionDate(tx);
+        final dateOnly = parsedDate == null
+            ? null
+            : DateUtils.dateOnly(parsedDate);
 
-      if (startDate != null &&
-          (dateOnly == null || dateOnly.isBefore(startDate))) {
-        return false;
+        if (startDate != null &&
+            (dateOnly == null || dateOnly.isBefore(startDate))) {
+          return false;
+        }
+
+        if (endDate != null &&
+            (dateOnly == null || dateOnly.isAfter(endDate))) {
+          return false;
+        }
       }
 
-      if (endDate != null && (dateOnly == null || dateOnly.isAfter(endDate))) {
-        return false;
-      }
-
-      final isIncome = _isTransactionIncome(tx);
-      if (filter.jenis == FilterJenisTransaksi.danaMasuk && !isIncome) {
-        return false;
-      }
-      if (filter.jenis == FilterJenisTransaksi.danaKeluar && isIncome) {
-        return false;
+      if (filter.jenis != FilterJenisTransaksi.all) {
+        final isIncome = _isTransactionIncome(tx);
+        if (filter.jenis == FilterJenisTransaksi.danaMasuk && !isIncome) {
+          return false;
+        }
+        if (filter.jenis == FilterJenisTransaksi.danaKeluar && isIncome) {
+          return false;
+        }
       }
 
       return true;
@@ -732,7 +777,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
       return true;
     }
 
-    return true;
+    return false;
   }
 
   Future<void> _openTransactionFilter() async {
@@ -1826,7 +1871,24 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
         'transaction_date',
         'date',
       ]);
-      final isExpense = _readBool(tx, 'is_debit') || amount.startsWith('-');
+      final isIncome = _isTransactionIncome(tx);
+      final isExpense = !isIncome;
+        final sourceFunds = _readString(tx, const [
+        'source_funds',
+        'merchant_name',
+        ]);
+        final referenceNumber = _readString(tx, const ['transaction_id']);
+        final currentSakuInfo = _celenganName;
+        final fromInfo = isIncome
+          ? (sourceFunds.isEmpty ? '-' : sourceFunds)
+          : currentSakuInfo;
+        final toInfo = isIncome
+          ? currentSakuInfo
+          : (sourceFunds.isEmpty ? '-' : sourceFunds);
+      final formattedAmount = amount.isEmpty
+          ? _formatRupiah('0')
+          : _formatRupiah(amount);
+      final signedAmount = '${isExpense ? '-' : '+'}$formattedAmount';
 
       widgets.add(
         GestureDetector(
@@ -1834,7 +1896,17 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const RiwayatTransaksiScreen(),
+                builder: (context) => RiwayatTransaksiScreen(
+                  transactionTitle: title.isEmpty ? 'Transaksi' : title,
+                  amount: signedAmount,
+                  isIncome: isIncome,
+                  fromInfo: fromInfo,
+                  toInfo: toInfo,
+                  referenceNumber: referenceNumber,
+                  status: 'Berhasil',
+                  transactionTimeRaw: timestamp,
+                  transactionTypeLabel: isIncome ? 'Dana masuk' : 'Dana keluar',
+                ),
               ),
             );
           },
@@ -1845,9 +1917,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
               subTitle: subTitle.isEmpty
                   ? 'Saku Celengan'
                   : _formatCategoryLabel(subTitle),
-              amount: amount.isEmpty
-                  ? _formatRupiah('0')
-                  : _formatRupiah(amount),
+              amount: signedAmount,
               time: _formatTransactionTime(timestamp),
               imageAsset: 'assets/images/celengan.png',
               isExpense: isExpense,

@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static String baseUrl = 'http://10.10.161.245:8000/api/auth';
+  static String baseUrl = 'http://192.168.1.12:8000/api/auth';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
@@ -630,5 +630,51 @@ class AuthService {
     }
 
     await clearTokens();
+  }
+
+  static Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    final url = Uri.parse('$baseUrl/change-password/');
+    final response = await authorizedPost(
+      url,
+      body: jsonEncode({
+        'old_password': oldPassword,
+        'new_password': newPassword,
+        'new_password_confirmation': newPasswordConfirmation,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        _extractErrorMessage(response, 'Failed to change password'),
+      );
+    }
+  }
+
+  static Future<void> changePIN({
+    required String oldPin,
+    required String newPin,
+    required String newPinConfirmation,
+  }) async {
+    final url = Uri.parse('$baseUrl/change-pin/');
+    final response = await authorizedPost(
+      url,
+      body: jsonEncode({
+        'old_pin': oldPin,
+        'new_pin': newPin,
+        'new_pin_confirmation': newPinConfirmation,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(_extractErrorMessage(response, 'Failed to change PIN'));
+    }
   }
 }

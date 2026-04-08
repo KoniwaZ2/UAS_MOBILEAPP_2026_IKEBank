@@ -155,14 +155,11 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
     return name.contains('deposito') || category.contains('deposito');
   }
 
-  bool _isBlockedSourceCategory(Map<String, dynamic> saku) {
+  bool _isCelenganSaku(Map<String, dynamic> saku) {
     final name = _readString(saku, const ['saku_name', 'name']).toLowerCase();
     final category = _readString(saku, const ['category_name', 'category'])
         .toLowerCase();
-    return name.contains('nabung') ||
-        category.contains('nabung') ||
-        name.contains('deposito') ||
-        category.contains('deposito');
+    return name.contains('celengan') || category.contains('celengan');
   }
 
   String _resolveSakuIcon(Map<String, dynamic> saku) {
@@ -187,7 +184,7 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
       final id = _readString(saku, const ['id', 'saku_id']);
       final isSameAsDestination =
           destinationId.trim().isNotEmpty && id == destinationId;
-      return !_isBlockedSourceCategory(saku) && !isSameAsDestination;
+      return _isCelenganSaku(saku) && !isSameAsDestination;
     }).toList();
   }
 
@@ -275,7 +272,7 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
       }
 
       selectedSource ??= sourceCandidates
-          .where((s) => _readBool(s, 'is_primary'))
+          .where((s) => _isCelenganSaku(s))
           .cast<Map<String, dynamic>?>()
           .firstWhere((_) => true, orElse: () => null);
 

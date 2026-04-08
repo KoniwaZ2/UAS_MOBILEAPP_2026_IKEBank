@@ -2,6 +2,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from user.models import User, OtpVerification, generate_otp_code, hash_otp_code
 from .serializers import (
+    ChangePasswordSerializer,
+    ChangePinSerializer,
     CheckPhoneEmailSerializer,
     FaceLoginSerializer,
     RegisterSerializer,
@@ -13,6 +15,7 @@ from .serializers import (
     CheckLoginSerializer,
     OtpLoginSerializer,
     ForgotPasswordSerializer,
+    ForgotPinSerializer,
 )
 from user.models import RegistrationDraft
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -22,6 +25,7 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+from django.contrib.auth.hashers import check_password
 import re
 import math
 import pytesseract
@@ -556,3 +560,94 @@ class LogoutView(generics.GenericAPIView):
             return Response({'detail': f'Invalid refresh token: {exc}'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
+    
+class ChangePasswordView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = request.user
+        old_password = validated_data.get('old_password')
+        new_password = validated_data.get('new_password')
+        new_password_confirm = validated_data.get('new_password_confirmation')
+
+        if not user.check_password(old_password):
+            return Response({'detail': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != new_password_confirm:
+            return Response({'detail': 'New password and confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+
+        return Response(
+            {
+                'message': 'Password berhasil diubah.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class ChangePinView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ChangePinSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = request.user
+        old_pin = validated_data.get('old_pin')
+        new_pin = validated_data.get('new_pin')
+        new_pin_confirm = validated_data.get('new_pin_confirmation')
+
+        stored_pin = getattr(user, 'pin', '') or ''
+        is_old_pin_valid = stored_pin == old_pin or check_password(old_pin, stored_pin)
+        if not is_old_pin_valid:
+            return Response({'detail': 'Old PIN is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_pin != new_pin_confirm:
+            return Response({'detail': 'New PIN and confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.pin = user_models.hash_pin(new_pin)
+        user.save(update_fields=['pin', 'updated_at'])
+
+        return Response(
+            {
+                'message': 'PIN berhasil diubah.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class ForgotPinView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = ForgotPinSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        user = request.user
+        new_pin = validated_data.get('new_pin')
+        new_pin_confirm = validated_data.get('new_pin_confirmation')
+
+        if new_pin != new_pin_confirm:
+            return Response({'detail': 'New PIN and confirmation do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.pin = user_models.hash_pin(new_pin)
+        user.save(update_fields=['pin', 'updated_at'])
+
+        return Response(
+            {
+                'message': 'PIN berhasil direset.',
+                'email': user.email,
+            },
+            status=status.HTTP_200_OK,
+        )

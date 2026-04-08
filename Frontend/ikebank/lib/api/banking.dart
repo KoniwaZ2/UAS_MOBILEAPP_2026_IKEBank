@@ -6,7 +6,7 @@ import '../models/beneficial_account.dart';
 import '../models/wallet_source.dart';
 
 class BankingService {
-  static String baseUrl = 'http://10.10.161.245:8000/api/banking';
+  static String baseUrl = 'http://192.168.1.12:8000/api/banking';
   static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
 
   static void notifyAccountDataChanged() {
@@ -522,6 +522,50 @@ class BankingService {
       } else {
         throw Exception(
           'Failed to get deposito estimation (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> cashflowCalculate({
+    required int month,
+    required int year,
+  }) {
+    final url = Uri.parse("$baseUrl/cashflow-calculate/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({'month': month, 'year': year}),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to calculate cashflow (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> editDeposito({
+    required String depositoUUID,
+    required String nama,
+  }) {
+    final url = Uri.parse("$baseUrl/deposito-edit/");
+    final payload = <String, dynamic>{
+      'deposito_account_id': depositoUUID,
+      'nama_deposito': nama,
+    };
+
+    return AuthService.authorizedPost(url, body: jsonEncode(payload)).then((
+      response,
+    ) {
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        notifyAccountDataChanged();
+        return result;
+      } else {
+        throw Exception(
+          'Failed to edit deposito (HTTP ${response.statusCode}): ${response.body}',
         );
       }
     });

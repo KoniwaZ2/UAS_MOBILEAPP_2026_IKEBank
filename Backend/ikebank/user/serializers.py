@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.db import IntegrityError, transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -363,6 +364,74 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         if not email:
             raise serializers.ValidationError("Email must be provided.")
+
+        if email:
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, email):
+                raise serializers.ValidationError("Invalid email format.")
+            if not User.objects.filter(email=email).exists():
+                raise PermissionDenied("Email is not registered.")
+        data['email'] = email
+        return data
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    new_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    new_password_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate(self, data):
+        user = self.context['request'].user
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        new_password_confirmation = data.get('new_password_confirmation')
+
+        if not user.check_password(old_password):
+            raise PermissionDenied("Old password is incorrect.")
+
+        if new_password != new_password_confirmation:
+            raise serializers.ValidationError("New password and confirmation do not match.")
+
+        return data
+    
+class ChangePinSerializer(serializers.Serializer):
+    old_pin = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    new_pin = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    new_pin_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate(self, data):
+        user = self.context['request'].user
+        old_pin = data.get('old_pin')
+        new_pin = data.get('new_pin')
+        new_pin_confirmation = data.get('new_pin_confirmation')
+
+        stored_pin = getattr(user, 'pin', '') or ''
+        is_old_pin_valid = stored_pin == old_pin or check_password(old_pin, stored_pin)
+        if not is_old_pin_valid:
+            raise PermissionDenied("Old PIN is incorrect.")
+
+        if new_pin != new_pin_confirmation:
+            raise serializers.ValidationError("New PIN and confirmation do not match.")
+
+        return data
+    
+class ForgotPinSerializer(serializers.Serializer):
+    otp_reference = serializers.UUIDField(required=True)
+    email = serializers.EmailField(required=True)
+    new_pin = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    new_pin_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate(self, data):
+        otp_reference = data.get('otp_reference')
+        raw_email = data.get('email')
+        email = raw_email.strip().lower() if isinstance(raw_email, str) else raw_email
+        new_pin = data.get('new_pin')
+        new_pin_confirmation = data.get('new_pin_confirmation')
+
+        if otp_reference is None:
+            raise serializers.ValidationError({'otp_reference': 'OTP reference is required.'})
+
+        if new_pin != new_pin_confirmation:
+            raise serializers.ValidationError("New PIN and confirmation do not match.")
 
         if email:
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'

@@ -39,7 +39,7 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
   bool _isLoadingTransactions = false;
   bool _isLoading = true;
   bool _shouldReturnRefresh = false;
-  TransactionFilter? _activeFilter;
+  TransactionFilter _activeFilter = const TransactionFilter.noFilter();
 
   @override
   void initState() {
@@ -503,6 +503,7 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
     final widgets = <Widget>[];
     DateTime? activeDate;
     bool hasUntitledDateGroup = false;
+    bool hasPlacedFilterOnHeader = false;
 
     for (final transaction in transactions) {
       final parsedDate = _parseTransactionDate(transaction);
@@ -515,32 +516,58 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
           : activeDate == null || activeDate != dateOnly;
 
       if (shouldInsertDateHeader) {
+        late final Widget headerText;
+
         if (dateOnly == null) {
           hasUntitledDateGroup = true;
-          widgets.add(
-            const Text(
-              'Tanpa tanggal',
-              style: TextStyle(
-                color: Color(0xFFFF7F00),
-                fontSize: 18,
-                fontFamily: 'AlumniSans',
-                fontWeight: FontWeight.w800,
-              ),
+          headerText = const Text(
+            'Tanpa tanggal',
+            style: TextStyle(
+              color: Color(0xFFFF7F00),
+              fontSize: 18,
+              fontFamily: 'AlumniSans',
+              fontWeight: FontWeight.w800,
             ),
           );
         } else {
           activeDate = dateOnly;
-          widgets.add(
-            Text(
-              _formatTransactionDateHeader(dateOnly),
-              style: const TextStyle(
-                color: Color(0xFFFF7F00),
-                fontSize: 18,
-                fontFamily: 'AlumniSans',
-                fontWeight: FontWeight.w800,
-              ),
+          headerText = Text(
+            _formatTransactionDateHeader(dateOnly),
+            style: const TextStyle(
+              color: Color(0xFFFF7F00),
+              fontSize: 18,
+              fontFamily: 'AlumniSans',
+              fontWeight: FontWeight.w800,
             ),
           );
+        }
+
+        if (!hasPlacedFilterOnHeader) {
+          widgets.add(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                headerText,
+                GestureDetector(
+                  onTap: () {
+                    _showFilterBottomSheet(context);
+                  },
+                  child: SvgPicture.asset(
+                    'assets/images/history.svg',
+                    width: 28,
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFFFF7F00),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+          hasPlacedFilterOnHeader = true;
+        } else {
+          widgets.add(headerText);
         }
 
         widgets.add(const SizedBox(height: 16));
@@ -559,6 +586,18 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
       ]);
       final isIncome = _isTransactionIncome(transaction);
       final iconPath = _getTransactionIcon(transaction);
+        final sourceFunds = _readString(transaction, const [
+        'source_funds',
+        'merchant_name',
+        ]);
+        final referenceNumber = _readString(transaction, const ['transaction_id']);
+        final currentSakuInfo = _sakuTitle;
+        final fromInfo = isIncome
+          ? (sourceFunds.isEmpty ? '-' : sourceFunds)
+          : currentSakuInfo;
+        final toInfo = isIncome
+          ? currentSakuInfo
+          : (sourceFunds.isEmpty ? '-' : sourceFunds);
 
       final formattedAmount = isIncome
           ? '+${_formatRupiah(amount)}'
@@ -577,7 +616,17 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const RiwayatTransaksiScreen(),
+                builder: (context) => RiwayatTransaksiScreen(
+                  transactionTitle: title.isEmpty ? 'Transaksi' : title,
+                  amount: formattedAmount,
+                  isIncome: isIncome,
+                  fromInfo: fromInfo,
+                  toInfo: toInfo,
+                  referenceNumber: referenceNumber,
+                  status: 'Berhasil',
+                  transactionTimeRaw: timestamp,
+                  transactionTypeLabel: isIncome ? 'Dana masuk' : 'Dana keluar',
+                ),
               ),
             );
           },
@@ -670,7 +719,8 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
     List<Map<String, dynamic>> transactions,
   ) {
     final filter = _activeFilter;
-    if (filter == null) {
+    if (filter.periode == FilterPeriode.all &&
+        filter.jenis == FilterJenisTransaksi.all) {
       return transactions;
     }
 
@@ -678,45 +728,56 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
     DateTime? startDate;
     DateTime? endDate;
 
-    switch (filter.periode) {
-      case FilterPeriode.last7Days:
-        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 6)));
-        endDate = DateUtils.dateOnly(now);
-        break;
-      case FilterPeriode.last30Days:
-        startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 29)));
-        endDate = DateUtils.dateOnly(now);
-        break;
-      case FilterPeriode.customDate:
-        startDate = filter.tanggalDari == null
-            ? null
-            : DateUtils.dateOnly(filter.tanggalDari!);
-        endDate = filter.tanggalSampai == null
-            ? null
-            : DateUtils.dateOnly(filter.tanggalSampai!);
-        break;
+    if (filter.periode != FilterPeriode.all) {
+      switch (filter.periode) {
+        case FilterPeriode.all:
+          break;
+        case FilterPeriode.last7Days:
+          startDate = DateUtils.dateOnly(now.subtract(const Duration(days: 6)));
+          endDate = DateUtils.dateOnly(now);
+          break;
+        case FilterPeriode.last30Days:
+          startDate = DateUtils.dateOnly(
+            now.subtract(const Duration(days: 29)),
+          );
+          endDate = DateUtils.dateOnly(now);
+          break;
+        case FilterPeriode.customDate:
+          startDate = filter.tanggalDari == null
+              ? null
+              : DateUtils.dateOnly(filter.tanggalDari!);
+          endDate = filter.tanggalSampai == null
+              ? null
+              : DateUtils.dateOnly(filter.tanggalSampai!);
+          break;
+      }
     }
 
     return transactions.where((transaction) {
-      final parsedDate = _parseTransactionDate(transaction);
-      final dateOnly = parsedDate == null
-          ? null
-          : DateUtils.dateOnly(parsedDate);
+      if (filter.periode != FilterPeriode.all) {
+        final parsedDate = _parseTransactionDate(transaction);
+        final dateOnly = parsedDate == null
+            ? null
+            : DateUtils.dateOnly(parsedDate);
 
-      if (startDate != null &&
-          (dateOnly == null || dateOnly.isBefore(startDate))) {
-        return false;
-      }
-      if (endDate != null && (dateOnly == null || dateOnly.isAfter(endDate))) {
-        return false;
+        if (startDate != null &&
+            (dateOnly == null || dateOnly.isBefore(startDate))) {
+          return false;
+        }
+        if (endDate != null &&
+            (dateOnly == null || dateOnly.isAfter(endDate))) {
+          return false;
+        }
       }
 
-      final isIncome = _isTransactionIncome(transaction);
-      if (filter.jenis == FilterJenisTransaksi.danaMasuk && !isIncome) {
-        return false;
-      }
-      if (filter.jenis == FilterJenisTransaksi.danaKeluar && isIncome) {
-        return false;
+      if (filter.jenis != FilterJenisTransaksi.all) {
+        final isIncome = _isTransactionIncome(transaction);
+        if (filter.jenis == FilterJenisTransaksi.danaMasuk && !isIncome) {
+          return false;
+        }
+        if (filter.jenis == FilterJenisTransaksi.danaKeluar && isIncome) {
+          return false;
+        }
       }
 
       return true;

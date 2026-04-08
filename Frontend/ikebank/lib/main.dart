@@ -8,6 +8,7 @@ import 'screens/auth/signin.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
   await initializeDateFormatting('id_ID', null);
   runApp(const MyApp());
 }

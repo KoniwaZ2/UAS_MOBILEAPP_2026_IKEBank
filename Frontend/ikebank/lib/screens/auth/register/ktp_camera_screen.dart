@@ -18,7 +18,7 @@ class KtpCameraScreen extends StatelessWidget {
 
   Future<void> _captureKtpAndNavigate(BuildContext context) async {
     final XFile? pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+      source: ImageSource.camera,
     );
 
     if (pickedFile == null || !context.mounted) {

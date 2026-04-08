@@ -93,7 +93,7 @@ class _SakuScreenState extends State<SakuScreen> {
 
     if (_selectedTab == 1) {
       return _wallets
-          .where((wallet) => wallet.category == WalletCategory.deposito)
+          .where((wallet) => wallet.category == WalletCategory.nabung)
           .toList();
     }
 
@@ -488,9 +488,11 @@ class _SakuScreenState extends State<SakuScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const BantuanCsScreen(),
+                  ),
                 );
-              }, 
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF7F00),
                 shape: RoundedRectangleBorder(
@@ -666,16 +668,16 @@ class _SakuScreenState extends State<SakuScreen> {
             context,
             MaterialPageRoute(builder: (context) => const SakuUtamaScreen()),
           );
-        } 
-        else if (title == "Saku Celengan" || title == "Saku Deposito") {
+        } else if (title == "Saku Celengan" || title == "Saku Deposito") {
           // 2. Saku Celengan & Deposito -> Masuk ke layar detail masing-masing
-          Widget targetScreen = title == "Saku Celengan" ? const SakuCelenganScreen() : const SakuDepositoScreen();
+          Widget targetScreen = title == "Saku Celengan"
+              ? const SakuCelenganScreen()
+              : const SakuDepositoScreen();
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => targetScreen),
           );
-        } 
-        else {
+        } else {
           // 3. Saku Tambahan (Custom) -> Masuk ke layar History Transaksi Saku
           result = await Navigator.push(
             context,

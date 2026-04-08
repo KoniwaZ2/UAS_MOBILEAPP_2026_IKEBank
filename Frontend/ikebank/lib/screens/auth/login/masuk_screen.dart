@@ -48,7 +48,7 @@ class _MasukScreenState extends State<MasukScreen> {
       final result = await AuthService.checkLogin(email: email);
       final exists = result['exists'] == true;
 
-      if (!context.mounted) {
+      if (!mounted) {
         return;
       }
 
@@ -81,7 +81,7 @@ class _MasukScreenState extends State<MasukScreen> {
         throw Exception('OTP reference kosong');
       }
 
-      if (!context.mounted) {
+      if (!mounted) {
         return;
       }
 
@@ -93,7 +93,7 @@ class _MasukScreenState extends State<MasukScreen> {
         ),
       );
     } catch (e) {
-      if (!context.mounted) {
+      if (!mounted) {
         return;
       }
       setState(() {

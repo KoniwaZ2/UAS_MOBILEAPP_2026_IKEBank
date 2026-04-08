@@ -1,15 +1,93 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math; 
+import 'dart:math' as math;
 
-class RiwayatTransaksiScreen extends StatelessWidget {
-  const RiwayatTransaksiScreen({super.key});
+class RiwayatTransaksiScreen extends StatefulWidget {
+  final String transactionTitle;
+  final String amount;
+  final bool isIncome;
+  final String fromInfo;
+  final String toInfo;
+  final String referenceNumber;
+  final String status;
+  final String transactionTimeRaw;
+  final String transactionTypeLabel;
+
+  const RiwayatTransaksiScreen({
+    super.key,
+    this.transactionTitle = 'Transaksi',
+    this.amount = 'Rp 0',
+    this.isIncome = true,
+    this.fromInfo = '-',
+    this.toInfo = '-',
+    this.referenceNumber = '-',
+    this.status = 'Berhasil',
+    this.transactionTimeRaw = '',
+    this.transactionTypeLabel = '',
+  });
+
+  @override
+  State<RiwayatTransaksiScreen> createState() => _RiwayatTransaksiScreenState();
+}
+
+class _RiwayatTransaksiScreenState extends State<RiwayatTransaksiScreen> {
+  String _formatTransactionDateTime(String rawValue) {
+    if (rawValue.trim().isEmpty) {
+      return '-';
+    }
+
+    final parsed = DateTime.tryParse(rawValue);
+    if (parsed == null) {
+      return rawValue;
+    }
+
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
+    final local = parsed.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = months[local.month - 1];
+    final year = local.year.toString();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day $month $year, $hour:$minute';
+  }
+
+  String _normalizeAmount(String value, bool isIncome) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return isIncome ? '+Rp 0' : '-Rp 0';
+    }
+
+    if (trimmed.startsWith('+') || trimmed.startsWith('-')) {
+      return trimmed;
+    }
+
+    return '${isIncome ? '+' : '-'}$trimmed';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final signedAmount = _normalizeAmount(widget.amount, widget.isIncome);
+    final transactionType = widget.transactionTypeLabel.trim().isNotEmpty
+        ? widget.transactionTypeLabel
+        : (widget.isIncome ? 'Dana masuk' : 'Dana keluar');
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFF7F00), 
+        backgroundColor: const Color(0xFFFF7F00),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
@@ -31,11 +109,14 @@ class RiwayatTransaksiScreen extends StatelessWidget {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 32.0,
+                ),
                 child: Column(
                   children: [
                     Transform.rotate(
-                      angle: math.pi / 4, 
+                      angle: math.pi / 4,
                       child: Container(
                         width: 90,
                         height: 90,
@@ -45,15 +126,19 @@ class RiwayatTransaksiScreen extends StatelessWidget {
                         ),
                         child: Transform.rotate(
                           angle: -math.pi / 4,
-                          child: const Icon(Icons.add, color: Colors.white, size: 50),
+                          child: Icon(
+                            widget.isIncome ? Icons.add : Icons.arrow_upward,
+                            color: Colors.white,
+                            size: 50,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
 
-                    const Text(
-                      "Dana Masuk",
-                      style: TextStyle(
+                    Text(
+                      transactionType,
+                      style: const TextStyle(
                         fontFamily: 'AlumniSans',
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
@@ -70,9 +155,9 @@ class RiwayatTransaksiScreen extends StatelessWidget {
                         border: Border.all(color: Colors.grey.shade300),
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
-                        "+Rp 250.000",
-                        style: TextStyle(
+                      child: Text(
+                        signedAmount,
+                        style: const TextStyle(
                           fontFamily: 'AlumniSans',
                           fontSize: 36,
                           fontWeight: FontWeight.w900,
@@ -82,26 +167,50 @@ class RiwayatTransaksiScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    _buildInfoBox(title: "Dari", subtitle: "Ericson Wen\nBank BCA"),
+                    _buildInfoBox(
+                      title: "Dari",
+                      subtitle: widget.fromInfo.trim().isEmpty
+                          ? '-'
+                          : widget.fromInfo,
+                    ),
                     const SizedBox(height: 12),
-                    _buildInfoBox(title: "Ke", subtitle: "Jacob Sins\nSaku Utama : 10095653346"),
+                    _buildInfoBox(
+                      title: "Ke",
+                      subtitle: widget.toInfo.trim().isEmpty ? '-' : widget.toInfo,
+                    ),
 
                     const SizedBox(height: 32),
 
                     const Text(
                       "Detail Transaksi",
-                      style: TextStyle(fontFamily: 'AlumniSans', fontSize: 26, fontWeight: FontWeight.w800, color: Colors.black),
+                      style: TextStyle(
+                        fontFamily: 'AlumniSans',
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    _buildDetailRow("Nomor referensi", "1000000198341032"),
-                    _buildDetailRow("Jenis transaksi", "Dana masuk"),
-                    _buildDetailRow("Status", "Berhasil"),
-                    _buildDetailRow("Waktu transaksi", "26 Feb 2026, 11:00"),
+                    _buildDetailRow(
+                      "Nomor referensi",
+                      widget.referenceNumber.trim().isEmpty
+                          ? '-'
+                          : widget.referenceNumber,
+                    ),
+                    _buildDetailRow("Jenis transaksi", transactionType),
+                    _buildDetailRow(
+                      "Status",
+                      widget.status.trim().isEmpty ? '-' : widget.status,
+                    ),
+                    _buildDetailRow(
+                      "Waktu transaksi",
+                      _formatTransactionDateTime(widget.transactionTimeRaw),
+                    ),
                   ],
                 ),
               ),
             ),
-            
+
             // 5. Tombol Selesai di bagian bawah
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -114,10 +223,19 @@ class RiwayatTransaksiScreen extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF7F00),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text("Selesai", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: const Text(
+                    "Selesai",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -132,19 +250,30 @@ class RiwayatTransaksiScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8F0), 
+        color: const Color(0xFFFFF8F0),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5), 
+        border: Border.all(color: const Color(0xFFFFDBB7), width: 1.5),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFF7F00))),
           Text(
-            subtitle, 
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFFF7F00),
+            ),
+          ),
+          Text(
+            subtitle,
             textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -157,8 +286,18 @@ class RiwayatTransaksiScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFFF7F00))),
-          Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFFF7F00),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
         ],
       ),
     );

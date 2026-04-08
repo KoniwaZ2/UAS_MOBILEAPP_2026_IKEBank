@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
+import '../../../api/banking.dart';
 import '../layanan/bantuan_cs_screen.dart';
 
 class DepositoDetailScreen extends StatefulWidget {
@@ -10,21 +11,25 @@ class DepositoDetailScreen extends StatefulWidget {
   final double bungaSetelahPajak;
   final String tanggalMulai;
   final String tanggalJatuhTempo;
-  final bool isFromPortfolio; 
+  final bool isFromPortfolio;
   final double sukuBunga;
   final int jangkaWaktuBulan;
+  final String depositoUUID;
+  String get depositoAccountId => depositoUUID;
 
   const DepositoDetailScreen({
     super.key,
-    this.namaDeposito = "Deposito 1", 
-    required this.jumlahPenempatan,
-    required this.bungaSetelahPajak,
-    required this.tanggalMulai,
-    required this.tanggalJatuhTempo,
-    this.isFromPortfolio = false, 
+    this.namaDeposito = "Deposito 1",
+    this.jumlahPenempatan = 0,
+    this.bungaSetelahPajak = 0,
+    this.tanggalMulai = '-',
+    this.tanggalJatuhTempo = '-',
+    this.isFromPortfolio = false,
     this.sukuBunga = 8.8,
     this.jangkaWaktuBulan = 1,
-  });
+    String depositoUUID = '',
+    String? depositoAccountId,
+  }) : depositoUUID = depositoAccountId ?? depositoUUID;
 
   @override
   State<DepositoDetailScreen> createState() => _DepositoDetailScreenState();
@@ -33,6 +38,7 @@ class DepositoDetailScreen extends StatefulWidget {
 class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
   late String _namaDeposito;
   late TextEditingController _nameController;
+  bool _isSavingName = false;
 
   @override
   void initState() {
@@ -48,16 +54,20 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
   }
 
   String _formatRp(double value) {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
     return formatter.format(value);
   }
 
   void _showEditNameBottomSheet(BuildContext context) {
-    _nameController.text = _namaDeposito; 
+    _nameController.text = _namaDeposito;
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, 
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -65,26 +75,39 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom, 
-            left: 24, right: 24, top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 50, height: 5,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               const SizedBox(height: 24),
               Center(
                 child: Container(
-                  width: 100, height: 100,
+                  width: 100,
+                  height: 100,
                   decoration: const BoxDecoration(
                     color: Color(0xFFD6CFFF),
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(100)),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(100),
+                    ),
                   ),
                   alignment: Alignment.center,
-                  child: Image.asset('assets/images/deposito.png', width: 65, fit: BoxFit.contain),
+                  child: Image.asset(
+                    'assets/images/deposito.png',
+                    width: 65,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -93,13 +116,31 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                 style: const TextStyle(fontSize: 18, color: Colors.black),
                 decoration: InputDecoration(
                   labelText: "Nama deposito",
-                  labelStyle: const TextStyle(fontSize: 14, color: Colors.black87),
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
                   filled: true,
                   fillColor: const Color(0xFFF5F5F5),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFFF7F00), width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFFF7F00),
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -107,18 +148,105 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _namaDeposito = _nameController.text;
-                    });
-                    Navigator.pop(context); 
-                  },
+                  onPressed: _isSavingName
+                      ? null
+                      : () async {
+                          final newName = _nameController.text.trim();
+                          if (newName.isEmpty) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Nama deposito tidak boleh kosong.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          final depositoId = widget.depositoUUID.trim();
+                          if (depositoId.isEmpty) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'ID deposito tidak ditemukan. Coba buka ulang detail deposito.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          setState(() {
+                            _isSavingName = true;
+                          });
+
+                          try {
+                            await BankingService.editDeposito(
+                              depositoUUID: depositoId,
+                              nama: newName,
+                            );
+
+                            if (!mounted) {
+                              return;
+                            }
+
+                            setState(() {
+                              _namaDeposito = newName;
+                            });
+
+                            if (mounted && context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Nama deposito berhasil diperbarui.',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e.toString().replaceFirst(
+                                      'Exception: ',
+                                      '',
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isSavingName = false;
+                              });
+                            }
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF7F00),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text("Simpan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  child: Text(
+                    _isSavingName ? 'Menyimpan...' : 'Simpan',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -131,7 +259,8 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double totalEstimasi = widget.jumlahPenempatan + widget.bungaSetelahPajak;
+    final double totalEstimasi =
+        widget.jumlahPenempatan + widget.bungaSetelahPajak;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -143,88 +272,193 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
           icon: const Icon(Icons.close, color: Colors.black, size: 28),
           onPressed: () {
             if (widget.isFromPortfolio) {
-              Navigator.pop(context); 
+              Navigator.pop(context);
             } else {
               int count = 0;
-              Navigator.of(context).popUntil((_) => count++ >= 3); 
+              Navigator.of(context).popUntil((_) => count++ >= 3);
             }
           },
         ),
         centerTitle: true,
-        title: Text(_namaDeposito, style: const TextStyle(fontFamily: 'AlumniSans', fontWeight: FontWeight.w800, fontSize: 24, color: Colors.black)),
+        title: Text(
+          _namaDeposito,
+          style: const TextStyle(
+            fontFamily: 'AlumniSans',
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            color: Colors.black,
+          ),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Center(
                       child: Container(
-                        width: 100, height: 100,
+                        width: 100,
+                        height: 100,
                         decoration: const BoxDecoration(
                           color: Color(0xFFD6CFFF),
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(100)),
+                          borderRadius: BorderRadius.vertical(
+                            bottom: Radius.circular(100),
+                          ),
                         ),
                         alignment: Alignment.center,
-                        child: Image.asset('assets/images/deposito.png', width: 65, fit: BoxFit.contain),
+                        child: Image.asset(
+                          'assets/images/deposito.png',
+                          width: 65,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
                     Row(
                       children: [
-                        Text(_namaDeposito, style: const TextStyle(fontFamily: 'AlumniSans', fontSize: 24, fontWeight: FontWeight.w900)),
+                        Text(
+                          _namaDeposito,
+                          style: const TextStyle(
+                            fontFamily: 'AlumniSans',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () => _showEditNameBottomSheet(context),
-                          child: SvgPicture.asset('assets/images/pensil.svg', width: 20, height: 20, colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn)),
+                          child: SvgPicture.asset(
+                            'assets/images/pensil.svg',
+                            width: 20,
+                            height: 20,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.black,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text("Jumlah penempatan", style: TextStyle(fontSize: 24, color: Colors.black)),
-                    Text(_formatRp(widget.jumlahPenempatan), style: const TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFFFF7F00))),
+                    const Text(
+                      "Jumlah penempatan",
+                      style: TextStyle(fontSize: 24, color: Colors.black),
+                    ),
+                    Text(
+                      _formatRp(widget.jumlahPenempatan),
+                      style: const TextStyle(
+                        fontFamily: 'AlumniSans',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFF7F00),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.4),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          height: 1.4,
+                        ),
                         children: [
                           const TextSpan(text: "Kamu akan mendapatkan "),
-                          TextSpan(text: _formatRp(totalEstimasi), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF7F00))),
+                          TextSpan(
+                            text: _formatRp(totalEstimasi),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFF7F00),
+                            ),
+                          ),
                           const TextSpan(text: " saat jatuh tempo"),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
-                    const Text("Rincian Deposito", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Rincian Deposito",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailRow("Jumlah penempatan", _formatRp(widget.jumlahPenempatan)), 
-                    _buildDetailRow("Suku bunga (p.a)", "${widget.sukuBunga.toStringAsFixed(widget.sukuBunga == widget.sukuBunga.roundToDouble() ? 0 : 2)}%"),
-                    _buildDetailRow("Bunga setelah pajak", _formatRp(widget.bungaSetelahPajak)),
-                    _buildDetailRow("Jangka waktu", "${widget.jangkaWaktuBulan} Bulan"),
+                    _buildDetailRow(
+                      "Jumlah penempatan",
+                      _formatRp(widget.jumlahPenempatan),
+                    ),
+                    _buildDetailRow(
+                      "Suku bunga (p.a)",
+                      "${widget.sukuBunga.toStringAsFixed(widget.sukuBunga == widget.sukuBunga.roundToDouble() ? 0 : 2)}%",
+                    ),
+                    _buildDetailRow(
+                      "Bunga setelah pajak",
+                      _formatRp(widget.bungaSetelahPajak),
+                    ),
+                    _buildDetailRow(
+                      "Jangka waktu",
+                      "${widget.jangkaWaktuBulan} Bulan",
+                    ),
                     _buildDetailRow("Tanggal mulai", widget.tanggalMulai),
-                    _buildDetailRow("Tanggal jatuh tempo", widget.tanggalJatuhTempo),
+                    _buildDetailRow(
+                      "Tanggal jatuh tempo",
+                      widget.tanggalJatuhTempo,
+                    ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text("No. Rekening Deposito", style: TextStyle(fontSize: 18, color: Colors.black87)),
+                          const Text(
+                            "No. Rekening Deposito",
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.black87,
+                            ),
+                          ),
                           GestureDetector(
                             onTap: () async {
-                              await Clipboard.setData(const ClipboardData(text: "10095653482"));
+                              await Clipboard.setData(
+                                const ClipboardData(text: "10095653482"),
+                              );
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Nomor rekening berhasil disalin!"), duration: Duration(seconds: 2), backgroundColor: Colors.green));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Nomor rekening berhasil disalin!",
+                                    ),
+                                    duration: Duration(seconds: 2),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
                               }
                             },
                             child: Row(
                               children: [
-                                SvgPicture.asset('assets/images/copy.svg', width: 18, height: 18, colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn)),
+                                SvgPicture.asset(
+                                  'assets/images/copy.svg',
+                                  width: 18,
+                                  height: 18,
+                                  colorFilter: const ColorFilter.mode(
+                                    Color(0xFFFF7F00),
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
                                 const SizedBox(width: 6),
-                                const Text("10095653482", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                                const Text(
+                                  "10095653482",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -237,14 +471,43 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
             ),
             Container(
               padding: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1))),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
               child: Row(
                 children: [
-                  Expanded(child: Text("Pencairan sebelum jatuh tempo, hanya dapat dilakukan melalui bantuan CS dan sertakan No Rekening Deposito.", style: TextStyle(fontSize: 11, color: Colors.grey.shade400, height: 1.3))),
+                  Expanded(
+                    child: Text(
+                      "Pencairan sebelum jatuh tempo, hanya dapat dilakukan melalui bantuan CS dan sertakan No Rekening Deposito.",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade400,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 16),
-                  GestureDetector(onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const BantuanCsScreen()));
-                  }, child: const Text("Bantuan CS", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF7F00)))),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BantuanCsScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Bantuan CS",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFFF7F00),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -260,8 +523,14 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 18, color: Colors.black87)),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 18, color: Colors.black87),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

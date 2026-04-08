@@ -12,8 +12,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardDetails, Deposito, Qris, Saku, Transaction, DepositoAccount
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer
-from .services import get_weekly_savings_recommendation, upsert_cashflow_for_account
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer
+from .services import get_cashflow_highlights, get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
 def get_user_bank_account(user):
@@ -64,6 +64,12 @@ def _add_months(base_date, months):
     month = (base_date.month - 1 + months) % 12 + 1
     day = min(base_date.day, monthrange(year, month)[1])
     return base_date.replace(year=year, month=month, day=day)
+
+
+def _get_previous_month_year(base_date):
+    if base_date.month == 1:
+        return 12, base_date.year - 1
+    return base_date.month - 1, base_date.year
 
 
 class RegisterBankAccountView(APIView):
@@ -134,13 +140,16 @@ class CashFlowCalculateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        month = validated_data['month']
-        year = validated_data['year']
+        current_date = timezone.localdate()
+        month, year = current_date.month, current_date.year
 
         cashflow = upsert_cashflow_for_account(account=account, month=month, year=year)
+        highlights = get_cashflow_highlights(account=account, month=month, year=year)
 
         output_serializer = CashFlowSerializer(cashflow)
-        return Response(output_serializer.data, status=status.HTTP_200_OK)
+        data = output_serializer.data
+        data['highlights'] = highlights
+        return Response(data, status=status.HTTP_200_OK)
 
 class AccountDetailsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -411,11 +420,11 @@ class InternalTransferView(APIView):
     """
     Internal transfer between Sakus.
     Allowed routes:
-    - Any non-deposito Saku -> Saku Utama
-    - Saku Utama -> any non-deposito Saku
+    - Saku Celengan/Nabung <-> Saku Utama
+    - Any non-deposito Saku -> Saku Deposito
     Not allowed:
-    - Transfers involving deposito Sakus
-    - Non-primary -> non-primary
+    - Saku Deposito -> anywhere
+    - Non-primary -> non-primary (except when destination is deposito)
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -469,29 +478,28 @@ class InternalTransferView(APIView):
             name = (saku.saku_name or '').strip().lower()
             return category == 'deposito' or 'deposito' in name
 
-        # Deposito is excluded from internal transfer policy.
-        if _is_deposito_saku(source_saku) or _is_deposito_saku(destination_saku):
+        source_is_deposito = _is_deposito_saku(source_saku)
+        destination_is_deposito = _is_deposito_saku(destination_saku)
+
+        # Deposito cannot send funds to any destination.
+        if source_is_deposito:
             return Response(
-                {'detail': 'Internal transfer tidak berlaku untuk deposito.'},
+                {'detail': 'Saku deposito tidak bisa mengirim dana.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Allowed paths only:
-        # 1) any Saku -> Saku Utama
-        # 2) Saku Utama -> any Saku
-        # Therefore, non-primary -> non-primary is forbidden.
-        if not source_saku.is_primary and not destination_saku.is_primary:
-            return Response(
-                {'detail': 'Transfer hanya boleh antara Saku Utama dan saku lainnya.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Saku Nabung can only receive funds from Saku Utama.
-        if destination_saku.category_name == 'nabung' and not source_saku.is_primary:
-            return Response(
-                {'detail': 'Saku Nabung hanya bisa menerima dana dari Saku Utama.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Deposito can receive from any non-deposito source.
+        if not destination_is_deposito:
+            # Non-deposito can transfer to non-deposito freely.
+            # Validate that non-primary sakus (if any) belong to allowed categories.
+            for saku in [source_saku, destination_saku]:
+                if not saku.is_primary:
+                    saku_category = (saku.category_name or '').strip().lower()
+                    if saku_category not in {'celengan', 'nabung', 'transaksi'}:
+                        return Response(
+                            {'detail': f'Saku {saku.saku_name} tidak bisa digunakan untuk transfer internal.'},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
         amount = validated_data['amount']
 
@@ -503,35 +511,47 @@ class InternalTransferView(APIView):
             )
 
         try:
-            # Reduce source Saku
-            source_saku.balance -= amount
-            source_saku.save()
+            with transaction.atomic():
+                # Refresh objects to ensure latest balance before update
+                source_saku.refresh_from_db()
+                destination_saku.refresh_from_db()
 
-            # Increase destination Saku
-            destination_saku.balance += amount
-            destination_saku.save()
+                # Double-check balance after refresh
+                if source_saku.balance < amount:
+                    return Response(
+                        {'detail': 'Insufficient balance in source Saku (after refresh).'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-            # Create transaction record for source (outgoing)
-            transaction_out = Transaction.objects.create(
-                account_id=account,
-                saku=source_saku,
-                category='other',  # Internal transfer
-                amount=amount,
-                balance_after=source_saku.balance,
-                description=f'Transfer to {destination_saku.saku_name}' + (f': {validated_data.get("description", "")}' if validated_data.get('description') else ''),
-                source_funds=f'Internal transfer to {destination_saku.saku_name}'
-            )
+                # Reduce source Saku
+                source_saku.balance -= amount
+                source_saku.save(update_fields=['balance'])
 
-            # Create transaction record for destination (incoming)
-            transaction_in = Transaction.objects.create(
-                account_id=account,
-                saku=destination_saku,
-                category='other',  # Internal transfer
-                amount=amount,
-                balance_after=destination_saku.balance,
-                description=f'Transfer from {source_saku.saku_name}' + (f': {validated_data.get("description", "")}' if validated_data.get('description') else ''),
-                source_funds=f'Internal transfer from {source_saku.saku_name}'
-            )
+                # Increase destination Saku
+                destination_saku.balance += amount
+                destination_saku.save(update_fields=['balance'])
+
+                # Create transaction record for source (outgoing)
+                transaction_out = Transaction.objects.create(
+                    account_id=account,
+                    saku=source_saku,
+                    category='other',  # Internal transfer
+                    amount=amount,
+                    balance_after=source_saku.balance,
+                    description=f'Transfer to {destination_saku.saku_name}' + (f': {validated_data.get("description", "")}' if validated_data.get('description') else ''),
+                    source_funds=f'Internal transfer to {destination_saku.saku_name}'
+                )
+
+                # Create transaction record for destination (incoming)
+                transaction_in = Transaction.objects.create(
+                    account_id=account,
+                    saku=destination_saku,
+                    category='other',  # Internal transfer
+                    amount=amount,
+                    balance_after=destination_saku.balance,
+                    description=f'Transfer from {source_saku.saku_name}' + (f': {validated_data.get("description", "")}' if validated_data.get('description') else ''),
+                    source_funds=f'Internal transfer from {source_saku.saku_name}'
+                )
 
             return Response({
                 'detail': 'Internal transfer completed successfully.',
@@ -1604,6 +1624,61 @@ class DepositoDetailsView(APIView):
                 'start_date': deposito.start_date,
                 'end_date': deposito.end_date,
                 'remaining_days': remaining_days,
+            },
+            status=status.HTTP_200_OK,
+        )
+        
+
+class DepositoEditView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = DepositoEditSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        deposito_account_id = validated_data.get('deposito_account_id')
+        deposito_id = validated_data.get('deposito_id')
+        deposito_name = validated_data.get('nama_deposito', '').strip()
+
+        deposito = None
+        if deposito_account_id is not None:
+            deposito = DepositoAccount.objects.filter(
+                deposito_account_id=deposito_account_id,
+                account_id=account,
+            ).first()
+        elif deposito_id is not None:
+            deposito = (
+                DepositoAccount.objects.filter(
+                    account_id=account,
+                    deposito_id__deposito_id=deposito_id,
+                )
+                .order_by('-start_date', '-deposito_account_id')
+                .first()
+            )
+
+        if deposito is None:
+            return Response(
+                {'detail': 'Deposito not found for this user.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if deposito_name:
+            deposito.deposito_name = deposito_name
+            deposito.save(update_fields=['deposito_name'])
+
+        return Response(
+            {
+                'deposito_account_id': deposito.deposito_account_id,
+                'deposito_name': deposito.deposito_name,
+                'detail': 'Deposito updated successfully.',
             },
             status=status.HTTP_200_OK,
         )

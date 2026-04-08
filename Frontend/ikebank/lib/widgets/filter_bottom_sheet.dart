@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum FilterPeriode { last7Days, last30Days, customDate }
+enum FilterPeriode { all, last7Days, last30Days, customDate }
 
-enum FilterJenisTransaksi { danaMasuk, danaKeluar }
+enum FilterJenisTransaksi { all, danaMasuk, danaKeluar }
 
 class TransactionFilter {
   final FilterPeriode periode;
@@ -20,6 +20,12 @@ class TransactionFilter {
   const TransactionFilter.initial()
     : periode = FilterPeriode.last7Days,
       jenis = FilterJenisTransaksi.danaMasuk,
+      tanggalDari = null,
+      tanggalSampai = null;
+
+  const TransactionFilter.noFilter()
+    : periode = FilterPeriode.all,
+      jenis = FilterJenisTransaksi.all,
       tanggalDari = null,
       tanggalSampai = null;
 }
@@ -121,6 +127,12 @@ Future<TransactionFilter?> showFilterBottomSheet(
                 const SizedBox(height: 8),
 
                 _buildRadioOption<FilterPeriode>(
+                  "Semua",
+                  FilterPeriode.all,
+                  selectedPeriode,
+                  (val) => setState(() => selectedPeriode = val),
+                ),
+                _buildRadioOption<FilterPeriode>(
                   "7 hari terakhir",
                   FilterPeriode.last7Days,
                   selectedPeriode,
@@ -173,6 +185,12 @@ Future<TransactionFilter?> showFilterBottomSheet(
                 ),
                 const SizedBox(height: 8),
 
+                _buildRadioOption<FilterJenisTransaksi>(
+                  "Semua jenis",
+                  FilterJenisTransaksi.all,
+                  selectedJenis,
+                  (val) => setState(() => selectedJenis = val),
+                ),
                 _buildRadioOption<FilterJenisTransaksi>(
                   "Dana masuk",
                   FilterJenisTransaksi.danaMasuk,

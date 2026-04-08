@@ -316,6 +316,10 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
                     isFromPortfolio: true,
                     sukuBunga: interestRateValue,
                     jangkaWaktuBulan: tenorMonths,
+                    depositoUUID:
+                        deposito['deposito_account_id']?.toString() ??
+                        deposito['deposito_uuid']?.toString() ??
+                        '',
                   ),
                 ),
               );
