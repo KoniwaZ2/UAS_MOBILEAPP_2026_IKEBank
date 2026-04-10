@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../../../api/banking.dart';
 import '../main_tab_screen.dart';
 
 class BuatPinScreen extends StatefulWidget {
-  const BuatPinScreen({super.key});
+  final String cardLast6Digits;
+
+  const BuatPinScreen({super.key, required this.cardLast6Digits});
 
   @override
   State<BuatPinScreen> createState() => _BuatPinScreenState();
@@ -13,6 +15,7 @@ class BuatPinScreen extends StatefulWidget {
 class _BuatPinScreenState extends State<BuatPinScreen> {
   String pin = "";
   String confirmPin = "";
+  bool _isSubmitting = false;
 
   final FocusNode _focusNode = FocusNode();
 
@@ -52,12 +55,64 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   void delete() {
     setState(() {
       if (confirmPin.isNotEmpty) {
-        confirmPin =
-            confirmPin.substring(0, confirmPin.length - 1);
+        confirmPin = confirmPin.substring(0, confirmPin.length - 1);
       } else if (pin.isNotEmpty) {
         pin = pin.substring(0, pin.length - 1);
       }
     });
+  }
+
+  String _errorMessage(Object error) {
+    final raw = error.toString();
+    return raw.replaceFirst('Exception: ', '').trim();
+  }
+
+  Future<void> _submitActivateCard() async {
+    final isPinValid =
+        pin.length == 6 && confirmPin.length == 6 && pin == confirmPin;
+    if (!isPinValid || _isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await BankingService.cardActivate(
+        cardLast6Digits: widget.cardLast6Digits,
+        newPIN: pin,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainTabScreen(initialIndex: 3)),
+        (Route<dynamic> route) => false,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage(error)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   Widget box(int i, String val) {
@@ -96,9 +151,10 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ],
                   ),
@@ -109,7 +165,9 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 25),
+                      horizontal: 20,
+                      vertical: 25,
+                    ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.vertical(
@@ -133,19 +191,13 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
                         const Text(
                           "Masukkan PIN untuk kartumu",
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.black,
-                          ),
+                          style: TextStyle(fontSize: 22, color: Colors.black),
                           textAlign: TextAlign.center,
                         ),
 
                         const SizedBox(height: 30),
 
-                        Row(
-                          children:
-                              List.generate(6, (i) => box(i, pin)),
-                        ),
+                        Row(children: List.generate(6, (i) => box(i, pin))),
 
                         const SizedBox(height: 20),
 
@@ -163,16 +215,13 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
                         const Text(
                           "Konfirmasi PIN kartumu",
-                          style: TextStyle(
-                            fontSize: 20,
-                          ),
+                          style: TextStyle(fontSize: 20),
                         ),
 
                         const SizedBox(height: 15),
 
                         Row(
-                          children: List.generate(
-                              6, (i) => box(i, confirmPin)),
+                          children: List.generate(6, (i) => box(i, confirmPin)),
                         ),
 
                         const Spacer(),
@@ -181,9 +230,11 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                           width: double.infinity,
                           height: 65,
                           decoration: BoxDecoration(
-                            color: (pin.length == 6 &&
+                            color:
+                                (pin.length == 6 &&
                                     confirmPin.length == 6 &&
-                                    pin == confirmPin)
+                                    pin == confirmPin &&
+                                    !_isSubmitting)
                                 ? const Color(0xFFFF7F00)
                                 : Colors.grey[400],
                             borderRadius: BorderRadius.circular(30),
@@ -191,32 +242,35 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius:
-                                  BorderRadius.circular(30),
-                              onTap: (pin.length == 6 &&
+                              borderRadius: BorderRadius.circular(30),
+                              onTap:
+                                  (pin.length == 6 &&
                                       confirmPin.length == 6 &&
-                                      pin == confirmPin)
-                                  ? () {
-                                      Navigator.pushAndRemoveUntil(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const MainTabScreen(
-                                                  initialIndex: 5),
-                                        ),
-                                        (Route<dynamic> route) => false,
-                                      );
-                                    }
+                                      pin == confirmPin &&
+                                      !_isSubmitting)
+                                  ? _submitActivateCard
                                   : null,
-                              child: const Center(
-                                child: Text(
-                                  "Lanjut",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                              child: Center(
+                                child: _isSubmitting
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        "Lanjut",
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),

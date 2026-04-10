@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../main_tab_screen.dart'; // 🔥 WAJIB
+import '../../../api/banking.dart';
 
 class RegistrasiPinBlockScreen extends StatefulWidget {
   const RegistrasiPinBlockScreen({super.key});
@@ -10,10 +11,10 @@ class RegistrasiPinBlockScreen extends StatefulWidget {
       _RegistrasiPinBlockScreenState();
 }
 
-class _RegistrasiPinBlockScreenState
-    extends State<RegistrasiPinBlockScreen> {
+class _RegistrasiPinBlockScreenState extends State<RegistrasiPinBlockScreen> {
   String pin = "";
   final FocusNode _focusNode = FocusNode();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -46,6 +47,56 @@ class _RegistrasiPinBlockScreenState
         }
       }
     }
+  }
+
+  String _errorMessage(Object error) {
+    return error.toString().replaceFirst('Exception: ', '').trim();
+  }
+
+  Future<void> _handleContinue() async {
+    if (_isLoading || pin.length != 6) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await BankingService.cardBlockTemp(pinUser: pin);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainTabScreen(initialIndex: 3)),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorMessage(error))));
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Widget pinBox(int i) {
@@ -85,8 +136,7 @@ class _RegistrasiPinBlockScreenState
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ],
                   ),
@@ -97,7 +147,9 @@ class _RegistrasiPinBlockScreenState
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 30),
+                      horizontal: 20,
+                      vertical: 30,
+                    ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.vertical(
@@ -130,10 +182,7 @@ class _RegistrasiPinBlockScreenState
                         const SizedBox(height: 30),
 
                         // PIN BOX
-                        Row(
-                          children:
-                              List.generate(6, (i) => pinBox(i)),
-                        ),
+                        Row(children: List.generate(6, (i) => pinBox(i))),
 
                         const Spacer(),
 
@@ -142,35 +191,35 @@ class _RegistrasiPinBlockScreenState
                           width: double.infinity,
                           height: 65,
                           child: ElevatedButton(
-                            onPressed: pin.length == 6
-                                ? () {
-                                   Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const MainTabScreen(initialIndex: 6),
-                                  ),
-                                  (route) => false,
-                                );
-                                  }
+                            onPressed: (pin.length == 6 && !_isLoading)
+                                ? _handleContinue
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFFFF7F00),
-                              disabledBackgroundColor:
-                                  Colors.grey,
+                              backgroundColor: const Color(0xFFFF7F00),
+                              disabledBackgroundColor: Colors.grey,
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(35),
+                                borderRadius: BorderRadius.circular(35),
                               ),
                             ),
-                            child: const Text(
-                              "Lanjut",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    "Lanjut",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../api/banking.dart';
 import '10_detail_kartu_2_screen.dart';
 
 class RegistrasiPinDetailScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class RegistrasiPinDetailScreen extends StatefulWidget {
 class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
   String pin = "";
   final FocusNode _focusNode = FocusNode();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -43,6 +45,61 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
         }
       }
     }
+  }
+
+  String _errorMessage(Object error) {
+    return error.toString().replaceFirst('Exception: ', '').trim();
+  }
+
+  Future<void> _handleContinue() async {
+    if (_isLoading || pin.length != 6) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await BankingService.cardGetDetails(userPin: pin);
+
+      if (!mounted) {
+        return;
+      }
+
+      if (result is! Map<String, dynamic>) {
+        throw Exception('Format respons detail kartu tidak valid.');
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailKartu2Screen(cardDetails: result),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorMessage(error))));
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Widget pinBox(int i) {
@@ -82,8 +139,7 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ],
                   ),
@@ -94,7 +150,9 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 30),
+                      horizontal: 20,
+                      vertical: 30,
+                    ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.vertical(
@@ -114,10 +172,7 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
 
                         const SizedBox(height: 35),
 
-                        Row(
-                          children:
-                              List.generate(6, (i) => pinBox(i)),
-                        ),
+                        Row(children: List.generate(6, (i) => pinBox(i))),
 
                         const Spacer(),
 
@@ -126,7 +181,7 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
                           width: double.infinity,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: pin.length == 6
+                            color: (pin.length == 6 && !_isLoading)
                                 ? const Color(0xFFFF7F00)
                                 : Colors.grey[400],
                             borderRadius: BorderRadius.circular(30),
@@ -134,28 +189,31 @@ class _RegistrasiPinDetailScreenState extends State<RegistrasiPinDetailScreen> {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius:
-                                  BorderRadius.circular(30),
-                              onTap: pin.length == 6
-                                  ? () {
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const DetailKartu2Screen(),
-                                        ),
-                                      );
-                                    }
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: (pin.length == 6 && !_isLoading)
+                                  ? _handleContinue
                                   : null,
-                              child: const Center(
-                                child: Text(
-                                  "Lanjut",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                              child: Center(
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        "Lanjut",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),

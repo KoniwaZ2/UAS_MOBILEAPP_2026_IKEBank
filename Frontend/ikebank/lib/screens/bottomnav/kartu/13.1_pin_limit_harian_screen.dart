@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../api/banking.dart';
 
 class PinLimitHarianScreen extends StatefulWidget {
-  const PinLimitHarianScreen({super.key});
+  final int dailyWithdrawalLimit;
+  final int dailyTransactionLimit;
+  final int dailySingleTransactionLimit;
+
+  const PinLimitHarianScreen({
+    super.key,
+    required this.dailyWithdrawalLimit,
+    required this.dailyTransactionLimit,
+    required this.dailySingleTransactionLimit,
+  });
 
   @override
   State<PinLimitHarianScreen> createState() =>
@@ -13,6 +23,7 @@ class _PinLimitHarianScreenState
     extends State<PinLimitHarianScreen> {
   String pin = "";
   final FocusNode _focusNode = FocusNode();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -40,6 +51,58 @@ class _PinLimitHarianScreenState
             () => pin = pin.substring(0, pin.length - 1));
       }
     }
+  }
+
+  String _errorMessage(Object error) {
+    return error.toString().replaceFirst('Exception: ', '').trim();
+  }
+
+  Future<void> _handleContinue() async {
+    if (_isLoading || pin.length != 6) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await BankingService.setDailyLimit(
+        pinUser: pin,
+        dailyWithdrawalLimit: widget.dailyWithdrawalLimit,
+        dailyTransactionLimit: widget.dailyTransactionLimit,
+        dailySingleTransactionLimit: widget.dailySingleTransactionLimit,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_errorMessage(error))),
+      );
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Widget box(int i) {
@@ -127,15 +190,14 @@ class _PinLimitHarianScreenState
                             width: double.infinity,
                             height: 65,
                             child: ElevatedButton(
-                              onPressed: pin.length == 6
-                                  ? () {
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                    }
+                              onPressed: (pin.length == 6 && !_isLoading)
+                                  ? _handleContinue
                                   : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
-                                    const Color(0xFFFF7F00),
+                                    _isLoading
+                                        ? Colors.grey
+                                        : const Color(0xFFFF7F00),
                                 disabledBackgroundColor:
                                     Colors.grey,
                                 shape: RoundedRectangleBorder(
@@ -143,14 +205,26 @@ class _PinLimitHarianScreenState
                                       BorderRadius.circular(35),
                                 ),
                               ),
-                              child: const Text(
-                                "Lanjut",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Lanjut",
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

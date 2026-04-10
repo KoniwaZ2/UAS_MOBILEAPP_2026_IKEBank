@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../api/banking.dart';
 import '../main_tab_screen.dart';
 
 class BukaBlokirSementaraScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class BukaBlokirSementaraScreen extends StatefulWidget {
 class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
   String pin = "";
   final FocusNode _focusNode = FocusNode();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -43,6 +45,56 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
         }
       }
     }
+  }
+
+  String _errorMessage(Object error) {
+    return error.toString().replaceFirst('Exception: ', '').trim();
+  }
+
+  Future<void> _handleContinue() async {
+    if (_isLoading || pin.length != 6) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await BankingService.cardOpenBlockTemp(pinUser: pin);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainTabScreen(initialIndex: 3)),
+        (Route<dynamic> route) => false,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorMessage(error))));
+    } finally {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Widget pinBox(int i) {
@@ -82,8 +134,7 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ],
                   ),
@@ -94,7 +145,9 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 30),
+                      horizontal: 20,
+                      vertical: 30,
+                    ),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.vertical(
@@ -114,10 +167,7 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
 
                         const SizedBox(height: 35),
 
-                        Row(
-                          children:
-                              List.generate(6, (i) => pinBox(i)),
-                        ),
+                        Row(children: List.generate(6, (i) => pinBox(i))),
 
                         const Spacer(),
 
@@ -126,7 +176,7 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
                           width: double.infinity,
                           height: 60,
                           decoration: BoxDecoration(
-                            color: pin.length == 6
+                            color: (pin.length == 6 && !_isLoading)
                                 ? const Color(0xFFFF7F00)
                                 : Colors.grey[400],
                             borderRadius: BorderRadius.circular(30),
@@ -134,30 +184,31 @@ class _BukaBlokirSementaraScreenState extends State<BukaBlokirSementaraScreen> {
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius:
-                                  BorderRadius.circular(30),
-                              onTap: pin.length == 6
-                                  ? () {
-                                      Navigator.pushAndRemoveUntil(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const MainTabScreen(
-                                                  initialIndex: 5),
-                                        ),
-                                        (Route<dynamic> route) => false,
-                                      );
-                                    }
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: (pin.length == 6 && !_isLoading)
+                                  ? _handleContinue
                                   : null,
-                              child: const Center(
-                                child: Text(
-                                  "Lanjut",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                              child: Center(
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text(
+                                        "Lanjut",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),

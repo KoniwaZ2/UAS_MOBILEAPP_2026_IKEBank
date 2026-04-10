@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../api/banking.dart';
+import '../../../models/wallet_source.dart';
 import '03_buat_kartu_screen_3.dart';
 import '04_pin_screen.dart';
 
@@ -11,11 +13,222 @@ class BuatKartuScreen2 extends StatefulWidget {
 }
 
 class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
-  final TextEditingController namaController = TextEditingController();
+  final nama = TextEditingController();
 
-  String selectedSaku = "Saku Utama";
-  String saldo = "Rp 3.000.000";
-  String alamatUser = "Belum diisi";
+  String selectedSaku = 'Saku Utama';
+  String saldo = 'Rp 3.000.000';
+  String alamatUser = 'Belum diisi';
+  String _sourceFundsId = '';
+  String? _selectedSakuId;
+  bool _isLoadingSaku = true;
+  List<WalletSource> _availableSakus = <WalletSource>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEligibleSakus();
+    _prefillNamaPenerima();
+  }
+
+  Future<void> _prefillNamaPenerima() async {
+    try {
+      final accountDetails = await BankingService.fetchAccountDetails();
+      final fetchedName = accountDetails.isNotEmpty
+          ? accountDetails.first.username.trim()
+          : '';
+      final fetchedSourceFundsId = accountDetails.isNotEmpty
+          ? accountDetails.first.userid.toString().trim()
+          : '';
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        nama.text = fetchedName;
+        _sourceFundsId = fetchedSourceFundsId;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {});
+    }
+  }
+
+  Future<void> _loadEligibleSakus() async {
+    try {
+      final raw = await BankingService.sakuList();
+      final dynamic payload = raw is Map<String, dynamic>
+          ? (raw['data'] ?? raw['results'] ?? raw['sakus'] ?? raw)
+          : raw;
+
+      final sources = payload is List
+          ? payload
+                .whereType<Map<String, dynamic>>()
+                .map(WalletSource.fromJson)
+                .where(
+                  (source) =>
+                      source.category == WalletCategory.utama ||
+                      source.category == WalletCategory.nabung ||
+                      source.category == WalletCategory.transaksi,
+                )
+                .where((source) => source.id.trim().isNotEmpty)
+                .toList()
+          : <WalletSource>[];
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _availableSakus = sources;
+
+        final defaultSource = _availableSakus.firstWhere(
+          (source) => source.category == WalletCategory.utama,
+          orElse: () => _availableSakus.isNotEmpty
+              ? _availableSakus.first
+              : const WalletSource(
+                  id: '',
+                  name: 'Saku Utama',
+                  balance: '0',
+                  imagePath: 'assets/images/IKEHome.png',
+                  category: WalletCategory.utama,
+                ),
+        );
+
+        if (defaultSource.id.isNotEmpty) {
+          _selectedSakuId = defaultSource.id;
+          selectedSaku = defaultSource.name;
+          saldo = _formatRupiah(defaultSource.balance);
+        }
+
+        _isLoadingSaku = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _availableSakus = <WalletSource>[];
+        _isLoadingSaku = false;
+      });
+    }
+  }
+
+  String _formatRupiah(String raw) {
+    final numeric = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numeric.isEmpty) {
+      return 'Rp 0';
+    }
+
+    final reversed = numeric.split('').reversed.join();
+    final chunks = <String>[];
+    for (var i = 0; i < reversed.length; i += 3) {
+      final end = (i + 3 < reversed.length) ? i + 3 : reversed.length;
+      chunks.add(reversed.substring(i, end));
+    }
+    final grouped = chunks.join('.').split('').reversed.join();
+    return 'Rp $grouped';
+  }
+
+  Widget _buildSakuItem(WalletSource source) {
+    final isSelected = source.id == _selectedSakuId;
+    final isSvg = source.imagePath.toLowerCase().endsWith('.svg');
+    final showTransaksiBadge = source.category == WalletCategory.transaksi;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedSakuId = source.id;
+          selectedSaku = source.name;
+          saldo = _formatRupiah(source.balance);
+        });
+        Navigator.pop(context);
+      },
+      child: Stack(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEBD7C3),
+              borderRadius: BorderRadius.circular(18),
+              border: isSelected
+                  ? Border.all(color: const Color(0xFFFF7F00), width: 1.5)
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 55,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: isSvg
+                        ? SvgPicture.asset(source.imagePath)
+                        : Image.asset(source.imagePath),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        source.name,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatRupiah(source.balance),
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (showTransaksiBadge)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(18),
+                    bottomLeft: Radius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Transaksi',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   void showSakuPopup() {
     showModalBottomSheet(
@@ -44,148 +257,32 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Sumber dana",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 16),
-
-              // SAKU UTAMA
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedSaku = "Saku Utama";
-                    saldo = "Rp 3.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEBD7C3),
-                    borderRadius: BorderRadius.circular(18),
+              if (_isLoadingSaku)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: CircularProgressIndicator(color: Color(0xFFFF7F00)),
+                )
+              else if (_availableSakus.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'Tidak ada saku nabung/transaksi/utama yang tersedia',
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 55,
-                        height: 55,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Image.asset(
-                            "assets/images/IKEHome.png",
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Saku Utama",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            "Rp 3.000.000",
-                            style: TextStyle(fontSize: 20),
-                          ),
-                        ],
-                      ),
-                    ],
+                )
+              else
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _availableSakus.map(_buildSakuItem).toList(),
+                    ),
                   ),
                 ),
-              ),
-
-              // UANG BELANJA
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedSaku = "Uang Belanja";
-                    saldo = "Rp 5.000.000";
-                  });
-                  Navigator.pop(context);
-                },
-                child: Stack(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEBD7C3),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 55,
-                            height: 55,
-                            decoration: BoxDecoration(
-                              color: Colors.purple[100],
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: SvgPicture.asset(
-                                "assets/images/Uangbelanja.svg",
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                "Uang Belanja",
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                "Rp 5.000.000",
-                                style: TextStyle(fontSize: 20),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          "Transaksi",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         );
@@ -217,9 +314,12 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon:
-                        const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                   ),
                   const Expanded(
                     child: Text(
@@ -250,11 +350,13 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
 
                     boxField(
                       child: TextField(
-                        controller: namaController,
+                        controller: nama,
+                        readOnly: true,
                         style: const TextStyle(fontSize: 22),
-                        decoration: const InputDecoration(
-                          hintText: "Nama yang dicetak di kartu",
+                        decoration: InputDecoration(
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                         ),
                       ),
                     ),
@@ -265,32 +367,31 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                       onTap: showSakuPopup,
                       child: boxField(
                         child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   "Saku yang terhubung",
                                   style: TextStyle(
                                     fontSize: 20,
-                                    color: Colors.black, 
+                                    color: Colors.black,
                                   ),
                                 ),
 
                                 Text(
                                   selectedSaku,
                                   style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 Text(
                                   saldo,
                                   style: TextStyle(
                                     fontSize: 20,
-                                    color: Colors.black, 
+                                    color: Colors.black,
                                   ),
                                 ),
                               ],
@@ -299,11 +400,9 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                               onTap: showSakuPopup,
                               child: const Text(
                                 "Ganti",
-                                style: TextStyle(
-                                  color: Color(0xFFFF7F00),
-                                ),
+                                style: TextStyle(color: Color(0xFFFF7F00)),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -317,30 +416,31 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                const BuatKartuScreen3(),
+                                BuatKartuScreen3(sourceFundsId: _sourceFundsId),
                           ),
                         );
 
                         if (result != null) {
                           setState(() {
                             alamatUser = result["alamat"];
+                            _sourceFundsId =
+                                (result["source_funds_id"] ?? _sourceFundsId)
+                                    .toString();
                           });
                         }
                       },
                       child: boxField(
                         child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   "Alamat Pengiriman Kartu",
                                   style: TextStyle(
                                     fontSize: 20,
-                                    color: Colors.black, 
+                                    color: Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -353,8 +453,7 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                                 ),
                               ],
                             ),
-                            const Icon(Icons.arrow_forward_ios,
-                                size: 16),
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                           ],
                         ),
                       ),
@@ -382,8 +481,11 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              PinScreen(nama: namaController.text),
+                          builder: (_) => PinScreen(
+                            nama: nama.text,
+                            sourceFundsId: _sourceFundsId,
+                            entrySource: PinEntrySource.buatKartu,
+                          ),
                         ),
                       );
                     },
@@ -405,5 +507,11 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    nama.dispose();
+    super.dispose();
   }
 }

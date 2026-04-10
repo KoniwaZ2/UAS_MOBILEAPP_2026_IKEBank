@@ -21,11 +21,6 @@ class KartuBerhasilScreen extends StatelessWidget {
               color: primaryColor,
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon:
-                        const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
                   const Expanded(
                     child: Text(
                       "Kartumu sedang diproses",
@@ -82,7 +77,7 @@ class KartuBerhasilScreen extends StatelessWidget {
                       textAlign: TextAlign.left,
                       style: TextStyle(
                         fontSize: 20,
-                        
+
                         height: 1.7,
                         color: Colors.black,
                       ),
