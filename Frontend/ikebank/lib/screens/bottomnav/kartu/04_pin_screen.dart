@@ -319,7 +319,7 @@ class _PinScreenState extends State<PinScreen> {
                               "Masukkan PIN keamananmu",
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 32,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

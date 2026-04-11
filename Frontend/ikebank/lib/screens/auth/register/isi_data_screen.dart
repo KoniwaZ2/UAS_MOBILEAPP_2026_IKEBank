@@ -185,6 +185,16 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                           label: "Nomor Induk KTP",
                           controller: _nikController,
                           isNumber: true,
+                          maxLength: 16,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Bagian ini harus diisi';
+                            }
+                            if (value.length != 16) {
+                              return 'NIK harus terdiri dari 16 digit';
+                            }
+                            return null;
+                          },
                         ),
 
                         _buildTextInput(
@@ -300,6 +310,8 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     bool readOnly = false,
     VoidCallback? onTap,
     IconData? suffixIcon,
+    int? maxLength,
+    String? Function(String?)? validator,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -319,8 +331,9 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
             controller: controller,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             readOnly: readOnly,
+            maxLength: maxLength,
             onTap: onTap,
-            validator: (value) {
+            validator: validator ?? (value) {
               if (value == null || value.isEmpty) {
                 return 'Bagian ini harus diisi';
               }
@@ -329,6 +342,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
             style: const TextStyle(fontSize: 16, color: Colors.black),
             decoration: InputDecoration(
               isDense: true,
+              counterText: "",
               contentPadding: const EdgeInsets.only(top: 4, bottom: 4),
               border: InputBorder.none,
               suffixIcon: suffixIcon != null

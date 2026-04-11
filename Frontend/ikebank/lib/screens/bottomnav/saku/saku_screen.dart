@@ -238,7 +238,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                           Text(
                                             bannerTitle,
                                             style: const TextStyle(
-                                              fontSize: 26,
+                                              fontSize: 20,
                                               color: Colors.black87,
                                             ),
                                           ),
@@ -259,7 +259,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                           const Text(
                                             "Jumlah dana dari\nsemua saku kamu",
                                             style: TextStyle(
-                                              fontSize: 20,
+                                              fontSize: 14,
                                               color: Colors.black,
                                               height: 1.1,
                                             ),
@@ -333,7 +333,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                     Text(
                                       bannerTitle,
                                       style: const TextStyle(
-                                        fontSize: 26,
+                                        fontSize: 20,
                                         color: Colors.black87,
                                       ),
                                     ),
@@ -344,7 +344,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                       child: Text(
                                         _formatRupiah(totalAmount),
                                         style: alumniSansBold.copyWith(
-                                          fontSize: 24,
+                                          fontSize: 18,
                                           color: Colors.black,
                                           height: 1.0,
                                         ),
@@ -354,7 +354,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                     const Text(
                                       "Jumlah dana dari\nsemua saku kamu",
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 16,
                                         color: Colors.black,
                                         height: 1.1,
                                       ),
@@ -469,7 +469,7 @@ class _SakuScreenState extends State<SakuScreen> {
             style: TextStyle(
               fontFamily: 'AlumniSans',
               fontWeight: FontWeight.w800,
-              fontSize: 26,
+              fontSize: 22,
               color: Colors.black,
             ),
           ),
@@ -477,7 +477,7 @@ class _SakuScreenState extends State<SakuScreen> {
           const Text(
             "Mau lebih bijak kelola keuangan kamu? Atur\npengeluaranmu dengan bantuan AI kami sesuai\nkebutuhanmu",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, color: Colors.black, height: 1.3),
+            style: TextStyle(fontSize: 14, color: Colors.black, height: 1.3),
           ),
           const SizedBox(height: 24),
 
@@ -550,7 +550,7 @@ class _SakuScreenState extends State<SakuScreen> {
         mainAxisSpacing: 16,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 0.90,
+        childAspectRatio: 0.75,
         children: _buildWalletCards(includeTambahCard: true),
       );
     }
@@ -593,7 +593,7 @@ class _SakuScreenState extends State<SakuScreen> {
           title,
           style: TextStyle(
             color: Colors.black,
-            fontSize: 30,
+            fontSize: 20,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -737,14 +737,14 @@ class _SakuScreenState extends State<SakuScreen> {
             style: const TextStyle(
               fontFamily: 'AlumniSans',
               fontWeight: FontWeight.w800,
-              fontSize: 22,
+              fontSize: 20,
               color: Colors.black,
             ),
           ),
           const SizedBox(height: 0.5),
           Text(
             amount,
-            style: const TextStyle(fontSize: 28, color: Colors.black87),
+            style: const TextStyle(fontSize: 22, color: Colors.black87),
           ),
         ],
       ),

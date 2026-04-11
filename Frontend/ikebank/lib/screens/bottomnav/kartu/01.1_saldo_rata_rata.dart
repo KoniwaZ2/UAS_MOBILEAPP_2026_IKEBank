@@ -67,7 +67,7 @@ class SaldoRataRataScreen extends StatelessWidget {
                           children: const [
                             Text(
                               "Dana rata-rata sekarang",
-                              style: TextStyle(fontSize: 24),
+                              style: TextStyle(fontSize: 18),
                             ),
                             SizedBox(height: 4),
                             Text(
@@ -82,7 +82,7 @@ class SaldoRataRataScreen extends StatelessWidget {
                       ],
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 35),
 
                     // CARD 1
                     Container(
@@ -114,7 +114,7 @@ class SaldoRataRataScreen extends StatelessWidget {
                             ],
                           ),
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 25),
 
                           item("1 Kartu Debit"),
                           item("5x Bebas biaya tarik tunai di ATM tiap bulan"),
@@ -123,7 +123,7 @@ class SaldoRataRataScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
 
                     // CARD 2
                     Container(

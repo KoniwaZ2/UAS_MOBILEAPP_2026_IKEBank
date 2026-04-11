@@ -134,10 +134,10 @@ class _LimitHarianScreenState extends State<LimitHarianScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 1),
 
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -172,14 +172,14 @@ class _LimitHarianScreenState extends State<LimitHarianScreen> {
           ),
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 1),
 
         Text(
           "Batas maksimum: Rp${format(max)}",
-          style: const TextStyle(fontSize: 20, color: Colors.black54),
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
       ],
     );
   }
@@ -192,7 +192,6 @@ class _LimitHarianScreenState extends State<LimitHarianScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -205,11 +204,11 @@ class _LimitHarianScreenState extends State<LimitHarianScreen> {
                   ),
                   const Expanded(
                     child: Text(
-                      "Atur batas transaksi BI-Fast",
+                      "Atur batas transaksi",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -219,88 +218,108 @@ class _LimitHarianScreenState extends State<LimitHarianScreen> {
               ),
             ),
 
-            // BODY
             Expanded(
               child: Container(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Untuk keamanan akunmu, transaksi yang melebihi jumlah ini akan otomatis dibatalkan.",
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black87,
-                        height: 1.5,
-                      ),
-                    ),
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Untuk keamanan akunmu, transaksi yang melebihi jumlah ini akan otomatis dibatalkan.",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.black87,
+                                  height: 1.5,
+                                ),
+                              ),
 
-                    const SizedBox(height: 24),
+                              const SizedBox(height: 24),
 
-                    field("Batas harian", harian, maxHarian),
-                    field("Batas transaksi tunggal", tunggal, maxTunggal),
-                    field("Batas tarik tunai harian", tarik, maxTarik),
+                              field("Batas harian", harian, maxHarian),
+                              field("Batas transaksi tunggal", tunggal, maxTunggal),
+                              field("Batas tarik tunai harian", tarik, maxTarik),
 
-                    const Spacer(),
+                              const Spacer(),
 
-                    // BUTTON
-                    Container(
-                      width: double.infinity,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: _isLoading
-                            ? Colors.grey
-                            : const Color(0xFFFF7F00),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(30),
-                          onTap: _isLoading
-                              ? null
-                              : () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => PinLimitHarianScreen(
-                                        dailyWithdrawalLimit:
-                                            _dailyWithdrawalLimit,
-                                        dailyTransactionLimit:
-                                            _dailyTransactionLimit,
-                                        dailySingleTransactionLimit:
-                                            _dailySingleTransactionLimit,
+                              Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: _isLoading
+                                        ? Colors.grey
+                                        : const Color(0xFFFF7F00),
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(30),
+                                      onTap: _isLoading
+                                          ? null
+                                          : () {
+                                              _dailyWithdrawalLimit = parse(tarik.text);
+                                              _dailyTransactionLimit = parse(harian.text);
+                                              _dailySingleTransactionLimit = parse(tunggal.text);
+
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => PinLimitHarianScreen(
+                                                    dailyWithdrawalLimit: _dailyWithdrawalLimit,
+                                                    dailyTransactionLimit: _dailyTransactionLimit,
+                                                    dailySingleTransactionLimit: _dailySingleTransactionLimit,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                      child: Center(
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                height: 24,
+                                                width: 24,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.5,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                                ),
+                                              )
+                                            : const Text(
+                                                "Simpan",
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
-                                    ),
-                                  );
-                                },
-                          child: Center(
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Text(
-                                    "Simpan",
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
                                     ),
                                   ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 10),
-                  ],
+                    );
+                  }
                 ),
               ),
             ),

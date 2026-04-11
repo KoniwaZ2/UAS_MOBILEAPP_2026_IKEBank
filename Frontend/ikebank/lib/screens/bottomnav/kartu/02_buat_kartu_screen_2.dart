@@ -433,11 +433,12 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Alamat Pengiriman Kartu",
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Alamat Pengiriman Kartu",
                                   style: TextStyle(
                                     fontSize: 20,
                                     color: Colors.black,
@@ -446,14 +447,19 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                                 const SizedBox(height: 4),
                                 Text(
                                   alamatUser,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     color: Colors.grey,
+                                    height: 1.2,
                                   ),
                                 ),
                               ],
                             ),
-                            const Icon(Icons.arrow_forward_ios, size: 16),
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.arrow_forward_ios, size: 16),
                           ],
                         ),
                       ),
@@ -478,6 +484,17 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(30),
                     onTap: () {
+                      if (alamatUser == 'Belum diisi' || alamatUser.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Silakan isi alamat pengiriman kartu terlebih dahulu!"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return; // Hentikan, jangan biarkan pindah ke PinScreen
+                      }
+
+                      // Jika aman, baru boleh lanjut buat PIN
                       Navigator.push(
                         context,
                         MaterialPageRoute(

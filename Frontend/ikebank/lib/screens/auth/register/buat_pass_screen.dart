@@ -128,7 +128,7 @@ class _BuatPassScreenState extends State<BuatPassScreen> {
                             const Text(
                               "Selamat Jacob, rekening kamu telah aktif dan sudah dapat digunakan untuk bertransaksi. Yuk buat password kamu",
                               style: TextStyle(
-                                fontSize: 22,
+                                fontSize: 18,
                                 color: Colors.black,
                                 height: 1.4,
                               ),
@@ -250,7 +250,7 @@ class _BuatPassScreenState extends State<BuatPassScreen> {
         Text(
           labelText,
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: 14,
             color: Color.fromARGB(255, 0, 0, 0),
           ),
         ),

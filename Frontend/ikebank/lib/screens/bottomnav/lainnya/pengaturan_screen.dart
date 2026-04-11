@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'pengaturan_bifast_screen.dart';
 import 'pengaturan_batas_transaksi_screen.dart';
 import 'ubah_password_screen.dart';
 import 'ubah_pin_screen.dart';
@@ -48,17 +47,6 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           children: [
             _buildSectionTitle("Pengaturan Transaksi"),
             const SizedBox(height: 1),
-            _buildMenuItem(
-              title: "Pengaturan BI-FAST",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const PengaturanBiFastScreen(),
-                  ),
-                );
-              },
-            ),
             _buildMenuItem(
               title: "Pengaturan batas transaksi",
               onTap: () {

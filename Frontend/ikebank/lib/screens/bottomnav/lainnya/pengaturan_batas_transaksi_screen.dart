@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'atur_batas_qris_screen.dart';
-import 'atur_batas_bifast_screen.dart';
 import 'atur_batas_rtol_screen.dart';
 
 class PengaturanBatasTransaksiScreen extends StatelessWidget {
@@ -49,15 +48,6 @@ class PengaturanBatasTransaksiScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AturBatasQrisScreen()),
-                );
-              }
-            ),
-            _buildLimitMenuItem(
-              title: "Batas transaksi BI-FAST", 
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AturBatasBiFastScreen()),
                 );
               }
             ),

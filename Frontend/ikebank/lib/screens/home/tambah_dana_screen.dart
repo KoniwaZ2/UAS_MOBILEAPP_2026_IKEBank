@@ -111,14 +111,14 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
                             Text(
                               safeAccountName,
                               style: alumniSansBold.copyWith(
-                                fontSize: 24,
+                                fontSize: 18,
                                 color: Colors.black,
                               ),
                             ),
                             const Text(
                               "Saku Utama",
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 16,
                                 color: Colors.black54,
                               ),
                             ),
@@ -155,7 +155,7 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
                             const Text(
                               "Nomor rekening Saku",
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 16,
                                 color: Colors.black54,
                               ),
                             ),
@@ -195,7 +195,7 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
 
             Text(
               "Cara top up",
-              style: alumniSansBold.copyWith(fontSize: 22, color: Colors.black),
+              style: alumniSansBold.copyWith(fontSize: 20, color: Colors.black),
             ),
             const SizedBox(height: 16),
 
@@ -235,7 +235,7 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
           const SizedBox(width: 20),
           Text(
             title,
-            style: alumniSansBold.copyWith(fontSize: 18, color: Colors.black),
+            style: alumniSansBold.copyWith(fontSize: 16, color: Colors.black),
           ),
         ],
       ),

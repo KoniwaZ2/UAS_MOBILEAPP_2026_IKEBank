@@ -102,7 +102,7 @@ class _VerifikasiCodeScreenState extends State<VerifikasiCodeScreen> {
                         Text(
                           "Konfirmasi email kamu",
                           style: alumniSansBold.copyWith(
-                            fontSize: 32,
+                            fontSize: 28,
                             color: AppColors.textBlack,
                           ),
                         ),
@@ -110,7 +110,7 @@ class _VerifikasiCodeScreenState extends State<VerifikasiCodeScreen> {
                         RichText(
                           text: TextSpan(
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               color: AppColors.textBlack,
                               height: 1.4,
                             ),

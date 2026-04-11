@@ -186,7 +186,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                           Text(
                             "Buat PIN Baru",
                             style: alumniSansBold.copyWith(
-                              fontSize: 32,
+                              fontSize: 28,
                               color: Colors.black,
                             ),
                           ),
@@ -194,7 +194,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
                           const Text(
                             "Masukkan PIN keamananmu",
-                            style: TextStyle(fontSize: 22, color: Colors.black),
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                           ),
                           const SizedBox(height: 16),
 
@@ -206,7 +206,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                             "Hindari menggunakan tanggal lahir serta angka yang\nberurutan dan berulang\n(Contoh: 123456, DDMMYY, 000000)",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 12,
                               color: Colors.grey.shade400,
                               height: 1.4,
                             ),

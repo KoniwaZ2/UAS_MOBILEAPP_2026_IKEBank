@@ -54,7 +54,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   static const double _yawThreshold = 12.0;
 
   bool get _isDevFaceBypassEnabled =>
-      kDebugMode && Platform.isIOS && _skipFaceVerify;
+      _skipFaceVerify && kDebugMode; // ini diganti supaya bukan cuma os yang bisa bypass
 
   @override
   void initState() {

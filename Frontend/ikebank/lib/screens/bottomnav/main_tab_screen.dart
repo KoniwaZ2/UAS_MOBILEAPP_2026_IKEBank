@@ -249,7 +249,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 12,
                 color: currentColor,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),

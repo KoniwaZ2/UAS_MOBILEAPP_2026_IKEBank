@@ -142,7 +142,7 @@ class _BuatKartuScreen3State extends State<BuatKartuScreen3> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "⚠ Sesuai nama yang terdaftar di sistem bank",
-                        style: TextStyle(color: Colors.red, fontSize: 18),
+                        style: TextStyle(color: Colors.red, fontSize: 14),
                       ),
                     ),
 
@@ -175,6 +175,23 @@ class _BuatKartuScreen3State extends State<BuatKartuScreen3> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(30),
                     onTap: () {
+                      if (nomor.text.trim().isEmpty ||
+                          alamat.text.trim().isEmpty ||
+                          provinsi.text.trim().isEmpty ||
+                          kota.text.trim().isEmpty ||
+                          kecamatan.text.trim().isEmpty ||
+                          kelurahan.text.trim().isEmpty ||
+                          kodepos.text.trim().isEmpty) {
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Mohon lengkapi semua data alamat!"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return; 
+                      }
+
                       Navigator.pop(context, {
                         "alamat":
                             "${alamat.text}, ${kecamatan.text}, ${kota.text}",

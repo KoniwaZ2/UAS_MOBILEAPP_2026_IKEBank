@@ -55,9 +55,9 @@ class DetailKartu2Screen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 20)),
+        Text(label, style: const TextStyle(fontSize: 16)),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 1),
 
         Container(
           width: double.infinity,
@@ -72,7 +72,7 @@ class DetailKartu2Screen extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: copy ? Colors.blueAccent : Colors.black,
                   letterSpacing: copy ? 1.5 : 0,
@@ -146,7 +146,7 @@ class DetailKartu2Screen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -174,7 +174,7 @@ class DetailKartu2Screen extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 10),
 
                       infoBox(context, "No. Kartu", cardNumber, copy: true),
 

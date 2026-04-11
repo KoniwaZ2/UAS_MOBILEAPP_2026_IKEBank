@@ -83,7 +83,7 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
                     Text(
                       "Untuk keamanan akunmu, transaksi yang melebihi\njumlah ini akan otomatis dibatalkan.",
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 13,
                         color: Colors.grey.shade800,
                         height: 1.4,
                       ),
@@ -145,7 +145,7 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
                     Text(
                       "Batas maksimum: Rp10.000.000",
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 14,
                         color: Colors.grey.shade600,
                       ),
                     ),

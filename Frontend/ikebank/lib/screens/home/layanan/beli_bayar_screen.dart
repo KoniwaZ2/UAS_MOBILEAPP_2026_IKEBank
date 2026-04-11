@@ -112,7 +112,7 @@ class BeliBayarScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 18, color: Colors.black),
+            style: const TextStyle(fontSize: 12, color: Colors.black),
           ),
         ],
       ),

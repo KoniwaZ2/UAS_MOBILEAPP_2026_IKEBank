@@ -67,21 +67,6 @@ class LainnyaScreen extends StatelessWidget {
               },
             ),
 
-            // 3. Undang Teman
-            _buildMenuItem(
-              icon: Icons.card_giftcard,
-              title: "Undang Teman",
-              subtitle: "Ajak temanmu untuk gunakan IKE Bank",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const UndangTemanScreen(),
-                  ),
-                );
-              },
-            ),
-
             // 4. Bantuan/Help
             _buildMenuItem(
               icon: Icons.help_outline,

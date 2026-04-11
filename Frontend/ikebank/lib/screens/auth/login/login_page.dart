@@ -165,12 +165,12 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 50),
 
                   Text(
                     "Selamat Datang Kembali",
                     style: alumniSansBold.copyWith(
-                      fontSize: 40,
+                      fontSize: 26,
                       color: AppColors.primaryOrange,
                     ),
                   ),
@@ -179,13 +179,13 @@ class _LoginPageState extends State<LoginPage> {
                     "Ikuti langkah dibawah ini untuk masuk kembali ke akunmu",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 11,
                       color: AppColors.primaryOrange.withValues(alpha: 0.9),
-                      height: 1.4,
+                      height: 1.0,
                     ),
                   ),
 
-                  const SizedBox(height: 110),
+                  const SizedBox(height: 50),
 
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),

@@ -130,15 +130,15 @@ class TambahSakuScreen extends StatelessWidget {
                             style: const TextStyle(
                               fontFamily: 'AlumniSans',
                               fontWeight: FontWeight.w800,
-                              fontSize: 20,
+                              fontSize: 18,
                               color: Colors.black,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 12),
                           Text(
                             description,
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 12,
                               color: Colors.black87,
                               height: 1.3,
                             ),

@@ -66,12 +66,12 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                     children: const [
                       Text(
                         "Halo JACOB",
-                        style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white),
+                        style: TextStyle(fontFamily: 'AlumniSans', fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                       SizedBox(height: 4),
                       Text(
                         "Selamat datang di layanan chat IKE Bank",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        style: TextStyle(fontSize: 12, color: Colors.white),
                       ),
                     ],
                   ),

@@ -862,21 +862,21 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
                     height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 1),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
                       'Nomor rekening  ',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 12,
                         color: Color.fromARGB(255, 107, 107, 107),
                       ),
                     ),
                     Text(
                       '$_accountNumber ',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 12,
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
                       ),

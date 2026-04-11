@@ -27,7 +27,7 @@ class KartuBerhasilScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -76,7 +76,7 @@ class KartuBerhasilScreen extends StatelessWidget {
                       "Selamat! Kartumu berhasil dibuat! Silakan menunggu kartumu diproses, estimasi 3 hari kerja! Jangan lupa untuk aktifkan kartumu setelah tiba ya!",
                       textAlign: TextAlign.left,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
 
                         height: 1.7,
                         color: Colors.black,

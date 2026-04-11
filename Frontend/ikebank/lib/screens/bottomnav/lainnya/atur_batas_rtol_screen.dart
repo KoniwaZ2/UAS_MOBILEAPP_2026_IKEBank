@@ -83,7 +83,7 @@ class _AturBatasRtolScreenState extends State<AturBatasRtolScreen> {
                   children: [
                     Text(
                       "Untuk keamanan akunmu, transaksi yang melebihi\njumlah ini akan otomatis dibatalkan.",
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade800, height: 1.4),
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade800, height: 1.4),
                     ),
                     const SizedBox(height: 24),
 
@@ -178,7 +178,7 @@ class _AturBatasRtolScreenState extends State<AturBatasRtolScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(maxText, style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
+        Text(maxText, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
       ],
     );
   }

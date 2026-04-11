@@ -47,7 +47,7 @@ class BuatAkunScreen extends StatelessWidget {
                         Text(
                           "Sebelum mulai...",
                           style: alumniSansBold.copyWith(
-                            fontSize: 36,
+                            fontSize: 28,
                             color: AppColors.textBlack,
                           ),
                         ),
@@ -55,7 +55,7 @@ class BuatAkunScreen extends StatelessWidget {
                         const Text(
                           "Siapkan hal-hal berikut untuk membuka akun IKE Bank:",
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 16,
                             color: AppColors.textBlack,
                             height: 1.4,
                           ),
@@ -141,7 +141,7 @@ class BuatAkunScreen extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700, 
                   color: AppColors.textBlack,
                 ),
@@ -150,7 +150,7 @@ class BuatAkunScreen extends StatelessWidget {
               Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   color: Colors.black, 
                   height: 1.4,
                 ),

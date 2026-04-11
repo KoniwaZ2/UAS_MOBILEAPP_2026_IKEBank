@@ -157,7 +157,7 @@ class _MasukScreenState extends State<MasukScreen> {
                         const Text(
                           "Masukkan alamat email kamu untuk\nmenghubungkan akunmu",
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textBlack,
                             height: 1.2,

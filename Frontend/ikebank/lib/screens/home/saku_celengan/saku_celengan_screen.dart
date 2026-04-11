@@ -1068,7 +1068,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                                       child: Text(
                                         "Dana yang dapat kamu\nmasukkan ke Saku",
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 14,
                                           color: Color(0xFFFF7F00),
                                         ),
                                       ),
@@ -1079,7 +1079,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                                           : _savingRecommendationAmount,
                                       style: const TextStyle(
                                         fontFamily: 'AlumniSans',
-                                        fontSize: 28,
+                                        fontSize: 24,
                                         fontWeight: FontWeight.w900,
                                         color: Color(0xFFFF7F00),
                                       ),
@@ -1191,6 +1191,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                                           Text(
                                             "Tambah dana ke Saku",
                                             style: TextStyle(
+                                              fontSize: 12,
                                               // Warna teks jadi abu-abu kalau disable
                                               color: hasAddedFund
                                                   ? Colors.grey.shade500
@@ -1239,51 +1240,7 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                         // ==========================================
                         const SizedBox(height: 16),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ActionSquareButton(
-                              imageAsset: 'assets/images/cashback.png',
-                              label: "Promo Cashback",
-                              imageHeight: 32,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const PromoScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            ActionSquareButton(
-                              imageAsset: 'assets/images/misi.png',
-                              label: "Ikut Misi",
-                              imageHeight: 45,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const RewardScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            ActionSquareButton(
-                              imageAsset: 'assets/images/teman3.png',
-                              label: "Undang Teman",
-                              imageHeight: 45,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const UndangTemanScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+
                         const SizedBox(height: 16),
                       ],
                     ),

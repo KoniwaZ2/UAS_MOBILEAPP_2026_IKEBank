@@ -3,10 +3,8 @@ import '../../../core/colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'notification_screen.dart';
-import 'reward_screen.dart';
 import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
-import 'promo_screen.dart';
 import 'saku_utama/saku_utama_screen.dart';
 import 'saku_celengan/saku_celengan_screen.dart';
 import 'saku_deposito/saku_deposito_screen.dart';
@@ -144,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 120,
+                height: 140,
                 child: Container(
                   decoration: const BoxDecoration(
                     color: AppColors.primaryOrange,
@@ -190,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : 'Pengguna',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 18,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'AlumniSans',
                                     ),
@@ -256,28 +254,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) =>
-                                            const RewardScreen(),
-                                      ),
-                                    );
-                                  });
-                                },
-                                child: SvgPicture.asset(
-                                  'assets/images/present.svg',
-                                  height: 26,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              GestureDetector(
-                                onTap: () async {
-                                  await _openAndRefresh(() {
-                                    return Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
                                             const NotificationScreen(),
                                       ),
                                     );
@@ -298,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 2),
 
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -346,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const Text(
                                     "Total dana",
                                     style: TextStyle(
-                                      fontSize: 30,
+                                      fontSize: 26,
                                       color: Colors.black,
                                     ),
                                   ),
@@ -365,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               )
                                             : "Rp •••••••••",
                                         style: alumniSansBold.copyWith(
-                                          fontSize: 30,
+                                          fontSize: 28,
                                           color: Colors.black,
                                         ),
                                       ),
@@ -560,54 +536,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
 
                     const SizedBox(height: 4),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Promo buat kamu 👀",
-                            style: alumniSansBold.copyWith(
-                              fontSize: 18,
-                              color: Colors.black,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              await _openAndRefresh(() {
-                                return Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const PromoScreen(),
-                                  ),
-                                );
-                              });
-                            },
-                            child: const Text(
-                              "Lihat Semua",
-                              style: TextStyle(
-                                color: AppColors.primaryOrange,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 90,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: 2,
-                        itemBuilder: (context, index) {
-                          return _buildPromoCard();
-                        },
-                      ),
-                    ),
-
                     const SizedBox(height: 14),
 
                     Padding(
@@ -670,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const Text(
                               "Jangan pernah membagikan OTP, PIN dan Password ke orang yang tidak dikenal",
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 13,
                                 color: Colors.black87,
                               ),
                             ),
@@ -715,7 +643,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(
                 color: AppColors.primaryOrange,
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 13,
               ),
             ),
           ],
@@ -757,34 +685,12 @@ class _HomeScreenState extends State<HomeScreen> {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPromoCard() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const PromoScreen()),
-        );
-      },
-      child: Container(
-        width: 220,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        child: Image.asset(
-          'assets/images/promo.png',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(color: Colors.grey.shade300);
-          },
-        ),
-      ),
-    );
-  }
+
 }

@@ -63,7 +63,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
                             Text(
                               "Masukkan PIN Lama Kamu",
                               style: alumniSansBold.copyWith(
-                                fontSize: 26,
+                                fontSize: 24,
                                 color: Colors.black,
                               ),
                             ),
@@ -82,7 +82,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
                             Text(
                               "Masukkan PIN Baru Kamu",
                               style: alumniSansBold.copyWith(
-                                fontSize: 26,
+                                fontSize: 24,
                                 color: Colors.black,
                               ),
                             ),
@@ -94,7 +94,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
                               "Hindari menggunakan tanggal lahir serta angka yang\nberurutan dan berulang\n(Contoh: 123456, DDMMYY, 000000)",
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 12,
                                 color: Colors.grey.shade400,
                                 height: 1.4,
                               ),
@@ -227,7 +227,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
             children: List.generate(6, (index) {
               bool isFilled = index < controller.text.length;
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(

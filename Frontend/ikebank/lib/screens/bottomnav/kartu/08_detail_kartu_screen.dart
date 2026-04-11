@@ -4,6 +4,7 @@ import '09_registrasi_pin_detail_screen.dart';
 import '09_registrasi_pin_block_screen.dart';
 import '12_pin_blokir_permanen.dart';
 import '13_limit_harian_screen.dart';
+import '../../home/layanan/bantuan_cs_screen.dart';
 
 class DetailKartuScreen extends StatelessWidget {
   const DetailKartuScreen({super.key});
@@ -161,7 +162,14 @@ class DetailKartuScreen extends StatelessWidget {
                       title: "Ubah PIN Kartu",
                       trailingText: "Bantuan CS",
                       showArrow: false,
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BantuanCsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

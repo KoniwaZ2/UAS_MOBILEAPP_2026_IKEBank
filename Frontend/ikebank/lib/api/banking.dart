@@ -6,7 +6,7 @@ import '../models/beneficial_account.dart';
 import '../models/wallet_source.dart';
 
 class BankingService {
-  static String baseUrl = 'http://192.168.18.71:8000/api/banking';
+  static String baseUrl = 'http://192.168.0.113:8000/api/banking';
   static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
 
   static void notifyAccountDataChanged() {

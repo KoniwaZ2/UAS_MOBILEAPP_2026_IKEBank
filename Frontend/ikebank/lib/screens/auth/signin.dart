@@ -43,7 +43,7 @@ class SignIn extends StatelessWidget {
                   Text(
                     "Teman Menabung Kamu 🤝",
                     style: alumniSansBold.copyWith(
-                      fontSize: 32,
+                      fontSize: 24,
                       color: AppColors.textBlack,
                     ),
                   ),
@@ -68,7 +68,7 @@ class SignIn extends StatelessWidget {
                         Text(
                           "Benefit kamu pakai IKE Bank",
                           style: alumniSansBold.copyWith(
-                            fontSize: 24,
+                            fontSize: 20,
                             color: AppColors.textBlack,
                           ),
                         ),
@@ -116,7 +116,7 @@ class SignIn extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
                   Center(
                     child: GestureDetector(
@@ -129,13 +129,15 @@ class SignIn extends StatelessWidget {
                       child: Text(
                         "Ringkasan Informasi Produk dan Layanan (RIPLAY) Umum",
                         style: alumniSansBold.copyWith(
-                          fontSize: 18, 
+                          fontSize: 11, 
                           color: AppColors.primaryOrange,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 8),
 
                   Row(
                     children: [
@@ -181,7 +183,7 @@ class SignIn extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 4),
 
                   Center(
                     child: Padding(
