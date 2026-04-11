@@ -6,7 +6,7 @@ import '../models/beneficial_account.dart';
 import '../models/wallet_source.dart';
 
 class BankingService {
-  static String baseUrl = 'http://192.168.0.113:8000/api/banking';
+  static String baseUrl = 'http://192.168.1.12:8000/api/banking';
   static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
 
   static void notifyAccountDataChanged() {
@@ -852,6 +852,44 @@ class BankingService {
       } else {
         throw Exception(
           'Failed to block card (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> getQrisDailyLimit() {
+    final url = Uri.parse("$baseUrl/qris-daily-limit/");
+
+    return AuthService.authorizedGet(url).then((response) {
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        notifyAccountDataChanged();
+        return result;
+      } else {
+        throw Exception(
+          'Failed to get QRIS daily limit (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> setQrisDailyLimit({
+    // required String pinUser,
+    required int qrisLimit,
+  }) {
+    final url = Uri.parse("$baseUrl/qris-daily-limit/");
+
+    return AuthService.authorizedPatch(
+      url,
+      body: jsonEncode({'qris_limit': qrisLimit}),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        notifyAccountDataChanged();
+        return result;
+      } else {
+        throw Exception(
+          'Failed to set QRIS daily limit (HTTP ${response.statusCode}): ${response.body}',
         );
       }
     });

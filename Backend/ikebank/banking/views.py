@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
+from django.db.models import Sum
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils import timezone
 from rest_framework import permissions, status
@@ -12,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardBlacklist, CardDetails, Deposito, Qris, Saku, Transaction, DepositoAccount
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, QrisLimitSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
 from .services import get_cashflow_highlights, get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
@@ -180,8 +181,63 @@ class AccountDetailsView(APIView):
                 'account_number': account.account_number,
                 'card_number': account.card_number,
                 'balance': str(account.balance),
+                'qris_limit': account.qris_limit,
             })
         return Response(data, status=status.HTTP_200_OK)
+
+
+class QrisDailyLimitView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({
+            'qris_limit': account.qris_limit,
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = QrisLimitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # pin = serializer.validated_data['pin']
+        # pin = check_password(pin, request.user.pin)
+        # if not pin:
+        #     return Response(
+        #         {'detail': 'PIN Salah! Silahkan masukkan PIN yang benar untuk mengubah limit QRIS.'},
+        #         status=status.HTTP_400_BAD_REQUEST,
+        #     )
+        
+        account.qris_limit = serializer.validated_data['qris_limit']
+
+        if account.qris_limit < 0:
+            return Response(
+                {'detail': 'QRIS limit must be a non-negative integer.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if account.qris_limit > 10000000:
+            return Response(
+                {'detail': 'QRIS limit cannot exceed 10 million.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        account.save(update_fields=['qris_limit', 'updated_at'])
+
+        return Response({
+            'detail': 'QRIS limit updated successfully.',
+            'qris_limit': account.qris_limit,
+        }, status=status.HTTP_200_OK)
     
 class TransactionCreateView(APIView):
     """
@@ -252,8 +308,45 @@ class TransactionCreateView(APIView):
 
         try:
             with transaction.atomic():
+                account = BankAccount.objects.select_for_update().select_related('user').filter(pk=account.pk).first()
+                saku_utama = Saku.objects.select_for_update().filter(
+                    account=account,
+                    is_primary=True
+                ).first()
+
+                if account is None:
+                    return Response(
+                        {'detail': 'Bank account not found or not owned by user.'},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
+                if saku_utama is None:
+                    return Response(
+                        {'detail': 'Primary Saku Utama not found.'},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+
                 destination_account = None
                 destination_saku = None
+
+                if category == 'payment':
+                    qris_spent_today = Transaction.objects.filter(
+                        account_id=account,
+                        category='payment',
+                        timestamp__date=timezone.localdate(),
+                    ).aggregate(total=Sum('amount'))['total'] or 0
+
+                    if qris_spent_today + amount > account.qris_limit:
+                        remaining_limit = max(account.qris_limit - qris_spent_today, 0)
+                        return Response(
+                            {
+                                'detail': 'QRIS daily limit exceeded.',
+                                'qris_limit': account.qris_limit,
+                                'qris_spent_today': qris_spent_today,
+                                'remaining_limit': remaining_limit,
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
                 if category == 'transfer_out':
                     destination_account = BankAccount.objects.filter(
@@ -1681,14 +1774,16 @@ class DepositoUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        account = get_user_bank_account(request.user)
-        if account is None:
+        accounts = BankAccount.objects.filter(user=request.user)
+        if not accounts.exists():
             return Response(
                 {'detail': 'No bank accounts found for user.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        depositos = DepositoAccount.objects.filter(account_id=account).select_related('deposito_id')
+        depositos = DepositoAccount.objects.filter(
+            account_id__in=accounts,
+        ).select_related('deposito_id').order_by('-start_date')
         data = []
         for deposito in depositos:
             data.append({

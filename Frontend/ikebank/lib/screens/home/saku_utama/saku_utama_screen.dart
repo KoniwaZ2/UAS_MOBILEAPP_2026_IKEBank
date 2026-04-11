@@ -9,6 +9,7 @@ import 'transfer_dana_screen.dart';
 import '../../bottomnav/kartu/buat_kartu_screen.dart';
 import '../../../api/banking.dart';
 import '../../../widgets/filter_bottom_sheet.dart';
+import '../../../screens/bottomnav/main_tab_screen.dart';
 
 class SakuUtamaScreen extends StatefulWidget {
   final String title;
@@ -423,18 +424,20 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
       ]);
       final isIncome = _isTransactionIncome(transaction);
       final iconPath = _getTransactionIcon(transaction);
-        final sourceFunds = _readString(transaction, const [
+      final sourceFunds = _readString(transaction, const [
         'source_funds',
         'merchant_name',
-        ]);
-        final referenceNumber = _readString(transaction, const ['transaction_id']);
-        final currentSakuInfo = _accountNumber == '-'
+      ]);
+      final referenceNumber = _readString(transaction, const [
+        'transaction_id',
+      ]);
+      final currentSakuInfo = _accountNumber == '-'
           ? _sakuTitle
           : '$_sakuTitle\n$_accountNumber';
-        final fromInfo = isIncome
+      final fromInfo = isIncome
           ? (sourceFunds.isEmpty ? '-' : sourceFunds)
           : currentSakuInfo;
-        final toInfo = isIncome
+      final toInfo = isIncome
           ? currentSakuInfo
           : (sourceFunds.isEmpty ? '-' : sourceFunds);
 
@@ -878,7 +881,15 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                           ),
                         );
                       }
-                    : null,
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const MainTabScreen(initialIndex: 3),
+                          ),
+                        );
+                      },
                 behavior: HitTestBehavior.opaque,
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 24.0),

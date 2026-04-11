@@ -7,6 +7,7 @@ class BankAccount(models.Model):
     card_number = models.CharField(max_length=20, unique=True, null=False, blank=True)
     balance = models.IntegerField(default=0)
     block = models.BooleanField(default=False)
+    qris_limit = models.IntegerField(default=10000000)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

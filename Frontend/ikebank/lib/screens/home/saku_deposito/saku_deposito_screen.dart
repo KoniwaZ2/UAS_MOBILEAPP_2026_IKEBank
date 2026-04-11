@@ -23,18 +23,58 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTotalAssetDeposito();
-    _loadDepositoOffers();
+    BankingService.accountDataRevision.addListener(_handleAccountDataChanged);
+    _refreshAll(showLoader: true);
+  }
+
+  @override
+  void dispose() {
+    BankingService.accountDataRevision.removeListener(
+      _handleAccountDataChanged,
+    );
+    super.dispose();
+  }
+
+  void _handleAccountDataChanged() {
+    _refreshAll();
+  }
+
+  Future<void> _refreshAll({bool showLoader = false}) async {
+    if (showLoader && mounted) {
+      setState(() {
+        _isLoadingDeposito = true;
+        _isLoadingOffers = true;
+      });
+    }
+
+    await Future.wait([_loadTotalAssetDeposito(), _loadDepositoOffers()]);
+  }
+
+  List<Map<String, dynamic>> _normalizeDynamicList(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+
+    if (raw is Map) {
+      final payload = raw['data'] ?? raw['results'] ?? raw['depositos'];
+      if (payload is List) {
+        return payload
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+    }
+
+    return <Map<String, dynamic>>[];
   }
 
   Future<void> _loadTotalAssetDeposito() async {
     try {
       final response = await BankingService.depositoUser();
-      if (response is! List) {
-        return;
-      }
-
-      final depositos = response.whereType<Map<String, dynamic>>().toList();
+      final depositos = _normalizeDynamicList(response);
       double total = 0;
       for (final item in depositos) {
         total += _parseAmount(item['balance']);
@@ -129,18 +169,26 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
   Future<void> _loadDepositoOffers() async {
     try {
       final response = await BankingService.DepositoList();
-      if (response is! List) {
-        return;
-      }
-
-      final offers = response
-          .whereType<Map<String, dynamic>>()
+      final offers = _normalizeDynamicList(response)
           .where(
             (offer) =>
                 (offer['status']?.toString().toLowerCase() ?? 'active') ==
                 'active',
           )
           .toList();
+
+      offers.sort((a, b) {
+        final aIsSpecial = a['isSpecial'] == true;
+        final bIsSpecial = b['isSpecial'] == true;
+
+        if (aIsSpecial != bIsSpecial) {
+          return aIsSpecial ? -1 : 1;
+        }
+
+        final aRate = _parseAmount(a['interest_rate']);
+        final bRate = _parseAmount(b['interest_rate']);
+        return bRate.compareTo(aRate);
+      });
 
       if (!mounted) {
         return;
@@ -249,7 +297,7 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
                   sisaKuota: isSpecial ? remainingQuota : null,
                 ),
               ),
-            );
+            ).then((_) => _refreshAll());
           },
         );
       }).toList(),
@@ -277,10 +325,11 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 16,
         children: _depositoUser.map((deposito) {
           final namaDeposito =
               deposito['deposito_name']?.toString().trim().isNotEmpty == true
@@ -303,6 +352,7 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
             amount: _formatRupiah(jumlahPenempatan),
             title: namaDeposito,
             rate: bungaRate,
+            margin: EdgeInsets.zero,
             onTap: () {
               Navigator.push(
                 context,
@@ -322,7 +372,7 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
                         '',
                   ),
                 ),
-              );
+              ).then((_) => _refreshAll());
             },
           );
         }).toList(),
@@ -362,126 +412,131 @@ class _SakuDepositoScreenState extends State<SakuDepositoScreen> {
               color: const Color(0x1AFFCA96),
             ),
 
-            SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Container(
-                      width: double.infinity,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+            RefreshIndicator(
+              onRefresh: _refreshAll,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(top: 8.0, bottom: 32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Container(
+                        width: double.infinity,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1.5,
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14.5),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 16),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Dana Deposito",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _totalAssetDeposito,
-                                      style: const TextStyle(
-                                        fontFamily: 'AlumniSans',
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w900,
-                                        color: Color(0xFFFF7F00),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Container(
-                              width: 90,
-                              height: double.infinity,
-                              margin: const EdgeInsets.only(right: 20),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFCCCCFF),
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(80),
-                                  bottomRight: Radius.circular(80),
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Image.asset(
-                                'assets/images/deposito.png',
-                                width: 65,
-                                fit: BoxFit.contain,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Penawaran Deposito",
-                          style: TextStyle(
-                            fontFamily: 'AlumniSans',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFFFF7F00),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14.5),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 16),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Dana Deposito",
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _totalAssetDeposito,
+                                        style: const TextStyle(
+                                          fontFamily: 'AlumniSans',
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFFF7F00),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 90,
+                                height: double.infinity,
+                                margin: const EdgeInsets.only(right: 20),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFCCCCFF),
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(80),
+                                    bottomRight: Radius.circular(80),
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Image.asset(
+                                  'assets/images/deposito.png',
+                                  width: 65,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        _buildOfferSection(),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 1),
-
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Text(
-                      "Portofolio",
-                      style: TextStyle(
-                        fontFamily: 'AlumniSans',
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFFFF7F00),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPortfolioSection(),
-                ],
+
+                    const SizedBox(height: 24),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Penawaran Deposito",
+                            style: TextStyle(
+                              fontFamily: 'AlumniSans',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFFFF7F00),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildOfferSection(),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 1),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Text(
+                        "Portofolio (${_depositoUser.length})",
+                        style: const TextStyle(
+                          fontFamily: 'AlumniSans',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFFF7F00),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPortfolioSection(),
+                  ],
+                ),
               ),
             ),
           ],

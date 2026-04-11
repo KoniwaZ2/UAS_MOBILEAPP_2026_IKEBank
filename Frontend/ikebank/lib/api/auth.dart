@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static String baseUrl = 'http://192.168.0.113:8000/api/auth';
+  static String baseUrl = 'http://192.168.1.12:8000/api/auth';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
@@ -128,6 +128,34 @@ class AuthService {
           includeJsonContentType: true,
         );
         response = await http.post(
+          url,
+          headers: <String, String>{...retryHeaders, ...?headers},
+          body: body,
+        );
+      }
+    }
+
+    return response;
+  }
+
+  static Future<http.Response> authorizedPatch(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    await _refreshAccessTokenIfNeeded();
+
+    final authHeaders = await buildAuthHeaders(includeJsonContentType: true);
+    final mergedHeaders = <String, String>{...authHeaders, ...?headers};
+    var response = await http.patch(url, headers: mergedHeaders, body: body);
+
+    if (response.statusCode == 401) {
+      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      if (refreshed) {
+        final retryHeaders = await buildAuthHeaders(
+          includeJsonContentType: true,
+        );
+        response = await http.patch(
           url,
           headers: <String, String>{...retryHeaders, ...?headers},
           body: body,

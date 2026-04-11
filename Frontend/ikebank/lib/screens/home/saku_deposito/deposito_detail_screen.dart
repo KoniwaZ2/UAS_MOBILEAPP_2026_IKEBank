@@ -426,7 +426,7 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                           GestureDetector(
                             onTap: () async {
                               await Clipboard.setData(
-                                const ClipboardData(text: "10095653482"),
+                                ClipboardData(text: widget.depositoAccountId),
                               );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -452,8 +452,8 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                const Text(
-                                  "10095653482",
+                                Text(
+                                  widget.depositoAccountId,
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w500,

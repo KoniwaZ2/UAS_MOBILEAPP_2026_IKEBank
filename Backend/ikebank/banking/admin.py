@@ -3,7 +3,7 @@ from .models import BankAccount, CardBlacklist, Transaction, CashFlow, CardDetai
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ('user', 'account_number', 'card_number', 'balance', 'created_at', 'updated_at')
+    list_display = ('user', 'account_number', 'card_number', 'balance', 'qris_limit', 'created_at', 'updated_at')
     search_fields = ('user__name', 'account_number', 'card_number')
     list_filter = ('created_at', 'updated_at')
 

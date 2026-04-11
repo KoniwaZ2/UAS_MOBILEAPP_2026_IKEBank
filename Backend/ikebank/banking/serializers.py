@@ -38,6 +38,18 @@ class DepositoSerializer(serializers.ModelSerializer):
             'isSpecial',
         ]
 
+
+class QrisLimitSerializer(serializers.Serializer):
+    qris_limit = serializers.IntegerField(required=True, min_value=0)
+    # pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+
+    # def validate(self, attrs):
+
+    #     if not attrs.get('pin'):
+    #         raise serializers.ValidationError({'pin': 'pin is required for card request.'})
+
+    #     return attrs
+
 class TransactionCreateSerializer(serializers.Serializer):
     pin = serializers.CharField(required=True)
     category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
