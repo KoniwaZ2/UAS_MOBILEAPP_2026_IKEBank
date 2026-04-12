@@ -12,3 +12,4 @@ coverage.xml
 htmlcov/
 collectstatic/
 .DS_Store
+.media/face_image
