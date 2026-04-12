@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ikebank/screens/auth/login/login_page.dart';
 import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ikebank/screens/home/home_screen.dart';
@@ -52,7 +53,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: _isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : (_isLoggedIn ? const MainTabScreen() : const SignIn()),
+          : (_isLoggedIn ? const LoginPage() : const SignIn()),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/buat_password': (context) => const BuatPassScreen(),

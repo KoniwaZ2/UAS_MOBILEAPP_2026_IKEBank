@@ -82,12 +82,12 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
     });
 
     try {
-      // Panggil API Ganti PIN. 
+      // Panggil API Ganti PIN.
       // (Asumsi di AuthService / BankingService ada fungsi changePin)
       // Karena Lupa PIN biasanya meng-overwrite PIN lama tanpa tahu PIN lamanya,
       // pastikan Backend mendukung ini, atau gunakan API yang sesuai.
-      // 
-      // await AuthService.resetPin(newPin: pin1); <--- SESUAIKAN DENGAN API 
+      //
+      // await AuthService.resetPin(newPin: pin1); <--- SESUAIKAN DENGAN API
 
       // Simulasi sukses untuk UI Flow:
       await Future.delayed(const Duration(seconds: 1));
@@ -96,7 +96,8 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('PIN Berhasil Diperbarui! Silakan Lanjut Bayar')),
+          content: Text('PIN Berhasil Diperbarui! Silakan Lanjut Bayar'),
+        ),
       );
 
       Navigator.pushReplacement(
@@ -183,10 +184,6 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
       if (!mounted) return;
 
-      await BankingService.registerAccount();
-
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registrasi Berhasil! Silakan Login')),
       );
@@ -267,7 +264,11 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isButtonEnabled = pin.length == 6 && confirmPin.length == 6 && pin == confirmPin && !_isSubmitting;
+    bool isButtonEnabled =
+        pin.length == 6 &&
+        confirmPin.length == 6 &&
+        pin == confirmPin &&
+        !_isSubmitting;
 
     return Scaffold(
       backgroundColor: AppColors.primaryOrange,
@@ -328,14 +329,15 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                         keyboardType: TextInputType.number,
                         maxLength: 12,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
                         decoration: const InputDecoration(counterText: ""),
                       ),
                     ),
 
                     GestureDetector(
-                      onTap: () => FocusScope.of(context).requestFocus(_pinFocusNode),
+                      onTap: () =>
+                          FocusScope.of(context).requestFocus(_pinFocusNode),
                       behavior: HitTestBehavior.opaque,
                       child: CustomScrollView(
                         slivers: [
@@ -356,13 +358,18 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                                 const Text(
                                   "Masukkan PIN keamananmu",
                                   style: TextStyle(
-                                      fontSize: 16, color: Colors.black),
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
 
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(6, (i) => box(i, pin)),
+                                  children: List.generate(
+                                    6,
+                                    (i) => box(i, pin),
+                                  ),
                                 ),
 
                                 const SizedBox(height: 24),
@@ -382,14 +389,18 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                                 const Text(
                                   "Konfirmasi PIN keamananmu",
                                   style: TextStyle(
-                                      fontSize: 16, color: Colors.black),
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
 
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: List.generate(
-                                      6, (i) => box(i, confirmPin)),
+                                    6,
+                                    (i) => box(i, confirmPin),
+                                  ),
                                 ),
 
                                 const Spacer(),
@@ -425,9 +436,9 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2.5,
                                                   valueColor:
-                                                      AlwaysStoppedAnimation<Color>(
-                                                    Colors.white,
-                                                  ),
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(Colors.white),
                                                 ),
                                               )
                                             : Text(

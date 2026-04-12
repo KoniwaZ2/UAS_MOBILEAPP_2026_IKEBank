@@ -4,6 +4,7 @@ import 'package:ikebank/api/auth.dart';
 import 'package:ikebank/screens/home/home_screen.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
+import '../../../api/banking.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
@@ -99,6 +100,23 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) {
         return;
       }
+
+      // Cek apakah user sudah punya bank account
+      bool needsRegisterAccount = false;
+      try {
+        final accounts = await BankingService.fetchAccountDetails();
+        if (accounts.isEmpty) {
+          needsRegisterAccount = true;
+        }
+      } catch (_) {
+        needsRegisterAccount = true;
+      }
+
+      if (needsRegisterAccount) {
+        await BankingService.registerAccount();
+      }
+
+      if (!mounted) return;
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -199,10 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: const TextStyle(fontSize: 18),
                       decoration: const InputDecoration(
                         hintText: "Email",
-                        hintStyle: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                        ),
+                        hintStyle: TextStyle(color: Colors.black, fontSize: 16),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 20,

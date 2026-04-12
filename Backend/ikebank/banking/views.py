@@ -1199,6 +1199,20 @@ class CardRequestView(APIView):
                 {'detail': 'No bank accounts found for user.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+        # Ambil Saku/source_funds sesuai source_funds_id
+        source_funds_id = validated_data['source_funds_id'].strip()
+        saku = Saku.objects.filter(account=account, id=source_funds_id).first()
+        if saku is None:
+            return Response(
+                {'detail': 'Source Saku tidak ditemukan.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if saku.balance < 50000:
+            return Response(
+                {'detail': 'Minimum balance of 50,000 is required in the selected Saku to request a card.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         cardholder_name = request.user.name.strip()
         pin = validated_data['pin'].strip()
