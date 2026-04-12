@@ -16,6 +16,7 @@ from .views import (
     ChangePinView,
     ForgotPinView,
     UserDetailsView,
+    FacePinResetView,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -37,5 +38,6 @@ urlpatterns = [
     path('change-pin/', ChangePinView.as_view(), name='change-pin'),
     path('forgot-pin/', ForgotPinView.as_view(), name='forgot-pin'),
     path('user-details/', UserDetailsView.as_view(), name='user-details'),
+    path('face/reset-pin/', FacePinResetView.as_view(), name='face-reset-pin'),
 ]
 

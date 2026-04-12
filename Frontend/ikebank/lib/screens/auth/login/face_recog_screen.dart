@@ -8,7 +8,7 @@ import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
 import '../../../models/register_flow_data.dart';
 import 'login_page.dart';
-import '../register/buat_pin_screen.dart'; 
+import '../register/buat_pin_screen.dart';
 import '../register/buat_pass_screen.dart';
 
 enum LivenessStep { lookLeft, lookRight, smile, blink, done }
@@ -30,7 +30,7 @@ class FaceRecogScreen extends StatefulWidget {
     this.email,
     this.reference,
     this.flowData,
-    this.isFromCS = false, 
+    this.isFromCS = false,
     this.isLupaPin = false,
     this.qrisData,
   });
@@ -58,8 +58,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
   static const double _yawThreshold = 12.0;
 
-  bool get _isDevFaceBypassEnabled =>
-      _skipFaceVerify && kDebugMode;
+  bool get _isDevFaceBypassEnabled => _skipFaceVerify && kDebugMode;
 
   @override
   void initState() {
@@ -137,8 +136,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         if (faces.isNotEmpty) {
           _processLiveness(faces.first);
         }
-      } catch (_) {
-      }
+      } catch (_) {}
 
       _isProcessing = false;
     });
@@ -294,10 +292,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => BuatPinScreen(
-            isLupaPin: true,
-            qrisData: widget.qrisData,
-          ),
+          builder: (context) =>
+              BuatPinScreen(isLupaPin: true, qrisData: widget.qrisData),
         ),
       );
       return;

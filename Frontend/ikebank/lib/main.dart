@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:ikebank/screens/auth/login/login_page.dart';
 import 'package:ikebank/screens/home/home_screen.dart';
 import 'package:ikebank/screens/auth/register/buat_pass_screen.dart';
 import 'core/colors.dart';
@@ -10,7 +10,7 @@ import 'api/auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
+  GoogleFonts.config.allowRuntimeFetching = true;
   await initializeDateFormatting('id_ID', null);
   runApp(const MyApp());
 }
@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final hasToken = await AuthService.hasAccessToken();
+    final hasToken = await AuthService.hasValidAccessToken();
     setState(() {
       _isLoggedIn = hasToken;
       _isLoading = false;
@@ -52,7 +52,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: _isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : (_isLoggedIn ? const HomeScreen() : const SignIn()),
+          : (_isLoggedIn ? const MainTabScreen() : const SignIn()),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/buat_password': (context) => const BuatPassScreen(),

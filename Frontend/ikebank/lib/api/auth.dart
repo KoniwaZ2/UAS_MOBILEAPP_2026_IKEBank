@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static String baseUrl = 'http://192.168.0.113:8000/api/auth';
+  static String baseUrl = 'http://192.168.1.12:8000/api/auth';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
   static const String _refreshTokenKey = 'auth_refresh_token';
@@ -62,6 +62,14 @@ class AuthService {
   static Future<bool> hasAccessToken() async {
     final accessToken = await getAccessToken();
     return accessToken != null && accessToken.isNotEmpty;
+  }
+
+  static Future<bool> hasValidAccessToken() async {
+    final accessToken = await getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) return false;
+    // Anggap token expired jika akan expired dalam 2 menit ke depan
+    if (_isTokenExpiringSoon(accessToken, const Duration(minutes: 2))) return false;
+    return true;
   }
 
   static Future<void> clearTokens() async {
@@ -268,7 +276,6 @@ class AuthService {
       if (parts.length != 3) {
         return true;
       }
-
       final payload = utf8.decode(
         base64Url.decode(base64Url.normalize(parts[1])),
       );
@@ -276,7 +283,6 @@ class AuthService {
       if (decoded is! Map<String, dynamic>) {
         return true;
       }
-
       final expValue = decoded['exp'];
       final expSeconds = expValue is int
           ? expValue
@@ -284,7 +290,6 @@ class AuthService {
       if (expSeconds == null) {
         return true;
       }
-
       final expiresAt = DateTime.fromMillisecondsSinceEpoch(
         expSeconds * 1000,
         isUtc: true,

@@ -213,3 +213,17 @@ class DepositoEditSerializer(serializers.Serializer):
             raise serializers.ValidationError({'detail': 'deposito_account_id or deposito_id is required.'})
 
         return attrs
+    
+class ForgotPinSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    new_pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+    new_pin_confirm = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+
+    def validate(self, attrs):
+        new_pin = attrs.get('new_pin')
+        new_pin_confirm = attrs.get('new_pin_confirm')
+
+        if new_pin != new_pin_confirm:
+            raise serializers.ValidationError({'new_pin_confirm': 'new_pin_confirm must match new_pin.'})
+
+        return attrs

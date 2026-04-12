@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardBlacklist, CardDetails, Deposito, Qris, Saku, Transaction, DepositoAccount
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, QRISCheckSerializer, QrisLimitSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, ForgotPinSerializer, QRISCheckSerializer, QrisLimitSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
 from .services import get_cashflow_highlights, get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
@@ -1935,3 +1935,38 @@ class CardDailyLimitView(APIView):
             'daily_transaction_limit': card_details.daily_transaction_limit,
             'daily_single_transaction_limit': card_details.daily_single_transaction_limit,
         }, status=status.HTTP_200_OK)
+    
+class ForgotPinView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ForgotPinSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = get_user_bank_account(request.user)
+        if account is None:
+            return Response(
+                {'detail': 'No bank accounts found for user.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        new_pin = validated_data['new_pin'].strip()
+        confirm_new_pin = validated_data['confirm_new_pin'].strip()
+
+        if new_pin != confirm_new_pin:
+            return Response(
+                {'detail': 'New PIN and confirmation do not match.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(new_pin) < 6 or len(new_pin) > 12:
+            return Response(
+                {'detail': 'PIN must be between 6 and 12 characters long.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.pin = make_password(new_pin)
+        request.user.save(update_fields=['pin'])
+
+        return Response({'detail': 'PIN updated successfully.'}, status=status.HTTP_200_OK)

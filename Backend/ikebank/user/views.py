@@ -34,7 +34,6 @@ import user.models as user_models
 
 User = get_user_model()
 
-
 # def _mask_phone_number(phone_number):
 #     if not phone_number or len(phone_number) < 4:
 #         return phone_number
@@ -666,3 +665,69 @@ class UserDetailsView(generics.RetrieveAPIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class FacePinResetView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        # Ambil email atau phone_number dari request
+        email = request.data.get('email')
+        phone_number = request.data.get('phone_number')
+        face = request.data.get('face')
+        new_pin = request.data.get('new_pin')
+        new_pin_confirmation = request.data.get('new_pin_confirmation')
+
+        if not face or not (email or phone_number):
+            return Response({'detail': 'Email/phone dan face image wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = None
+        if email:
+            user = User.objects.filter(email=email.strip().lower()).first()
+        if not user and phone_number:
+            user = User.objects.filter(phone_number=phone_number.strip()).first()
+        if not user:
+            return Response({'detail': 'User tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.face_encoding and not user.face_image:
+            return Response({'detail': 'User belum punya data wajah.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        probe_encoding = user_models.extract_face_encoding(face)
+        if not probe_encoding:
+            return Response({'detail': 'Gagal ekstrak fitur wajah.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stored_encoding = None
+        if user.face_image:
+            stored_encoding = user_models.extract_face_encoding(user.face_image)
+        if not stored_encoding:
+            stored_encoding = user.face_encoding
+        if not stored_encoding:
+            return Response({'detail': 'Data wajah tersimpan tidak ditemukan.'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(stored_encoding) != len(probe_encoding):
+            return Response({'detail': 'Data wajah tidak valid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stored_vector = [float(v) for v in stored_encoding]
+        probe_vector = [float(v) for v in probe_encoding]
+        squared_sum = sum((a - b) ** 2 for a, b in zip(stored_vector, probe_vector))
+        rms_distance = math.sqrt(squared_sum / len(stored_vector))
+        dot_product = sum(a * b for a, b in zip(stored_vector, probe_vector))
+        stored_norm = math.sqrt(sum(a * a for a in stored_vector))
+        probe_norm = math.sqrt(sum(b * b for b in probe_vector))
+        if stored_norm == 0 or probe_norm == 0:
+            return Response({'detail': 'Face vector tidak valid.'}, status=status.HTTP_400_BAD_REQUEST)
+        cosine_similarity = dot_product / (stored_norm * probe_norm)
+        max_rms_distance = float(getattr(settings, 'FACE_LOGIN_MAX_RMS_DISTANCE', 0.08))
+        min_cosine_similarity = float(getattr(settings, 'FACE_LOGIN_MIN_COSINE_SIMILARITY', 0.985))
+        is_match = rms_distance <= max_rms_distance and cosine_similarity >= min_cosine_similarity
+
+        if not is_match:
+            return Response({'verified': False, 'detail': 'Wajah tidak cocok.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not new_pin or not new_pin_confirmation:
+            return Response({'detail': 'New PIN dan konfirmasi wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
+        if new_pin != new_pin_confirmation:
+            return Response({'detail': 'New PIN dan konfirmasi tidak sama.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.pin = user_models.hash_pin(new_pin)
+        user.save(update_fields=['pin', 'updated_at'])
+
+        return Response({'message': 'PIN berhasil direset dengan verifikasi wajah.', 'verified': True}, status=status.HTTP_200_OK)
