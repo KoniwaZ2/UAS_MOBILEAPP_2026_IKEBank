@@ -113,6 +113,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
         _hasKartu = resolvedHasKartu;
         _cardStatus = resolvedCardStatus.isEmpty ? 'none' : resolvedCardStatus;
         _selectedIndex = 3;
+        print('Kartu status: $_cardStatus, hasKartu: $_hasKartu');
       });
     } catch (_) {
       if (!mounted) {

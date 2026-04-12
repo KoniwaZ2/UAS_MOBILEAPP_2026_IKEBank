@@ -705,4 +705,17 @@ class AuthService {
       throw Exception(_extractErrorMessage(response, 'Failed to change PIN'));
     }
   }
+
+  static Future<Map<String, dynamic>> getProfile() async {
+    final url = Uri.parse('$baseUrl/user-details/');
+    final response = await authorizedGet(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        _extractErrorMessage(response, 'Failed to fetch profile'),
+      );
+    }
+  }
 }

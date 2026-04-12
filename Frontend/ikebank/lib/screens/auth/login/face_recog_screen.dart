@@ -233,9 +233,18 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         InputImageFormatValue.fromRawValue(image.format.raw) ??
         InputImageFormat.nv21;
 
+    // Penyesuaian rotasi untuk Android/iOS
+    InputImageRotation rotation;
+    if (Platform.isAndroid) {
+      // Banyak device Android kamera depan = 270deg, tapi bisa berbeda, sesuaikan jika perlu
+      rotation = InputImageRotation.rotation270deg;
+    } else {
+      rotation = InputImageRotation.rotation0deg;
+    }
+
     final metadata = InputImageMetadata(
       size: Size(image.width.toDouble(), image.height.toDouble()),
-      rotation: InputImageRotation.rotation0deg,
+      rotation: rotation,
       format: inputImageFormat,
       bytesPerRow: image.planes.first.bytesPerRow,
     );

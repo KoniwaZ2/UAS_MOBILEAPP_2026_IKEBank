@@ -1,8 +1,45 @@
 import 'package:flutter/material.dart';
 import '../../home/layanan/bantuan_cs_screen.dart';
+import '../../../api/auth.dart';
 
-class InformasiPribadiScreen extends StatelessWidget {
+class InformasiPribadiScreen extends StatefulWidget {
   const InformasiPribadiScreen({super.key});
+
+  @override
+  State<InformasiPribadiScreen> createState() => _InformasiPribadiScreenState();
+}
+
+class _InformasiPribadiScreenState extends State<InformasiPribadiScreen> {
+  bool _isLoading = true;
+  String? _error;
+  Map<String, dynamic>? _userInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final result = await AuthService.getProfile();
+      setState(() {
+        _userInfo = result;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Gagal memuat informasi pribadi';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +48,7 @@ class InformasiPribadiScreen extends StatelessWidget {
       fontFamily: 'AlumniSans',
     );
 
+    final result = _userInfo;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -45,11 +83,17 @@ class InformasiPribadiScreen extends StatelessWidget {
                     _buildInfoCard(
                       title: "Informasi Personal",
                       data: [
-                        {"label": "Nama", "value": "Jacob Sins"},
+                        {
+                          "label": "Nama",
+                          "value": result != null && result["name"] != null
+                              ? result["name"].toString()
+                              : "-",
+                        },
                         {
                           "label": "Alamat",
-                          "value":
-                              "Stasiun Kereta Tanah Abang,Tanah Abang,\nJakarta Pusat, DKI Jakarta",
+                          "value": result != null && result["alamat"] != null
+                              ? result["alamat"].toString()
+                              : "-",
                         },
                       ],
                       alumniSansStyle: alumniSansBold,
@@ -60,9 +104,17 @@ class InformasiPribadiScreen extends StatelessWidget {
                       data: [
                         {
                           "label": "Alamat Email",
-                          "value": "jacobsins@gmail.com",
+                          "value": result != null && result["email"] != null
+                              ? result["email"].toString()
+                              : "-",
                         },
-                        {"label": "Nomor Ponsel", "value": "+6281234567890"},
+                        {
+                          "label": "Nomor Ponsel",
+                          "value":
+                              result != null && result["phone_number"] != null
+                              ? result["phone_number"].toString()
+                              : "-",
+                        },
                       ],
                       alumniSansStyle: alumniSansBold,
                     ),
@@ -122,7 +174,9 @@ class InformasiPribadiScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const BantuanCsScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const BantuanCsScreen(),
+                          ),
                         );
                       },
                       child: const Text(

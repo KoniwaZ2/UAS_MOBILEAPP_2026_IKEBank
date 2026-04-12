@@ -651,3 +651,18 @@ class ForgotPinView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
+    
+class UserDetailsView(generics.RetrieveAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        return Response(
+            {
+                'phone_number': user.phone_number,
+                'email': user.email,
+                'name': user.name,
+                'alamat': user.address,
+            },
+            status=status.HTTP_200_OK,
+        )

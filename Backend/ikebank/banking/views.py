@@ -1394,9 +1394,7 @@ class CardEditView(APIView):
                 )
             card_details.block_temporary = True
             card_details.card_status = 'blocked_temporary'
-            account.card_number = ''
             update_fields.extend(['block_temporary', 'card_status'])
-            _blacklist_card_number(account.card_number, reason='Blocked temporarily by user action.')
 
         elif action == CardEditSerializer.ACTION_UNBLOCK_TEMPORARY:
             if card_details.block_permanent:
