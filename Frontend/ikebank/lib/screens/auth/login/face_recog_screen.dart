@@ -8,6 +8,7 @@ import 'package:ikebank/api/auth.dart';
 import '../../../core/colors.dart';
 import '../../../models/register_flow_data.dart';
 import 'login_page.dart';
+import '../register/buat_pin_screen.dart'; 
 import '../register/buat_pass_screen.dart';
 
 enum LivenessStep { lookLeft, lookRight, smile, blink, done }
@@ -19,6 +20,8 @@ class FaceRecogScreen extends StatefulWidget {
   final String? email;
   final String? reference;
   final RegisterFlowData? flowData;
+  final bool isLupaPin;
+  final Map<String, dynamic>? qrisData;
 
   const FaceRecogScreen({
     super.key,
@@ -28,6 +31,8 @@ class FaceRecogScreen extends StatefulWidget {
     this.reference,
     this.flowData,
     this.isFromCS = false, 
+    this.isLupaPin = false,
+    this.qrisData,
   });
 
   @override
@@ -54,7 +59,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   static const double _yawThreshold = 12.0;
 
   bool get _isDevFaceBypassEnabled =>
-      _skipFaceVerify && kDebugMode; // ini diganti supaya bukan cuma os yang bisa bypass
+      _skipFaceVerify && kDebugMode;
 
   @override
   void initState() {
@@ -133,7 +138,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           _processLiveness(faces.first);
         }
       } catch (_) {
-        // Keep UI responsive even if a frame fails to process.
       }
 
       _isProcessing = false;
@@ -153,16 +157,12 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     bool passed = false;
     switch (_currentStep) {
       case LivenessStep.lookLeft:
-        // Strict left check: negative yaw only.
         passed = headY < -_yawThreshold;
         break;
       case LivenessStep.lookRight:
-        // Strict right check: positive yaw only.
         passed = headY > _yawThreshold;
         break;
       case LivenessStep.smile:
-        // ML Kit does not expose mouth-open probability directly, so we use
-        // smile probability as a practical proxy for this step.
         passed = smileProbability > 0.55;
         break;
       case LivenessStep.blink:
@@ -233,10 +233,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         InputImageFormatValue.fromRawValue(image.format.raw) ??
         InputImageFormat.nv21;
 
-    // Penyesuaian rotasi untuk Android/iOS
     InputImageRotation rotation;
     if (Platform.isAndroid) {
-      // Banyak device Android kamera depan = 270deg, tapi bisa berbeda, sesuaikan jika perlu
       rotation = InputImageRotation.rotation270deg;
     } else {
       rotation = InputImageRotation.rotation0deg;
@@ -292,6 +290,19 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    if (widget.isLupaPin) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BuatPinScreen(
+            isLupaPin: true,
+            qrisData: widget.qrisData,
+          ),
+        ),
+      );
+      return;
+    }
+
     final prefilledEmail = widget.email?.trim();
     if (widget.isFromLupaPassword) {
       Navigator.pushReplacement(
@@ -333,9 +344,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
 
-    if (widget.isFromCS || widget.isFromLupaPassword) {
-      // Belum ada endpoint khusus CS/lupa password untuk validasi face di backend.
-      // Untuk sementara lanjutkan alur UI agar bisa dites end-to-end.
+    if (widget.isFromCS || widget.isFromLupaPassword || widget.isLupaPin) {
       await _routeAfterFaceVerified();
       return;
     }
@@ -485,7 +494,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // TEKS INSTRUKSI
                   Text(
                     _isUploadingFace
                         ? 'Mengunggah selfie...'
@@ -499,13 +507,11 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
                   const SizedBox(height: 60),
 
-                  // WADAH KAMERA (DUMMY FACE)
                   GestureDetector(
                     onTap: _onCaptureTap,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Lingkaran luar (Simulasi garis pinggir seperti di Figma)
                         Container(
                           width: MediaQuery.of(context).size.width * 0.85,
                           height: MediaQuery.of(context).size.width * 0.85,
@@ -570,8 +576,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 100),
                 ],
               ),
       ),

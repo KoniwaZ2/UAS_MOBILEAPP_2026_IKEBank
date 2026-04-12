@@ -56,6 +56,7 @@ class _RegistrasiPinBlockScreenState extends State<RegistrasiPinBlockScreen> {
 
     try {
       await BankingService.cardBlockTemp(pinUser: pin);
+      await Future.delayed(const Duration(milliseconds: 800));
 
       if (!mounted) {
         return;
@@ -160,7 +161,7 @@ class _RegistrasiPinBlockScreenState extends State<RegistrasiPinBlockScreen> {
                       "Setelah blokir sementara kamu dapat membukanya kembali melalui menu kartu debit",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Colors.black,
                         height: 1.4,
                       ),

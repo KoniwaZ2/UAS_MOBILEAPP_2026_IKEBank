@@ -28,23 +28,31 @@ class _MainTabScreenState extends State<MainTabScreen> {
   late int _selectedIndex;
   String _cardStatus = 'none';
   bool _hasKartu = false;
-  bool _isCheckingKartu = false;
+  bool _isCheckingKartu = true;
 
   Widget get _kartuPage {
+    if (_isCheckingKartu) {
+      return const Center(
+        child: CircularProgressIndicator( color: Color(0xFFFF7F00)),
+      );
+    }
+
     if (!_hasKartu) {
       return const BuatKartuScreen();
     }
 
-    if (_cardStatus.contains('requested') ||
-        _cardStatus.contains('delivered')) {
+    final status = _cardStatus.toLowerCase();
+
+    if (status.contains('requested') ||
+        status.contains('delivered')) {
       return const KartuBerhasilScreen();
     }
 
-    if (_cardStatus.contains('active')) {
+    if (status.contains('active')) {
       return const DetailKartuScreen();
     }
 
-    if (_cardStatus.contains('blocked_temporary')) {
+    if (status.contains('blocked')) {
       return const DetailKartuBlokirScreen();
     }
 
@@ -62,10 +70,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
   ];
 
   Future<void> _handleKartuTabTap() async {
-    if (_isCheckingKartu) {
-      return;
-    }
-
+    
     setState(() {
       _isCheckingKartu = true;
     });
@@ -86,12 +91,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
               .trim()
               .toLowerCase();
           final cardNumber = (detail['card_number'] ?? '').toString().trim();
-          final hasStatusKartu =
-              status == 'active' ||
-              status == 'requested' ||
-              status == 'delivered' ||
-              status == 'blocked_temporary' ||
-              status == 'blocked_permanent';
+          final hasStatusKartu = status != 'none' && status != 'null' && status.isNotEmpty;
 
           resolvedCardStatus = status.isEmpty ? 'none' : status;
           resolvedHasKartu =
@@ -113,7 +113,6 @@ class _MainTabScreenState extends State<MainTabScreen> {
         _hasKartu = resolvedHasKartu;
         _cardStatus = resolvedCardStatus.isEmpty ? 'none' : resolvedCardStatus;
         _selectedIndex = 3;
-        print('Kartu status: $_cardStatus, hasKartu: $_hasKartu');
       });
     } catch (_) {
       if (!mounted) {
@@ -145,6 +144,8 @@ class _MainTabScreenState extends State<MainTabScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _handleKartuTabTap();
       });
+    } else {
+      _isCheckingKartu = false;
     }
   }
 

@@ -411,60 +411,7 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                       "Tanggal jatuh tempo",
                       widget.tanggalJatuhTempo,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "No. Rekening Deposito",
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () async {
-                              await Clipboard.setData(
-                                ClipboardData(text: widget.depositoAccountId),
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "Nomor rekening berhasil disalin!",
-                                    ),
-                                    duration: Duration(seconds: 2),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            },
-                            child: Row(
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/images/copy.svg',
-                                  width: 18,
-                                  height: 18,
-                                  colorFilter: const ColorFilter.mode(
-                                    Color(0xFFFF7F00),
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.depositoAccountId,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    
                   ],
                 ),
               ),

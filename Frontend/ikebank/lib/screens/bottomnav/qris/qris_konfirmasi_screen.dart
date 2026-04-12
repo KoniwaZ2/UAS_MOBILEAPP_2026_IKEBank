@@ -38,6 +38,24 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
   void initState() {
     super.initState();
     _loadWalletSources();
+    _amountController.addListener(_onAmountFormat);
+  }
+
+  void _onAmountFormat() {
+    String text = _amountController.text.replaceAll('.', '');
+    if (text.isEmpty) return;
+
+    String formatted = text.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
+
+    if (formatted != _amountController.text) {
+      _amountController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
   }
 
   WalletSource? _resolveDefaultSource(List<WalletSource> sources) {
@@ -78,6 +96,7 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
 
   @override
   void dispose() {
+    _amountController.removeListener(_onAmountFormat);
     _amountController.dispose();
     super.dispose();
   }
@@ -291,7 +310,6 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // 1. INFO MERCHANT (Otomatis dari Scan)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -308,7 +326,7 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                         children: [
                           Text(
                             widget.merchantName,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 28,
                               color: Colors.black,
                               fontWeight: FontWeight.w400,
@@ -448,8 +466,9 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    final amount = _amountController.text.trim();
-                    if (amount.isEmpty) {
+                    final amount = _amountController.text.replaceAll('.', '').trim();
+                    
+                    if (amount.isEmpty || amount == '0') {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
@@ -465,7 +484,7 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                       MaterialPageRoute(
                         builder: (context) => QrisPinScreen(
                           qrisNumber: widget.qrisNumber,
-                          amount: amount,
+                          amount: amount, 
                           merchantName: widget.merchantName,
                           location: widget.location,
                           aquirer: widget.aquirer,

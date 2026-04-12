@@ -51,15 +51,7 @@ class PengaturanBatasTransaksiScreen extends StatelessWidget {
                 );
               }
             ),
-            _buildLimitMenuItem(
-              title: "Batas transaksi RTOL", 
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AturBatasRtolScreen()),
-                );
-              }
-            ),
+
           ],
         ),
       ),

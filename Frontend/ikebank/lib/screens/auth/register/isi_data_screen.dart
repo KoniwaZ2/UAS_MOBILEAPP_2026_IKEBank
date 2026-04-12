@@ -37,11 +37,19 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
   final TextEditingController _nikController = TextEditingController();
   final TextEditingController _ttlController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
-  final TextEditingController _agamaController = TextEditingController();
   final TextEditingController _ibuController = TextEditingController();
 
   String? _jenisKelamin;
   final List<String> _listKelamin = ['Laki-Laki', 'Perempuan'];
+
+  String? _agama;
+  final List<String> _listAgama = [
+    'ISLAM',
+    'CHRISTIANITY',
+    'HINDUISM',
+    'BUDDHISM',
+    'OTHER'
+  ];
 
   @override
   void initState() {
@@ -55,7 +63,6 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     _namaController.text = (data['name'] ?? '').toString();
     _nikController.text = (data['nik'] ?? '').toString();
     _alamatController.text = (data['address'] ?? '').toString();
-    _agamaController.text = (data['religion'] ?? '').toString();
     _ibuController.text = (data['mother_name'] ?? '').toString();
 
     final bornDate = (data['born_date'] ?? '').toString();
@@ -69,6 +76,19 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     } else if (gender.contains('female') || gender.contains('perempuan')) {
       _jenisKelamin = 'Perempuan';
     }
+
+    final religionRaw = (data['religion'] ?? '').toString().toUpperCase();
+    if (_listAgama.contains(religionRaw)) {
+      _agama = religionRaw;
+    } else if (religionRaw == 'KRISTEN' || religionRaw == 'KATHOLIK' || religionRaw == 'KATOLIK') {
+      _agama = 'CHRISTIANITY';
+    } else if (religionRaw == 'HINDU') {
+      _agama = 'HINDUISM';
+    } else if (religionRaw == 'BUDDHA' || religionRaw == 'BUDHA') {
+      _agama = 'BUDDHISM';
+    } else if (religionRaw.isNotEmpty) {
+      _agama = 'OTHER';
+    }
   }
 
   @override
@@ -77,7 +97,6 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     _nikController.dispose();
     _ttlController.dispose();
     _alamatController.dispose();
-    _agamaController.dispose();
     _ibuController.dispose();
     super.dispose();
   }
@@ -139,7 +158,6 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
           ),
         ),
       ),
-      // PERUBAHAN DI SINI: Pakai Column & Expanded
       body: Column(
         children: [
           const SizedBox(height: 16.0),
@@ -205,16 +223,33 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                           suffixIcon: Icons.calendar_today,
                         ),
 
-                        _buildDropdownInput(label: "Jenis Kelamin"),
+                        _buildDropdownInput(
+                          label: "Jenis Kelamin",
+                          value: _jenisKelamin,
+                          items: _listKelamin,
+                          onChanged: (newValue) {
+                            setState(() {
+                              _jenisKelamin = newValue;
+                            });
+                          },
+                        ),
 
                         _buildTextInput(
                           label: "Alamat Sesuai KTP",
                           controller: _alamatController,
                         ),
-                        _buildTextInput(
+
+                        _buildDropdownInput(
                           label: "Agama",
-                          controller: _agamaController,
+                          value: _agama,
+                          items: _listAgama,
+                          onChanged: (newValue) {
+                            setState(() {
+                              _agama = newValue;
+                            });
+                          },
                         ),
+
                         _buildTextInput(
                           label: "Nama Gadis Ibu Kandung",
                           controller: _ibuController,
@@ -233,11 +268,11 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                             ),
                             onPressed: () {
                               if (_formKey.currentState!.validate()) {
-                                if (_jenisKelamin == null) {
+                                if (_jenisKelamin == null || _agama == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        'Pilih Jenis Kelamin terlebih dahulu!',
+                                        'Pastikan Jenis Kelamin dan Agama sudah dipilih!',
                                       ),
                                     ),
                                   );
@@ -273,7 +308,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                         ),
                                         gender: _toApiGender(_jenisKelamin),
                                         address: _alamatController.text.trim(),
-                                        religion: _agamaController.text.trim(),
+                                        religion: _agama!, 
                                         motherName: _ibuController.text.trim(),
                                       ),
                                     ),
@@ -359,7 +394,12 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     );
   }
 
-  Widget _buildDropdownInput({required String label}) {
+  Widget _buildDropdownInput({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -376,7 +416,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
           ),
           DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              initialValue: _jenisKelamin,
+              value: value,
               icon: Icon(
                 Icons.keyboard_arrow_down,
                 color: Colors.grey.shade700,
@@ -387,7 +427,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                 contentPadding: EdgeInsets.zero,
                 border: InputBorder.none,
               ),
-              items: _listKelamin.map((String val) {
+              items: items.map((String val) {
                 return DropdownMenuItem<String>(
                   value: val,
                   child: Text(
@@ -396,11 +436,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                   ),
                 );
               }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _jenisKelamin = newValue;
-                });
-              },
+              onChanged: onChanged,
             ),
           ),
         ],

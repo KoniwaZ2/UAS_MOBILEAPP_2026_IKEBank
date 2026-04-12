@@ -111,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         const Text(
                           "Masukkan nomor ponsel dan alamat email\nkamu yang aktif",
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 16,
                             color: AppColors.textBlack,
                             height: 1.4,
                           ),

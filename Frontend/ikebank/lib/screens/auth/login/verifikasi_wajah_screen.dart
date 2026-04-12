@@ -8,6 +8,8 @@ class VerifikasiWajahScreen extends StatelessWidget {
   final String? email;
   final String? reference;
   final RegisterFlowData? flowData;
+  final bool isLupaPin;
+  final Map<String, dynamic>? qrisData;
 
   const VerifikasiWajahScreen({
     super.key,
@@ -15,11 +17,16 @@ class VerifikasiWajahScreen extends StatelessWidget {
     this.email,
     this.reference,
     this.flowData,
+    this.isLupaPin = false,
+    this.qrisData,
   });
 
   @override
   Widget build(BuildContext context) {
-    const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
+    const TextStyle alumniSansBold = TextStyle(
+      fontWeight: FontWeight.w700,
+      fontFamily: 'AlumniSans', 
+    );
 
     return Scaffold(
       backgroundColor: AppColors.primaryOrange,
@@ -30,6 +37,16 @@ class VerifikasiWajahScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
           onPressed: () => Navigator.pop(context),
         ),
+        title: isLupaPin
+            ? Text(
+                "Lupa PIN",
+                style: alumniSansBold.copyWith(
+                  fontSize: 28,
+                  color: Colors.white,
+                ),
+              )
+            : null,
+        centerTitle: true,
       ),
       body: Container(
         width: double.infinity,
@@ -138,6 +155,8 @@ class VerifikasiWajahScreen extends StatelessWidget {
                                     email: email,
                                     reference: reference,
                                     flowData: flowData,
+                                    isLupaPin: isLupaPin,
+                                    qrisData: qrisData,
                                   ),
                                 ),
                               );

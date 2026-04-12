@@ -34,7 +34,7 @@ class DetailKartuBlokirScreen extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -101,7 +101,7 @@ class DetailKartuBlokirScreen extends StatelessWidget {
                       Text(
                         "Kartu tidak tersedia",
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -109,7 +109,7 @@ class DetailKartuBlokirScreen extends StatelessWidget {
                       Text(
                         "Kartumu sedang diblokir sementara, klik buka kartu untuk memulihkan kartumu",
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: Colors.black,
                           height: 1.4,

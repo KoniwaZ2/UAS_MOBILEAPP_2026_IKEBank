@@ -641,7 +641,7 @@ class _SakuScreenState extends State<SakuScreen> {
                   style: TextStyle(
                     color: Color(0xFFFF7F00),
                     fontWeight: FontWeight.bold,
-                    fontSize: 25,
+                    fontSize: 20,
                   ),
                 ),
               ],

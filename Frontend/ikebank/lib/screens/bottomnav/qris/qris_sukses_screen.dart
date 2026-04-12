@@ -96,6 +96,12 @@ class QrisSuksesScreen extends StatelessWidget {
     return DateFormat('dd MMM yyyy, HH:mm', 'id_ID').format(parsed.toLocal());
   }
 
+  String _compactId(String id) {
+    if (id == '-') return id;
+    if (id.length <= 16) return id; 
+    return "${id.substring(0, 8)}...${id.substring(id.length - 8)}";
+  }
+
   @override
   Widget build(BuildContext context) {
     final payload = _resolvePayload();
@@ -108,11 +114,14 @@ class QrisSuksesScreen extends StatelessWidget {
     );
     final acquirerName = aquirer;
     final merchantPanId = panId;
-    final transactionId = _firstString([
+    
+    final rawTransactionId = _firstString([
       payload['transaction_id'],
       payload['id'],
       payload['reference_id'],
     ], fallback: '-');
+    final transactionId = _compactId(rawTransactionId);
+
     final transactionTime = _formatTransactionTime(
       payload['transaction_time'] ??
           payload['created_at'] ??
@@ -157,7 +166,7 @@ class QrisSuksesScreen extends StatelessWidget {
                     Text(
                       "Pembayaran Berhasil",
                       style: alumniSansBold.copyWith(
-                        fontSize: 32,
+                        fontSize: 24,
                         color: Colors.black,
                       ),
                     ),
@@ -169,12 +178,11 @@ class QrisSuksesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
 
-                    // 2. KARTU MERCHANT & NOMINAL
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -209,7 +217,7 @@ class QrisSuksesScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -227,7 +235,7 @@ class QrisSuksesScreen extends StatelessWidget {
                           Text(
                             displayAmount,
                             style: const TextStyle(
-                              fontSize: 32,
+                              fontSize: 24,
                               color: Colors.black,
                             ),
                           ),
@@ -240,7 +248,7 @@ class QrisSuksesScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -282,7 +290,7 @@ class QrisSuksesScreen extends StatelessWidget {
                       child: Text(
                         "Rincian Transaksi",
                         style: alumniSansBold.copyWith(
-                          fontSize: 24,
+                          fontSize: 20,
                           color: Colors.black,
                         ),
                       ),
@@ -290,7 +298,7 @@ class QrisSuksesScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildDetailRow("Nama Acquirer", acquirerName),
                     _buildDetailRow("Merchant PAN ID", merchantPanId),
-                    _buildDetailRow("Transaction ID", transactionId),
+                    _buildDetailRow("Transaction ID", transactionId), 
                     _buildDetailRow("Transaction Time", transactionTime),
 
                     const SizedBox(height: 24),
@@ -344,7 +352,7 @@ class QrisSuksesScreen extends StatelessWidget {
 Merchant: $displayMerchantName
 Nominal : $displayAmount
 Waktu   : $transactionTime
-ID Transaksi: $transactionId
+ID Transaksi: $rawTransactionId
 
 Terima kasih telah menggunakan IKE-Bank!
 """;
@@ -400,11 +408,11 @@ Terima kasih telah menggunakan IKE-Bank!
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade800),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
           ),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, color: Colors.black),
+            style: const TextStyle(fontSize: 14, color: Colors.black),
           ),
         ],
       ),

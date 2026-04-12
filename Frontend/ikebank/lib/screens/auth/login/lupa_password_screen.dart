@@ -117,7 +117,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Colors.white,
-            fontSize: 26,
+            fontSize: 24,
           ),
         ),
       ),
@@ -147,14 +147,14 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                         Text(
                           "Masukkan Password Baru",
                           style: alumniSansBold.copyWith(
-                            fontSize: 28,
+                            fontSize: 20,
                             color: AppColors.textBlack,
                           ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          "Silahkan masukan password baru anda di kolom\nbawah.",
-                          textAlign: TextAlign.center,
+                          "Silahkan masukan password baru anda di kolom bawah.",
+                          textAlign: TextAlign.justify, 
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.textBlack,

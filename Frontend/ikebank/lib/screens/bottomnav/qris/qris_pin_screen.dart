@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'qris_sukses_screen.dart';
+import '../../auth/login/verifikasi_wajah_screen.dart';
 import '../../../api/banking.dart';
 
 class QrisPinScreen extends StatefulWidget {
@@ -175,9 +176,9 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(6, (index) {
                       return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 50,
-                        height: 50,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 45,
+                        height: 45,
                         decoration: BoxDecoration(
                           color: const Color(0xFFEBEBEB),
                           borderRadius: BorderRadius.circular(12),
@@ -200,12 +201,28 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
 
-            // 3. TOMBOL LUPA PIN
             GestureDetector(
               onTap: () {
-                // TODO: Aksi Lupa PIN
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VerifikasiWajahScreen(
+                      isLupaPin: true, 
+                      qrisData: {
+                        'qrisNumber': widget.qrisNumber,
+                        'merchantName': widget.merchantName,
+                        'amount': widget.amount,
+                        'location': widget.location,
+                        'aquirer': widget.aquirer,
+                        'panId': widget.panId,
+                        'walletName': widget.walletName,
+                        'walletBalance': widget.walletBalance,
+                      },
+                    ),
+                  ),
+                );
               },
               child: const Text(
                 "Lupa PIN?",
