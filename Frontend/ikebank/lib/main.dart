@@ -6,6 +6,7 @@ import 'package:ikebank/screens/home/home_screen.dart';
 import 'package:ikebank/screens/auth/register/buat_pass_screen.dart';
 import 'core/colors.dart';
 import 'screens/auth/signin.dart';
+import 'api/auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +52,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: _isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : (_isLoggedIn ? const HomeScreen() : const LoginPage()),
+          : (_isLoggedIn ? const HomeScreen() : const SignIn()),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/buat_password': (context) => const BuatPassScreen(),
