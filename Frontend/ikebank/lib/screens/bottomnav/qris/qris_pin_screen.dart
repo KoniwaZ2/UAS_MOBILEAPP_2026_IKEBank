@@ -209,7 +209,7 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => VerifikasiWajahScreen(
-                      isLupaPin: true, 
+                      isLupaPin: true,
                       qrisData: {
                         'qrisNumber': widget.qrisNumber,
                         'merchantName': widget.merchantName,

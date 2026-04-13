@@ -119,7 +119,7 @@ class RegisterBankAccountView(APIView):
             Saku.objects.create(
                 saku_name="Saku Utama",
                 account=bank_account,
-                category_name="nabung",
+                category_name="utama",
                 balance=0,
                 is_primary=True
             )
@@ -148,12 +148,17 @@ class CashFlowCalculateView(APIView):
         input_serializer.is_valid(raise_exception=True)
         validated_data = input_serializer.validated_data
 
-        account = get_user_bank_account(request.user)
 
+        account = get_user_bank_account(request.user)
         if account is None:
             return Response(
                 {'detail': 'Bank account not found or not owned by user.'},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Aktivitas tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         current_date = timezone.localdate()
@@ -196,7 +201,11 @@ class QrisDailyLimitView(APIView):
                 {'detail': 'No bank accounts found for user.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Aktivitas tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return Response({
             'qris_limit': account.qris_limit,
         }, status=status.HTTP_200_OK)
@@ -210,6 +219,11 @@ class QrisDailyLimitView(APIView):
             return Response(
                 {'detail': 'No bank accounts found for user.'},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Aktivitas tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # pin = serializer.validated_data['pin']
@@ -247,6 +261,7 @@ class TransactionCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+
         serializer = TransactionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
@@ -257,6 +272,11 @@ class TransactionCreateView(APIView):
             return Response(
                 {'detail': 'Bank account not found or not owned by user.'},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Transaksi tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Get Saku Utama (primary account)
@@ -464,11 +484,15 @@ class TambahDanaView(APIView):
         validated_data = serializer.validated_data
 
         account = get_user_bank_account(request.user)
-
         if account is None:
             return Response(
                 {'detail': 'Bank account not found or not owned by user.'},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Aktivitas tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Get Saku Utama (primary account)
@@ -542,13 +566,18 @@ class InternalTransferView(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
+
         # Get account
         account = get_user_bank_account(request.user)
-
         if account is None:
             return Response(
                 {'detail': 'Bank account not found or not owned by user.'},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if account.block:
+            return Response(
+                {'detail': 'Akun Anda sedang diblokir. Aktivitas tidak dapat diproses.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Get source Saku
@@ -1427,7 +1456,6 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             card_details.block_permanent = True
-            card_details.block_temporary = True
             card_details.card_status = 'blocked'
             account.card_number = ''
             update_fields.extend(['block_permanent', 'block_temporary', 'card_status'])
@@ -1966,9 +1994,9 @@ class ForgotPinView(APIView):
             )
 
         new_pin = validated_data['new_pin'].strip()
-        confirm_new_pin = validated_data['confirm_new_pin'].strip()
+        new_pin_confirm = validated_data['new_pin_confirm'].strip()
 
-        if new_pin != confirm_new_pin:
+        if new_pin != new_pin_confirm:
             return Response(
                 {'detail': 'New PIN and confirmation do not match.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1984,3 +2012,16 @@ class ForgotPinView(APIView):
         request.user.save(update_fields=['pin'])
 
         return Response({'detail': 'PIN updated successfully.'}, status=status.HTTP_200_OK)
+    
+class BlockAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        account = BankAccount.objects.filter(user=request.user).first()
+        if not account:
+            return Response({'detail': 'Bank account not found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+
+        account.block = True
+        account.save()
+
+        return Response({'detail': 'Account has been blocked successfully.'}, status=status.HTTP_200_OK)

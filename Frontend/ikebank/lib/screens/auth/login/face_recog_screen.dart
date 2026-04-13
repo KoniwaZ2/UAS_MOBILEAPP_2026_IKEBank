@@ -23,6 +23,10 @@ class FaceRecogScreen extends StatefulWidget {
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
 
+  // Tambahan untuk reset password
+  final String? newPassword;
+  final String? newPasswordConfirmation;
+
   const FaceRecogScreen({
     super.key,
     this.isFromRegister = false,
@@ -33,6 +37,8 @@ class FaceRecogScreen extends StatefulWidget {
     this.isFromCS = false,
     this.isLupaPin = false,
     this.qrisData,
+    this.newPassword,
+    this.newPasswordConfirmation,
   });
 
   @override
@@ -46,6 +52,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   );
 
   CameraController? _controller;
+  CameraDescription?
+  _frontCamera; // FIX: simpan referensi kamera untuk baca sensorOrientation
   late FaceDetector _faceDetector;
   bool _isCameraReady = false;
   bool _isProcessing = false;
@@ -63,14 +71,12 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   @override
   void initState() {
     super.initState();
-
     if (_isDevFaceBypassEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToNextPage(skipFaceValidation: true);
       });
       return;
     }
-
     _faceDetector = FaceDetector(
       options: FaceDetectorOptions(
         enableClassification: true,
@@ -94,6 +100,9 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         orElse: () => cameras.first,
       );
 
+      // FIX: simpan referensi kamera
+      _frontCamera = frontCamera;
+
       final controller = CameraController(
         frontCamera,
         ResolutionPreset.medium,
@@ -116,6 +125,30 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
   }
 
+  // FIX: hitung rotasi secara dinamis berdasarkan sensorOrientation kamera
+  InputImageRotation _getImageRotation() {
+    final camera = _frontCamera;
+    if (camera == null) return InputImageRotation.rotation0deg;
+
+    if (Platform.isAndroid) {
+      switch (camera.sensorOrientation) {
+        case 0:
+          return InputImageRotation.rotation0deg;
+        case 90:
+          return InputImageRotation.rotation90deg;
+        case 180:
+          return InputImageRotation.rotation180deg;
+        case 270:
+          return InputImageRotation.rotation270deg;
+        default:
+          return InputImageRotation.rotation270deg;
+      }
+    }
+
+    // iOS selalu 0
+    return InputImageRotation.rotation0deg;
+  }
+
   void _startFaceDetectionStream() {
     final controller = _controller;
     if (controller == null) return;
@@ -123,21 +156,17 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     controller.startImageStream((image) async {
       if (_isProcessing) return;
       _isProcessing = true;
-
       try {
         final inputImage = _inputImageFromCameraImage(image);
         final faces = await _faceDetector.processImage(inputImage);
         final detected = faces.isNotEmpty;
-
         if (mounted && detected != _faceDetected) {
           setState(() => _faceDetected = detected);
         }
-
         if (faces.isNotEmpty) {
           _processLiveness(faces.first);
         }
       } catch (_) {}
-
       _isProcessing = false;
     });
   }
@@ -220,27 +249,32 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
   }
 
+  // FIX: format gambar disesuaikan per platform + rotasi dinamis
   InputImage _inputImageFromCameraImage(CameraImage image) {
-    final allBytes = BytesBuilder(copy: false);
-    for (final plane in image.planes) {
-      allBytes.add(plane.bytes);
-    }
+    final Uint8List bytes;
+    final InputImageFormat inputImageFormat;
 
-    final bytes = allBytes.takeBytes();
-    final inputImageFormat =
-        InputImageFormatValue.fromRawValue(image.format.raw) ??
-        InputImageFormat.nv21;
-
-    InputImageRotation rotation;
     if (Platform.isAndroid) {
-      rotation = InputImageRotation.rotation270deg;
+      // Android: NV21 — gabungkan semua planes
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final Plane plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      bytes = allBytes.done().buffer.asUint8List();
+      inputImageFormat = InputImageFormat.nv21;
     } else {
-      rotation = InputImageRotation.rotation0deg;
+      // iOS: BGRA8888 — gabungkan semua planes
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final Plane plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      bytes = allBytes.done().buffer.asUint8List();
+      inputImageFormat = InputImageFormat.bgra8888;
     }
 
     final metadata = InputImageMetadata(
       size: Size(image.width.toDouble(), image.height.toDouble()),
-      rotation: rotation,
+      rotation: _getImageRotation(), // FIX: pakai rotasi dinamis
       format: inputImageFormat,
       bytesPerRow: image.planes.first.bytesPerRow,
     );
@@ -299,7 +333,13 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
+    if (widget.isFromCS) {
+      Navigator.pop(context, true);
+      return;
+    }
+
     final prefilledEmail = widget.email?.trim();
+
     if (widget.isFromLupaPassword) {
       Navigator.pushReplacement(
         context,
@@ -340,8 +380,63 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
 
-    if (widget.isFromCS || widget.isFromLupaPassword || widget.isLupaPin) {
-      await _routeAfterFaceVerified();
+    // Jika dari lupa password, langsung proses reset password setelah face match
+    if (widget.isFromLupaPassword &&
+        widget.newPassword != null &&
+        widget.newPasswordConfirmation != null) {
+      setState(() {
+        _isUploadingFace = true;
+      });
+
+      try {
+        if (controller == null || !controller.value.isInitialized) {
+          throw Exception('Kamera belum siap untuk mengambil selfie.');
+        }
+
+        final image = await controller.takePicture();
+        await AuthService.checkFaceLogin(
+          File(image.path),
+          reference: widget.reference?.trim(),
+          purpose: 'login',
+        );
+
+        // Jika face match, langsung reset password
+        await AuthService.forgotPassword(
+          email: widget.email ?? '',
+          otpReference: widget.reference ?? '',
+          password: widget.newPassword!,
+          passwordConfirmation: widget.newPasswordConfirmation!,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password berhasil direset")),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginPage(
+                prefilledEmail: widget.email,
+                reference: widget.reference,
+              ),
+            ),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Gagal reset password: $e")));
+          setState(() {
+            _isUploadingFace = false;
+          });
+        }
+        _hasNavigated = false;
+        if (controller != null && !controller.value.isStreamingImages) {
+          _startFaceDetectionStream();
+        }
+      }
       return;
     }
 
@@ -402,7 +497,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           _isUploadingFace = false;
         });
       }
-
       await _routeAfterFaceVerified();
       return;
     }
@@ -446,7 +540,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         _isUploadingFace = false;
       });
     }
-
     await _routeAfterFaceVerified();
   }
 
@@ -500,9 +593,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-
                   const SizedBox(height: 60),
-
                   GestureDetector(
                     onTap: _onCaptureTap,
                     child: Stack(

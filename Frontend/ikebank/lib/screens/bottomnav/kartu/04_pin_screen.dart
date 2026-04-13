@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import '02_buat_kartu_screen_2.dart';
 import '05_kartu_berhasil_screen.dart';
 import '../../../api/banking.dart';
@@ -101,7 +102,8 @@ class _PinScreenState extends State<PinScreen> {
               .trim()
               .toLowerCase();
           final cardNumber = (detail['card_number'] ?? '').toString().trim();
-          final hasStatusKartu = status == 'active' ||
+          final hasStatusKartu =
+              status == 'active' ||
               status == 'requested' ||
               status == 'delivered';
 
@@ -142,15 +144,7 @@ class _PinScreenState extends State<PinScreen> {
       return;
     }
 
-    if (_isBackBlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Kartu sudah requested/active, tidak bisa kembali.'),
-        ),
-      );
-      return;
-    }
-
+    // Selalu izinkan back
     if (widget.entrySource == PinEntrySource.buatKartu ||
         widget.entrySource == PinEntrySource.kartuTab) {
       Navigator.pushReplacement(
@@ -181,6 +175,7 @@ class _PinScreenState extends State<PinScreen> {
 
   Future<String> _resolveSourceFundsId() async {
     final directSourceFundsId = widget.sourceFundsId.trim();
+    print('Resolving source funds ID, direct: "$directSourceFundsId"');
     if (directSourceFundsId.isNotEmpty) {
       return directSourceFundsId;
     }
@@ -223,7 +218,7 @@ class _PinScreenState extends State<PinScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const KartuBerhasilScreen()),
+        MaterialPageRoute(builder: (_) => const MainTabScreen(initialIndex: 3)),
       );
     } catch (error) {
       if (!mounted) {
@@ -284,9 +279,9 @@ class _PinScreenState extends State<PinScreen> {
                       child: Row(
                         children: [
                           IconButton(
-                            onPressed: _isSubmitting || _isCheckingCardState
-                                ? null
-                                : _handleBackPressed,
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
                             icon: const Icon(
                               Icons.arrow_back,
                               color: Colors.white,

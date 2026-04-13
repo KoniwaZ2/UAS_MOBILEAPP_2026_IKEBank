@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, NabungAIStateView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView, DepositoEditView, CardDailyLimitView, QrisDailyLimitView, ForgotPinView
+from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, NabungAIStateView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView, DepositoEditView, CardDailyLimitView, QrisDailyLimitView, ForgotPinView, BlockAccountView
 
 
 urlpatterns = [
@@ -32,4 +32,5 @@ urlpatterns = [
     path('daily-limit/', CardDailyLimitView.as_view(), name='card-daily-limit'),
     path('qris-daily-limit/', QrisDailyLimitView.as_view(), name='qris-daily-limit'),
     path('forgot-pin/', ForgotPinView.as_view(), name='forgot-pin'),
+    path('block-account/', BlockAccountView.as_view(), name='block-account'),
 ]

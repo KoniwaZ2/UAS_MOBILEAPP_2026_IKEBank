@@ -7,7 +7,8 @@ import '../models/wallet_source.dart';
 import 'package:http/http.dart' as http;
 
 class BankingService {
-  static String baseUrl = 'http://192.168.0.113:8000/api/banking';
+  // static const String baseUrl = 'http://10.10.161.245:8000/api/cs';
+  static const String baseUrl = 'http://192.168.1.12:8000/api/banking';
   static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
 
   static void notifyAccountDataChanged() {
@@ -891,6 +892,38 @@ class BankingService {
       } else {
         throw Exception(
           'Failed to set QRIS daily limit (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> blockAccount() {
+    final url = Uri.parse("$baseUrl/block-account/");
+    return AuthService.authorizedPost(url, body: {}).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to block account (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> changePin({
+    required String newPin,
+    required String newPinConfirm,
+  }) {
+    final url = Uri.parse("$baseUrl/forgot-pin/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({'new_pin': newPin, 'new_pin_confirm': newPinConfirm}),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to change PIN (HTTP ${response.statusCode}): ${response.body}',
         );
       }
     });
