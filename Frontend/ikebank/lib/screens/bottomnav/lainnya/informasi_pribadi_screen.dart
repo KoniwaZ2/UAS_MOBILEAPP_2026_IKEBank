@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../home/layanan/bantuan_cs_screen.dart';
 import '../../../api/auth.dart';
 
 class InformasiPribadiScreen extends StatefulWidget {
@@ -117,76 +116,6 @@ class _InformasiPribadiScreenState extends State<InformasiPribadiScreen> {
                         },
                       ],
                       alumniSansStyle: alumniSansBold,
-                    ),
-
-                    _buildInfoCard(
-                      title: "Informasi Ketenagakerjaan",
-                      data: [
-                        {"label": "Tujuan Pembukaan Akun", "value": "Tabungan"},
-                        {"label": "Sumber Dana", "value": "Gaji/Upah"},
-                        {
-                          "label": "Penghasilan per Bulan",
-                          "value": "Rp4.500.000",
-                        },
-                        {"label": "Jabatan", "value": "Staff"},
-                      ],
-                      alumniSansStyle: alumniSansBold,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              decoration: const BoxDecoration(color: Colors.white),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEAD1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Fitur Ubah Data belum tersedia"),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Ubah Data",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const BantuanCsScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Bantuan CS",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Color(0xFFFF7F00),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                     ),
                   ],
                 ),

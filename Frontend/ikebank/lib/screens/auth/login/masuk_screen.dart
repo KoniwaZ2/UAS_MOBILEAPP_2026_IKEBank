@@ -55,23 +55,22 @@ class _MasukScreenState extends State<MasukScreen> {
       if (!exists) {
         setState(() {
           _errorMessage = "Email belum terdaftar";
-          _isCheckingLogin = false;
         });
-        return;
+        return; // Akan ditangkap oleh finally untuk menghentikan loading
       }
 
-      setState(() {
-        _isCheckingLogin = false;
-      });
+      // 🔥 LOGIKA DIPERBAIKI: Kita hapus setState false di sini agar tombol tetap "Memproses..."
 
       final otpRes = await AuthService.otpRequest(
         email: email,
         purpose: 'login',
       );
+      
       final otpRequests = (otpRes['otp_requests'] as List?) ?? [];
       if (otpRequests.isEmpty) {
         throw Exception('OTP reference tidak ditemukan');
       }
+      
       final reference =
           (otpRequests.first as Map<String, dynamic>)['reference']
               ?.toString() ??
@@ -98,8 +97,14 @@ class _MasukScreenState extends State<MasukScreen> {
       }
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        _isCheckingLogin = false;
       });
+    } finally {
+      // 🔥 LOGIKA DIPERBAIKI: Mengikuti gaya register, reset loading diletakkan di finally
+      if (mounted) {
+        setState(() {
+          _isCheckingLogin = false;
+        });
+      }
     }
   }
 

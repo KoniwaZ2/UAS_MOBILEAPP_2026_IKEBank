@@ -129,7 +129,7 @@ class SignIn extends StatelessWidget {
                       child: Text(
                         "Ringkasan Informasi Produk dan Layanan (RIPLAY) Umum",
                         style: alumniSansBold.copyWith(
-                          fontSize: 11, 
+                          fontSize: 16, 
                           color: AppColors.primaryOrange,
                         ),
                         textAlign: TextAlign.center,

@@ -620,6 +620,7 @@ class _DepositoSpesialScreenState extends State<DepositoSpesialScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Minimal penempatan Rp 1.000.000"),
+                              backgroundColor: Colors.red,
                             ),
                           );
                         }

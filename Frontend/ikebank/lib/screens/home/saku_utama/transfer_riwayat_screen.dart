@@ -233,7 +233,13 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
                                           border: InputBorder.none,
                                           isDense: true,
                                           contentPadding: EdgeInsets.zero,
-                                          hintText: "", 
+                                          hintText: "0", 
+                                          hintStyle: TextStyle(
+                                            fontFamily: 'AlumniSans', 
+                                            fontSize: 32, 
+                                            fontWeight: FontWeight.w900, 
+                                            color: Colors.black26
+                                          ),
                                         ),
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly, 
@@ -247,7 +253,7 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
                               ],
                             ),
                           ),
-
+                          
                           Container(
                             color: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
@@ -291,7 +297,7 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              _showSumberDanaBottomSheet(context); // Pop-up dipanggil di sini
+                              _showSumberDanaBottomSheet(context); 
                             }, 
                             child: const Text("Ganti", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFF7F00))),
                           ),
@@ -345,9 +351,21 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    String nominalTransfer = _amountController.text.isEmpty ? "0" : _amountController.text;
+                    // 🔥 VALIDASI: Cek jika input kosong atau hanya 0
+                    String amountText = _amountController.text.replaceAll('.', '').trim();
+                    if (amountText.isEmpty || int.tryParse(amountText) == null || int.parse(amountText) <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nominal transfer harus lebih dari 0'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return; // Berhenti di sini, tidak lanjut pindah halaman
+                    }
 
-                    // Oper semua data ke halaman PIN
+                    String nominalTransfer = _amountController.text;
+
+                    // Jika validasi lolos, baru oper semua data ke halaman PIN
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -375,6 +393,7 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
     );
   }
 
+  // 🔥 UPDATE: Bottom sheet Sumber Dana Anti-Overflow (Turun ke bawah)
   void _showSumberDanaBottomSheet(BuildContext context) {
     if (_availableSourceSakus.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -385,144 +404,162 @@ class _TransferRiwayatScreenState extends State<TransferRiwayatScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // 🔥 Izinkan popup lebih panjang
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 50, height: 5,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+        return ConstrainedBox(
+          // 🔥 Batasi tinggi agar tidak menabrak batas atas layar (status bar)
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 50, height: 5,
+                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Sumber dana",
-                style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black),
-              ),
-              const SizedBox(height: 20),
-              ..._availableSourceSakus.map((source) {
-                final name = source['name'] ?? '-';
-                final balance = source['balance'] ?? 'Rp 0';
-                final category = source['category'] ?? '';
-                final isUtama = category == 'utama';
+                const SizedBox(height: 24),
+                const Text(
+                  "Sumber dana",
+                  style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black),
+                ),
+                const SizedBox(height: 20),
+                
+                // 🔥 Bungkus list dengan Flexible + SingleChildScrollView agar bisa di-scroll
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: _availableSourceSakus.map((source) {
+                        final name = source['name'] ?? '-';
+                        final balance = source['balance'] ?? 'Rp 0';
+                        final category = source['category'] ?? '';
+                        final isUtama = category == 'utama';
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedSumberDana = name;
-                        _selectedSumberDanaSaldo = balance;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8F0),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFFFDBB7),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 55,
-                                decoration: BoxDecoration(
-                                  color: isUtama
-                                      ? const Color(0xFFCCCCFF)
-                                      : const Color(0xFFD6CFFF),
-                                  borderRadius: const BorderRadius.vertical(
-                                    bottom: Radius.circular(25),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedSumberDana = name;
+                                _selectedSumberDanaSaldo = balance;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF8F0),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(0xFFFFDBB7),
+                                      width: 1.5,
+                                    ),
                                   ),
-                                ),
-                                alignment: Alignment.center,
-                                child: isUtama
-                                    ? Image.asset(
-                                        'assets/images/IKEHome.png',
-                                        height: 24,
-                                        fit: BoxFit.contain,
-                                      )
-                                    : SvgPicture.asset(
-                                        'assets/images/bag.svg',
-                                        height: 24,
-                                        colorFilter: const ColorFilter.mode(
-                                          Color(0xFFFF7F00),
-                                          BlendMode.srcIn,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 50,
+                                        height: 55,
+                                        decoration: BoxDecoration(
+                                          color: isUtama
+                                              ? const Color(0xFFCCCCFF)
+                                              : const Color(0xFFD6CFFF),
+                                          borderRadius: const BorderRadius.vertical(
+                                            bottom: Radius.circular(25),
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: isUtama
+                                            ? Image.asset(
+                                                'assets/images/IKEHome.png',
+                                                height: 24,
+                                                fit: BoxFit.contain,
+                                              )
+                                            : SvgPicture.asset(
+                                                'assets/images/bag.svg',
+                                                height: 24,
+                                                colorFilter: const ColorFilter.mode(
+                                                  Color(0xFFFF7F00),
+                                                  BlendMode.srcIn,
+                                                ),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              balance,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
+                                    ],
+                                  ),
+                                ),
+                                if (category == 'transaksi')
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF3B44F6),
+                                        borderRadius: BorderRadius.only(
+                                          topRight: Radius.circular(14),
+                                          bottomLeft: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Transaksi',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    balance,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (category == 'transaksi')
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF3B44F6),
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(14),
-                                  bottomLeft: Radius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Transaksi',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
-                      ],
+                        );
+                      }).toList(),
                     ),
                   ),
-                );
-              }),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },

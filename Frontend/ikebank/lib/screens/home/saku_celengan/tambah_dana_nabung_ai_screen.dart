@@ -252,6 +252,42 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
     }
   }
 
+  // 🔥 FUNGSI BARU: Penerjemah Error dari Backend
+  String _parseErrorMessage(String error) {
+    final errorLower = error.toLowerCase();
+
+    if (errorLower.contains('insufficient') || errorLower.contains('balance')) {
+      return 'Saldo tidak cukup untuk melakukan transfer';
+    }
+
+    if (errorLower.contains('not found') || errorLower.contains('tidak ada')) {
+      return 'Saku tidak ditemukan. Silakan refresh dan coba lagi';
+    }
+
+    if (errorLower.contains('socket') ||
+        errorLower.contains('connection') ||
+        errorLower.contains('timeout')) {
+      return 'Koneksi internet bermasalah. Silakan coba lagi';
+    }
+
+    if (errorLower.contains('unauthorized') ||
+        errorLower.contains('unauthenticated')) {
+      return 'Sesi Anda telah habis. Silakan login kembali';
+    }
+
+    if (errorLower.contains('bad request') || errorLower.contains('invalid')) {
+      return 'Data transfer tidak valid. Periksa kembali data Anda';
+    }
+
+    if (error.isNotEmpty && !error.startsWith('Exception:')) {
+      return error; // Jika sudah berupa string bersih, kembalikan saja
+    }
+
+    return error.replaceFirst('Exception: ', '').isNotEmpty
+        ? error.replaceFirst('Exception: ', '')
+        : 'Transfer gagal. Silakan coba lagi';
+  }
+
   Future<void> _submitTambahDana() async {
     final amountDigits = _extractAmountDigits(_amountController.text);
     final parsedAmount = int.tryParse(amountDigits) ?? 0;
@@ -259,20 +295,20 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
     if (parsedAmount < 1) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Nominal minimal Rp 1')));
+      ).showSnackBar(const SnackBar(content: Text('Nominal minimal Rp 1'), backgroundColor: Colors.red));
       return;
     }
 
     if (parsedAmount > 500000) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal maksimal Rp 500.000')),
+        const SnackBar(content: Text('Nominal maksimal Rp 500.000'), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (_selectedSumberId.isEmpty || _targetSakuId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid')),
+        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -281,6 +317,7 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sumber dan tujuan saku tidak boleh sama'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -307,12 +344,18 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
       scaffoldMessenger?.showSnackBar(
         SnackBar(
           content: Text('Dana berhasil ditambahkan ke $_targetSakuName!'),
+          backgroundColor: const Color(0xFF00C853), // 🔥 Warna Hijau Sukses
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      // 🔥 Menerapkan parser error agar rapi
+      String errorMessage = _parseErrorMessage(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red, // 🔥 Warna Merah Error
+        ),
       );
     } finally {
       if (mounted) {
@@ -402,9 +445,9 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
                                               height: 24,
                                               colorFilter:
                                                   const ColorFilter.mode(
-                                                    Color(0xFFFF7F00),
-                                                    BlendMode.srcIn,
-                                                  ),
+                                                Color(0xFFFF7F00),
+                                                BlendMode.srcIn,
+                                              ),
                                             )
                                           : Image.asset(
                                               _targetIconPath,
@@ -412,9 +455,9 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
                                               fit: BoxFit.contain,
                                               errorBuilder: (c, e, s) =>
                                                   const Icon(
-                                                    Icons.account_balance,
-                                                    color: Colors.blue,
-                                                  ),
+                                                Icons.account_balance,
+                                                color: Colors.blue,
+                                              ),
                                             ),
                                     ),
                                     const SizedBox(width: 12),
@@ -524,20 +567,6 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8.0, right: 8.0),
-                        child: Text(
-                          "*Minimal Rp 1, Maksimal Rp 500.000",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
                       ),
                     ),
 
@@ -669,144 +698,157 @@ class _TambahDanaNabungAiScreenState extends State<TambahDanaNabungAiScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // 🔥 Anti overflow
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(
-            left: 24.0,
-            right: 24.0,
-            top: 16.0,
-            bottom: 32.0,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75, // 🔥 Batasan tinggi layar
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 50,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Pilih sumber dana",
-                style: TextStyle(
-                  fontFamily: 'AlumniSans',
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              ..._sourceSakus.asMap().entries.map((entry) {
-                final index = entry.key;
-                final saku = entry.value;
-                final sourceId = _readString(saku, const ['id', 'saku_id']);
-                final sourceName = _readString(saku, const [
-                  'saku_name',
-                  'name',
-                ]);
-                final sourceBalance = _formatRupiah(
-                  _readString(saku, const ['balance']),
-                );
-                final iconPath = _resolveSakuIcon(saku);
-                final isSvg = iconPath.toLowerCase().endsWith('.svg');
-
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index == _sourceSakus.length - 1 ? 0 : 12,
-                  ),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedSumberId = sourceId;
-                        _selectedSumber = sourceName;
-                        _selectedSumberSaldo = sourceBalance;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8F0),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFFFDBB7),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 55,
-                            decoration: BoxDecoration(
-                              color: isSvg
-                                  ? const Color(0xFFD6CFFF)
-                                  : const Color(0xFFD6E4FF),
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(25),
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: isSvg
-                                ? SvgPicture.asset(
-                                    iconPath,
-                                    height: 24,
-                                    colorFilter: const ColorFilter.mode(
-                                      Color(0xFFFF7F00),
-                                      BlendMode.srcIn,
-                                    ),
-                                  )
-                                : Image.asset(
-                                    iconPath,
-                                    height: 28,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (c, e, s) => const Icon(
-                                      Icons.account_balance,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                sourceName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                sourceBalance,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 24.0,
+              right: 24.0,
+              top: 16.0,
+              bottom: 32.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                );
-              }),
-            ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "Pilih sumber dana",
+                  style: TextStyle(
+                    fontFamily: 'AlumniSans',
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: _sourceSakus.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final saku = entry.value;
+                        final sourceId = _readString(saku, const ['id', 'saku_id']);
+                        final sourceName = _readString(saku, const [
+                          'saku_name',
+                          'name',
+                        ]);
+                        final sourceBalance = _formatRupiah(
+                          _readString(saku, const ['balance']),
+                        );
+                        final iconPath = _resolveSakuIcon(saku);
+                        final isSvg = iconPath.toLowerCase().endsWith('.svg');
+
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index == _sourceSakus.length - 1 ? 0 : 12,
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedSumberId = sourceId;
+                                _selectedSumber = sourceName;
+                                _selectedSumberSaldo = sourceBalance;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF8F0),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: const Color(0xFFFFDBB7),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 55,
+                                    decoration: BoxDecoration(
+                                      color: isSvg
+                                          ? const Color(0xFFD6CFFF)
+                                          : const Color(0xFFD6E4FF),
+                                      borderRadius: const BorderRadius.vertical(
+                                        bottom: Radius.circular(25),
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: isSvg
+                                        ? SvgPicture.asset(
+                                            iconPath,
+                                            height: 24,
+                                            colorFilter: const ColorFilter.mode(
+                                              Color(0xFFFF7F00),
+                                              BlendMode.srcIn,
+                                            ),
+                                          )
+                                        : Image.asset(
+                                            iconPath,
+                                            height: 28,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (c, e, s) => const Icon(
+                                              Icons.account_balance,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        sourceName,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        sourceBalance,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

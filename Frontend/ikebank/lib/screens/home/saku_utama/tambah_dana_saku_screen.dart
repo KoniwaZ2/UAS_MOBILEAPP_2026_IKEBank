@@ -230,12 +230,10 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
       return 'Terjadi kesalahan pada server. Silakan coba lagi nanti';
     }
 
-    // Jika error sudah dihapus "Exception: " prefix, langsung return
     if (error.isNotEmpty && !error.startsWith('Exception:')) {
       return error;
     }
 
-    // Fallback: clean up Exception prefix jika ada
     return error.replaceFirst('Exception: ', '').isNotEmpty
         ? error.replaceFirst('Exception: ', '')
         : 'Transfer gagal. Silakan coba lagi';
@@ -247,14 +245,14 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
         int.tryParse(amountDigits) == null ||
         int.parse(amountDigits) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal transfer harus lebih dari 0')),
+        const SnackBar(content: Text('Nominal transfer harus lebih dari 0'), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (_selectedSumberDanaId.isEmpty || _targetSakuId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid')),
+        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red,),
       );
       return;
     }
@@ -263,6 +261,7 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sumber dan tujuan saku tidak boleh sama'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -285,6 +284,13 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
         return;
       }
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tambah Dana Berhasil!'),
+          backgroundColor: Color(0xFF00C853), 
+        ),
+      );
+
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) {
@@ -292,9 +298,12 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
       }
 
       String errorMessage = _parseErrorMessage(e.toString());
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red, 
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -586,6 +595,7 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
     );
   }
 
+  // 🔥 UPDATE: Bottom sheet Sumber Dana yang sudah Anti-Overflow
   void _showSumberDanaBottomSheet(BuildContext context) {
     if (_sourceSakus.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -596,158 +606,174 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(
-            left: 24.0,
-            right: 24.0,
-            top: 16.0,
-            bottom: 32.0,
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 50,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Sumber Dana",
-                style: TextStyle(
-                  fontFamily: 'AlumniSans',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ..._sourceSakus.map((saku) {
-                final sourceId = _readString(saku, const ['id', 'saku_id']);
-                final sourceName = _readString(saku, const [
-                  'saku_name',
-                  'name',
-                ]);
-                final sourceBalance = _formatRupiah(
-                  _readString(saku, const ['balance']),
-                );
-                final isSelected = _selectedSumberDana == sourceName;
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedSumberDanaId = sourceId;
-                        _selectedSumberDana = sourceName;
-                        _selectedSumberDanaSaldo = sourceBalance;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF8F0),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFFFF7F00)
-                                  : const Color(0xFFFFDBB7),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 50,
-                                height: 55,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFD6CFFF),
-                                  borderRadius: BorderRadius.vertical(
-                                    bottom: Radius.circular(25),
-                                  ),
-                                ),
-                                alignment: Alignment.center,
-                                child: SvgPicture.asset(
-                                  'assets/images/bag.svg',
-                                  height: 24,
-                                  colorFilter: const ColorFilter.mode(
-                                    Color(0xFFFF7F00),
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    sourceName,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    sourceBalance,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (sourceId == _targetSakuId)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFF7F00),
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(14),
-                                  bottomLeft: Radius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                "Utama",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: 24.0,
+              right: 24.0,
+              top: 16.0,
+              bottom: 32.0,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                );
-              }),
-            ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "Sumber Dana",
+                  style: TextStyle(
+                    fontFamily: 'AlumniSans',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: _sourceSakus.map((saku) {
+                        final sourceId = _readString(saku, const ['id', 'saku_id']);
+                        final sourceName = _readString(saku, const [
+                          'saku_name',
+                          'name',
+                        ]);
+                        final sourceBalance = _formatRupiah(
+                          _readString(saku, const ['balance']),
+                        );
+                        final isSelected = _selectedSumberDana == sourceName;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedSumberDanaId = sourceId;
+                                _selectedSumberDana = sourceName;
+                                _selectedSumberDanaSaldo = sourceBalance;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF8F0),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFFF7F00)
+                                          : const Color(0xFFFFDBB7),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 50,
+                                        height: 55,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFD6CFFF),
+                                          borderRadius: BorderRadius.vertical(
+                                            bottom: Radius.circular(25),
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: SvgPicture.asset(
+                                          'assets/images/bag.svg',
+                                          height: 24,
+                                          colorFilter: const ColorFilter.mode(
+                                            Color(0xFFFF7F00),
+                                            BlendMode.srcIn,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              sourceName,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              sourceBalance,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (sourceId == _targetSakuId)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFFF7F00),
+                                        borderRadius: BorderRadius.only(
+                                          topRight: Radius.circular(14),
+                                          bottomLeft: Radius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Utama",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

@@ -188,16 +188,16 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     "Selamat Datang Kembali",
                     style: alumniSansBold.copyWith(
-                      fontSize: 26,
+                      fontSize: 34,
                       color: AppColors.primaryOrange,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 1),
                   Text(
                     "Ikuti langkah dibawah ini untuk masuk kembali ke akunmu",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 15,
                       color: AppColors.primaryOrange.withValues(alpha: 0.9),
                       height: 1.0,
                     ),

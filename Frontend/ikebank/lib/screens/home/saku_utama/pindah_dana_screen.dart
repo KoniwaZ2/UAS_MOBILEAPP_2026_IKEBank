@@ -242,21 +242,21 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
     final amountDigits = _extractAmountDigits(_amountController.text);
     if (amountDigits.isEmpty || int.tryParse(amountDigits) == null || int.parse(amountDigits) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal transfer harus lebih dari 0')),
+        const SnackBar(content: Text('Nominal transfer harus lebih dari 0'), backgroundColor: Colors.red,),
       );
       return;
     }
 
     if (_sourceSakuId.isEmpty || _selectedTujuanId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid')),
+        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red,),
       );
       return;
     }
 
     if (_sourceSakuId == _selectedTujuanId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber dan tujuan saku tidak boleh sama')),
+        const SnackBar(content: Text('Sumber dan tujuan saku tidak boleh sama'), backgroundColor: Colors.red,),
       );
       return;
     }
@@ -276,6 +276,13 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       if (!mounted) {
         return;
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tambah Dana Berhasil!'),
+          backgroundColor: Color(0xFF00C853), 
+        ),
+      );
 
       Navigator.pop(context, true);
     } catch (e) {

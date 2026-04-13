@@ -94,8 +94,8 @@ class LainnyaScreen extends StatelessWidget {
             ),
 
             _buildMenuItem(
-              icon: Icons.logout,
-              title: "Keluar dari akun",
+              icon: Icons.person,
+              title: "Ganti akun",
               onTap: () async {
                 final lastEmail = await AuthService.getLastEmail();
 
@@ -123,8 +123,8 @@ class LainnyaScreen extends StatelessWidget {
             ),
 
             _buildMenuItem(
-              icon: Icons.person,
-              title: "Ganti akun",
+              icon: Icons.logout,
+              title: "Keluar dari akun",
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,

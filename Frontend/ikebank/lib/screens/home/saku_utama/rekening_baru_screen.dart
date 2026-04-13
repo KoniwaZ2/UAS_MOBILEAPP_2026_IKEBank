@@ -135,7 +135,7 @@ class _RekeningBaruScreenState extends State<RekeningBaruScreen> {
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Pilih bank dan isi nomor rekening dulu ya!")),
+                        const SnackBar(content: Text("Pilih bank dan isi nomor rekening dulu ya!"), backgroundColor: Colors.red,),
                       );
                     }
                   },

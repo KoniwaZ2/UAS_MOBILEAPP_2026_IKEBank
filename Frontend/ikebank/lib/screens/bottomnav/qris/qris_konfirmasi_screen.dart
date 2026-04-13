@@ -474,6 +474,7 @@ class _QrisKonfirmasiScreenState extends State<QrisKonfirmasiScreen> {
                           content: Text(
                             'Masukkan jumlah pembayaran terlebih dahulu.',
                           ),
+                          backgroundColor: Colors.red,
                         ),
                       );
                       return;

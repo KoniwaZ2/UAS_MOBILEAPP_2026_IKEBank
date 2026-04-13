@@ -82,7 +82,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
                         const Text(
                           "Yuk, ikuti panduan di bawah sebelum verifikasi\nwajahmu",
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 18,
                             color: AppColors.textBlack,
                             height: 1.4,
                           ),

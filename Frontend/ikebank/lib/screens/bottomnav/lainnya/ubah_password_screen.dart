@@ -56,7 +56,7 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
     if (oldPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field password wajib diisi.')),
+        const SnackBar(content: Text('Semua field password wajib diisi.'), backgroundColor: Colors.red,),
       );
       return;
     }

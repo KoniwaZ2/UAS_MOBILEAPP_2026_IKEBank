@@ -249,7 +249,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                             child: Text(
                                               _formatRupiah(totalAmount),
                                               style: alumniSansBold.copyWith(
-                                                fontSize: 24,
+                                                fontSize: 18,
                                                 color: Colors.black,
                                                 height: 1.0,
                                               ),
@@ -259,7 +259,7 @@ class _SakuScreenState extends State<SakuScreen> {
                                           const Text(
                                             "Jumlah dana dari\nsemua saku kamu",
                                             style: TextStyle(
-                                              fontSize: 14,
+                                              fontSize: 16,
                                               color: Colors.black,
                                               height: 1.1,
                                             ),
