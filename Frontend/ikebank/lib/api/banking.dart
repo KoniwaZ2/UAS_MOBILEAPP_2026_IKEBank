@@ -7,7 +7,8 @@ import '../models/wallet_source.dart';
 import 'package:http/http.dart' as http;
 
 class BankingService {
-  static String baseUrl = 'http://192.168.1.12:8000/api/banking';
+  // static const String baseUrl = 'http://10.10.161.245:8000/api/cs';
+  static const String baseUrl = 'http://192.168.1.12:8000/api/banking';
   static final ValueNotifier<int> accountDataRevision = ValueNotifier<int>(0);
 
   static void notifyAccountDataChanged() {

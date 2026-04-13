@@ -119,7 +119,7 @@ class RegisterBankAccountView(APIView):
             Saku.objects.create(
                 saku_name="Saku Utama",
                 account=bank_account,
-                category_name="nabung",
+                category_name="utama",
                 balance=0,
                 is_primary=True
             )
@@ -1427,7 +1427,6 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             card_details.block_permanent = True
-            card_details.block_temporary = True
             card_details.card_status = 'blocked'
             account.card_number = ''
             update_fields.extend(['block_permanent', 'block_temporary', 'card_status'])

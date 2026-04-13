@@ -436,8 +436,6 @@ class FaceLoginView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
-        
-
 class CheckLoginView(generics.GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = CheckLoginSerializer

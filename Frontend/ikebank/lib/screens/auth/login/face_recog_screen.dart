@@ -22,6 +22,9 @@ class FaceRecogScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
+  // Tambahan untuk reset password
+  final String? newPassword;
+  final String? newPasswordConfirmation;
 
   const FaceRecogScreen({
     super.key,
@@ -33,6 +36,8 @@ class FaceRecogScreen extends StatefulWidget {
     this.isFromCS = false,
     this.isLupaPin = false,
     this.qrisData,
+    this.newPassword,
+    this.newPasswordConfirmation,
   });
 
   @override
@@ -340,8 +345,57 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
 
-    if (widget.isFromCS || widget.isFromLupaPassword || widget.isLupaPin) {
-      await _routeAfterFaceVerified();
+    // Jika dari lupa password, langsung proses reset password setelah face match
+    if (widget.isFromLupaPassword && widget.newPassword != null && widget.newPasswordConfirmation != null) {
+      setState(() {
+        _isUploadingFace = true;
+      });
+      try {
+        if (controller == null || !controller.value.isInitialized) {
+          throw Exception('Kamera belum siap untuk mengambil selfie.');
+        }
+        final image = await controller.takePicture();
+        await AuthService.checkFaceLogin(
+          File(image.path),
+          reference: widget.reference?.trim(),
+          purpose: 'login',
+        );
+        // Jika face match, langsung reset password
+        await AuthService.forgotPassword(
+          email: widget.email ?? '',
+          otpReference: widget.reference ?? '',
+          password: widget.newPassword!,
+          passwordConfirmation: widget.newPasswordConfirmation!,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password berhasil direset")),
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginPage(
+                prefilledEmail: widget.email,
+                reference: widget.reference,
+              ),
+            ),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Gagal reset password: $e")),
+          );
+          setState(() {
+            _isUploadingFace = false;
+          });
+        }
+        _hasNavigated = false;
+        if (controller != null && !controller.value.isStreamingImages) {
+          _startFaceDetectionStream();
+        }
+      }
       return;
     }
 

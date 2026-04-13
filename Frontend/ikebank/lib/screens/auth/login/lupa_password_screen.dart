@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'face_recog_screen.dart';
 import '../../../api/auth.dart';
+import 'login_page.dart';
 
 class LupaPasswordScreen extends StatefulWidget {
   final String email;
@@ -61,30 +62,21 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
     });
 
     try {
-      await AuthService.forgotPassword(
-        email: widget.email,
-        otpReference: widget.reference,
-        password: password1,
-        passwordConfirmation: password2,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password berhasil direset")),
-      );
-      Navigator.pushReplacement(
+      // Langsung ke FaceRecogScreen, kirim password
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => FaceRecogScreen(
             isFromLupaPassword: true,
             reference: widget.reference,
             email: widget.email,
+            // custom argumen baru
+            newPassword: password1,
+            newPasswordConfirmation: password2,
           ),
         ),
       );
+      // Tidak perlu lanjut apapun di sini, semua proses di FaceRecogScreen
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -154,7 +146,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                         const SizedBox(height: 8),
                         const Text(
                           "Silahkan masukan password baru anda di kolom bawah.",
-                          textAlign: TextAlign.justify, 
+                          textAlign: TextAlign.justify,
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.textBlack,

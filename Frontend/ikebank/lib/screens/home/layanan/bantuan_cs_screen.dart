@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Untuk share.svg dan send.svg
 import '../../../widgets/chat_bubble.dart';
 import '../../auth/login/face_recog_screen.dart';
+import '../../../api/cs.dart';
 
 class BantuanCsScreen extends StatefulWidget {
   const BantuanCsScreen({super.key});
@@ -11,20 +12,93 @@ class BantuanCsScreen extends StatefulWidget {
 }
 
 class _BantuanCsScreenState extends State<BantuanCsScreen> {
-  bool _isVerified = false;
+  final List<_ChatMessage> _messages = [
+    _ChatMessage(
+      text: "Hai, apa yang dapat kami bantu?",
+      sender: "Menu",
+      isMe: false,
+      timestamp: DateTime.now().toIso8601String(),
+    ),
+  ];
+  final TextEditingController _controller = TextEditingController();
+  bool _isSending = false;
 
-  Future<void> _mulaiVerifikasi() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const FaceRecogScreen(
-        isFromCS: true,
-      )),
-    );
-    
-    if (mounted) {
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isSending) return;
+    setState(() {
+      _messages.add(
+        _ChatMessage(
+          text: text,
+          sender: "Saya",
+          isMe: true,
+          timestamp: DateTime.now().toIso8601String(),
+        ),
+      );
+      _isSending = true;
+      _controller.clear();
+    });
+    try {
+      final response = await CsService.sendMessage(text);
+      final reply = response['message']?.toString() ?? 'CS tidak merespon.';
+      final action = response['action']?.toString() ?? '';
+      if (action == 'FACE_VERIFICATION') {
+        // akan muncul tombol verifikasi muka
+      }
+      final replyTimestamp =
+          response['timestamp']?.toString() ?? DateTime.now().toIso8601String();
       setState(() {
-        _isVerified = true;
+        _messages.add(
+          _ChatMessage(
+            text: reply,
+            sender: "CS",
+            isMe: false,
+            timestamp: replyTimestamp,
+          ),
+        );
       });
+    } catch (e) {
+      setState(() {
+        _messages.add(
+          _ChatMessage(
+            text: "Gagal mengirim: $e",
+            sender: "System",
+            isMe: false,
+            timestamp: DateTime.now().toIso8601String(),
+          ),
+        );
+      });
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
+  }
+
+  Future<void> _handleClose() async {
+    try {
+      await CsService.closeChat(); // Pastikan ada method ini di CsService
+    } catch (_) {}
+    if (mounted) Navigator.pop(context);
+  }
+
+  String _formatTimeOnly(String ts) {
+    // Jika sudah format 'HH:mm', tampilkan langsung
+    final reg = RegExp(r'^\d{2}:\d{2}?$');
+    if (reg.hasMatch(ts)) return ts.substring(0, 5);
+    // Jika ISO, ambil jam dan menit
+    try {
+      final dt = DateTime.parse(ts);
+      return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (_) {
+      // Jika format aneh, fallback tampilkan 5 char pertama
+      return ts.length >= 5 ? ts.substring(0, 5) : ts;
     }
   }
 
@@ -35,6 +109,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // HEADER
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -44,16 +119,17 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                   const SizedBox(width: 30),
                   Image.asset('assets/images/IKEHome.png', height: 60),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black, size: 28),
-                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.black,
+                      size: 28,
+                    ),
+                    onPressed: _handleClose,
                   ),
                 ],
               ),
             ),
-
-            // ==========================================
-            // BANNER ORANYE DENGAN CS.PNG
-            // ==========================================
+            // BANNER ORANYE
             Container(
               width: double.infinity,
               color: const Color(0xFFFF7F00),
@@ -66,7 +142,12 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                     children: const [
                       Text(
                         "Halo JACOB",
-                        style: TextStyle(fontFamily: 'AlumniSans', fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+                        style: TextStyle(
+                          fontFamily: 'AlumniSans',
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
                       ),
                       SizedBox(height: 4),
                       Text(
@@ -83,99 +164,52 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                 ],
               ),
             ),
-
+            // CHAT BUBBLE LIST
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView.builder(
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const ChatBubble(
-                      text: "Hai, apa yang dapat kami bantu?",
-                      sender: "Menu",
-                      isMe: false,
-                    ),
-                    const ChatBubble(
-                      text: "Tolong rekening saya di hack",
-                      sender: "Jacob",
-                      isMe: true,
-                    ),
-                    const ChatBubble(
-                      text: "Mohon menunggu, AI Agent kami akan membantu",
-                      sender: "Menu",
-                      isMe: false,
-                    ),
-                    
-                    ChatBubble(
-                      text: "Hai Jacob, aku AI Agent dari IKE Bank yang akan membantumu. Silakan lakukan verifikasi wajah.",
-                      sender: "AI Agent",
-                      isMe: false,
-                      customAction: Align(
-                        alignment: Alignment.center,
-                        child: GestureDetector(
-                          onTap: _isVerified ? null : _mulaiVerifikasi,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: _isVerified ? Colors.grey.shade400 : const Color(0xFFFFC891),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: _isVerified ? Colors.grey : const Color(0x33000000)),
-                            ),
-                            child: const Text("Klik untuk Verifikasi", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    if (_isVerified) ...[
-                      ChatBubble(
-                        text: "Mengirim Data",
-                        sender: "Jacob",
-                        isMe: true,
-                        isActionOnly: true,
-                        customAction: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFCC80),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFFF9800)),
-                          ),
-                          child: const Text("Mengirim Data", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)),
-                        ),
-                      ),
-                      const ChatBubble(
-                        text: "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan 000637439482. Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
-                        sender: "AI Agent",
-                        isMe: false,
-                      ),
-                    ],
-                  ],
-                ),
+                itemCount: _messages.length,
+                itemBuilder: (context, idx) {
+                  final msg = _messages[idx];
+                  return ChatBubble(
+                    text: msg.text,
+                    sender: msg.sender,
+                    isMe: msg.isMe,
+                    timestamp: msg.timestamp != null
+                        ? _formatTimeOnly(msg.timestamp!)
+                        : null,
+                  );
+                },
               ),
             ),
-
-            // ==========================================
-            // BOTTOM INPUT (DENGAN SHARE.SVG & SEND.SVG)
-            // ==========================================
+            // INPUT
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  // Ikon Share di sebelah kiri input
                   SvgPicture.asset(
                     'assets/images/share.svg',
                     width: 28,
                     height: 28,
-                    colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFFFF7F00),
+                      BlendMode.srcIn,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
+                      controller: _controller,
+                      enabled: !_isSending,
+                      onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
                         hintText: "Send Message",
                         hintStyle: const TextStyle(color: Colors.grey),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide(color: Colors.grey.shade400),
@@ -186,21 +220,30 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: Color(0xFFFF7F00)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFF7F00),
+                          ),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Tombol Send dengan send.svg di sebelah kanan input
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFFFF7F00),
-                    radius: 24,
-                    child: SvgPicture.asset(
-                      'assets/images/send.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  GestureDetector(
+                    onTap: _isSending ? null : _sendMessage,
+                    child: CircleAvatar(
+                      backgroundColor: _isSending
+                          ? Colors.grey
+                          : const Color(0xFFFF7F00),
+                      radius: 24,
+                      child: SvgPicture.asset(
+                        'assets/images/send.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -211,4 +254,17 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       ),
     );
   }
+}
+
+class _ChatMessage {
+  final String text;
+  final String sender;
+  final bool isMe;
+  final String? timestamp;
+  _ChatMessage({
+    required this.text,
+    required this.sender,
+    required this.isMe,
+    this.timestamp,
+  });
 }
