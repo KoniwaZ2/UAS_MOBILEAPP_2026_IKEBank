@@ -57,4 +57,22 @@ class CsService {
       );
     }
   }
+
+  static Future<dynamic> submitReport({required String reportId}) async {
+    final url = Uri.parse('$baseUrl/report/');
+    final response = await AuthService.authorizedPost(
+      url,
+      body: jsonEncode({'report_number': reportId}),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        _extractErrorMessage(
+          response,
+          'Gagal mengambil riwayat chat dengan CS',
+        ),
+      );
+    }
+  }
 }

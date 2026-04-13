@@ -8,6 +8,7 @@ class BankAccount(models.Model):
     balance = models.IntegerField(default=0)
     block = models.BooleanField(default=False)
     qris_limit = models.IntegerField(default=10000000)
+    block = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

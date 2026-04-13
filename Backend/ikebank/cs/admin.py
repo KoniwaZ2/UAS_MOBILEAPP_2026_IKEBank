@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChatSession, ChatMessage
+from .models import ChatSession, ChatMessage, Report
 
 @admin.register(ChatSession)
 class ChatSessionAdmin(admin.ModelAdmin):
@@ -12,3 +12,8 @@ class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('id', 'session', 'sender', 'message', 'timestamp')
     list_filter = ('sender',)
     search_fields = ('message',)
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ('report_number', 'user', 'account', 'description', 'created_at')
+    search_fields = ('report_number', 'user__username', 'account__account_number')

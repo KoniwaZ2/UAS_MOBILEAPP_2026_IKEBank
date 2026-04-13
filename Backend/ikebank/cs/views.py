@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from banking.models import BankAccount
 from .service import get_intent
 from rest_framework import generics, permissions, status
-from .serializers import FaceVerificationSerializer
-from .models import ChatSession, ChatMessage
+from .serializers import FaceVerificationSerializer, ReportSerializer
+from .models import ChatSession, ChatMessage, Report
 
 def get_user_bank_account(user):
     return BankAccount.objects.filter(user=user).first()
@@ -166,3 +166,31 @@ class FaceVerificationView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
+
+class ReportView(generics.GenericAPIView):
+    serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account = BankAccount.objects.filter(user=request.user).first()
+        if not account:
+            return Response({'detail': 'Bank account not found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+
+        latest_session = ChatSession.objects.filter(user_id=request.user.id).order_by('-id').first()
+        description = latest_session.intent if latest_session and latest_session.intent else "No active session"
+        report = Report.objects.create(
+            report_number=validated_data['report_number'],
+            user=request.user,
+            account=account,
+            description=description
+        )
+
+        if description == "HACK_ACCOUNT":
+            account.block = True
+            account.save()
+
+        return Response({'detail': 'Report submitted successfully.', 'report_number': report.report_number}, status=status.HTTP_200_OK)

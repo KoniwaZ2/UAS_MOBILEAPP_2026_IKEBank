@@ -82,14 +82,8 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
     });
 
     try {
-      // Panggil API Ganti PIN.
-      // (Asumsi di AuthService / BankingService ada fungsi changePin)
-      // Karena Lupa PIN biasanya meng-overwrite PIN lama tanpa tahu PIN lamanya,
-      // pastikan Backend mendukung ini, atau gunakan API yang sesuai.
-      //
-      // await AuthService.resetPin(newPin: pin1); <--- SESUAIKAN DENGAN API
+      await BankingService.changePin(newPin: pin, newPinConfirm: confirmPin);
 
-      // Simulasi sukses untuk UI Flow:
       await Future.delayed(const Duration(seconds: 1));
 
       if (!mounted) return;

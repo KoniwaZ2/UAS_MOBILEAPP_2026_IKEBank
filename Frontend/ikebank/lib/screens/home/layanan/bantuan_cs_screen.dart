@@ -12,6 +12,46 @@ class BantuanCsScreen extends StatefulWidget {
 }
 
 class _BantuanCsScreenState extends State<BantuanCsScreen> {
+  bool _isVerified = false;
+  bool _reportSubmitted = false;
+  String? _reportId;
+
+  String _generateReportId() {
+    // Generate ID laporan dari timestamp + random number
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    return timestamp.substring(timestamp.length - 9); // Ambil 9 digit terakhir
+  }
+
+  Future<void> _mulaiVerifikasi() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FaceRecogScreen(isFromCS: true)),
+    );
+    if (result == true && mounted) {
+      // Generate ID laporan dan kirim ke backend
+      final reportId = _generateReportId();
+      try {
+        // Kirim ID laporan ke backend via CsService
+        await CsService.submitReport(reportId: reportId);
+        setState(() {
+          _isVerified = true;
+          _reportId = reportId;
+          _reportSubmitted =
+              true; // Hanya set true jika submit berhasil (return 200)
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal membuat laporan: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   final List<_ChatMessage> _messages = [
     _ChatMessage(
       text: "Hai, apa yang dapat kami bantu?",
@@ -48,21 +88,61 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       final response = await CsService.sendMessage(text);
       final reply = response['message']?.toString() ?? 'CS tidak merespon.';
       final action = response['action']?.toString() ?? '';
-      if (action == 'FACE_VERIFICATION') {
-        // akan muncul tombol verifikasi muka
-      }
       final replyTimestamp =
           response['timestamp']?.toString() ?? DateTime.now().toIso8601String();
-      setState(() {
-        _messages.add(
-          _ChatMessage(
-            text: reply,
-            sender: "CS",
-            isMe: false,
-            timestamp: replyTimestamp,
-          ),
-        );
-      });
+      if (action == 'FACE_VERIFICATION') {
+        setState(() {
+          _messages.add(
+            _ChatMessage(
+              text: reply,
+              sender: "AI Agent",
+              isMe: false,
+              timestamp: replyTimestamp,
+              customAction: Align(
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: _isVerified ? null : _mulaiVerifikasi,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isVerified
+                          ? Colors.grey.shade400
+                          : const Color(0xFFFFC891),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _isVerified
+                            ? Colors.grey
+                            : const Color(0x33000000),
+                      ),
+                    ),
+                    child: const Text(
+                      "Klik untuk Verifikasi",
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        });
+      } else {
+        setState(() {
+          _messages.add(
+            _ChatMessage(
+              text: reply,
+              sender: "CS",
+              isMe: false,
+              timestamp: replyTimestamp,
+            ),
+          );
+        });
+      }
     } catch (e) {
       setState(() {
         _messages.add(
@@ -92,9 +172,9 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
     // Jika sudah format 'HH:mm', tampilkan langsung
     final reg = RegExp(r'^\d{2}:\d{2}?$');
     if (reg.hasMatch(ts)) return ts.substring(0, 5);
-    // Jika ISO, ambil jam dan menit
+    // Jika ISO, ambil jam dan menit, konversi ke UTC+7 (WIB)
     try {
-      final dt = DateTime.parse(ts);
+      final dt = DateTime.parse(ts).toUtc().add(const Duration(hours: 7));
       return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
     } catch (_) {
       // Jika format aneh, fallback tampilkan 5 char pertama
@@ -168,16 +248,59 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
-                itemCount: _messages.length,
+                itemCount:
+                    _messages.length +
+                    ((_isVerified && _reportSubmitted) ? 2 : 0),
                 itemBuilder: (context, idx) {
-                  final msg = _messages[idx];
+                  if (idx < _messages.length) {
+                    final msg = _messages[idx];
+                    return ChatBubble(
+                      text: msg.text,
+                      sender: msg.sender,
+                      isMe: msg.isMe,
+                      timestamp: msg.timestamp != null
+                          ? _formatTimeOnly(msg.timestamp!)
+                          : null,
+                      customAction: msg.customAction,
+                    );
+                  }
+                  // Bubble custom "Mengirim Data"
+                  if (idx == _messages.length) {
+                    return ChatBubble(
+                      text: "Mengirim Data",
+                      sender: "Jacob",
+                      isMe: true,
+                      isActionOnly: true,
+                      customAction: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFCC80),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _isVerified
+                                ? Colors.grey
+                                : const Color(0x33000000),
+                          ),
+                        ),
+                        child: const Text(
+                          "Mengirim Data",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  // Bubble balasan AI Agent
                   return ChatBubble(
-                    text: msg.text,
-                    sender: msg.sender,
-                    isMe: msg.isMe,
-                    timestamp: msg.timestamp != null
-                        ? _formatTimeOnly(msg.timestamp!)
-                        : null,
+                    text:
+                        "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
+                    sender: "AI Agent",
+                    isMe: false,
                   );
                 },
               ),
@@ -261,10 +384,12 @@ class _ChatMessage {
   final String sender;
   final bool isMe;
   final String? timestamp;
+  final Widget? customAction;
   _ChatMessage({
     required this.text,
     required this.sender,
     required this.isMe,
     this.timestamp,
+    this.customAction,
   });
 }

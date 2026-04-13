@@ -215,7 +215,7 @@ class DepositoEditSerializer(serializers.Serializer):
         return attrs
     
 class ForgotPinSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(required=False)
     new_pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
     new_pin_confirm = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
 

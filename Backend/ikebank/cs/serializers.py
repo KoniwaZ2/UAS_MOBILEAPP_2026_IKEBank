@@ -5,3 +5,6 @@ import user.models as user_models
 
 class FaceVerificationSerializer(serializers.Serializer):
     face = serializers.ImageField(required=True)
+
+class ReportSerializer(serializers.Serializer):
+    report_number = serializers.CharField(required=True)

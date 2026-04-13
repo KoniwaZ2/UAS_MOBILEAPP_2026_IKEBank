@@ -896,4 +896,36 @@ class BankingService {
       }
     });
   }
+
+  static Future<dynamic> blockAccount() {
+    final url = Uri.parse("$baseUrl/block-account/");
+    return AuthService.authorizedPost(url, body: {}).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to block account (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
+
+  static Future<dynamic> changePin({
+    required String newPin,
+    required String newPinConfirm,
+  }) {
+    final url = Uri.parse("$baseUrl/forgot-pin/");
+    return AuthService.authorizedPost(
+      url,
+      body: jsonEncode({'new_pin': newPin, 'new_pin_confirm': newPinConfirm}),
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to change PIN (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
 }
