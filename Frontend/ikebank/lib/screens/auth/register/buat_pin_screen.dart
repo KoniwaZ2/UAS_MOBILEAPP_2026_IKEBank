@@ -10,12 +10,14 @@ import '../../bottomnav/qris/qris_pin_screen.dart';
 class BuatPinScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
   final bool isLupaPin;
+  final bool isFromCs;
   final Map<String, dynamic>? qrisData;
 
   const BuatPinScreen({
     super.key,
     this.flowData,
     this.isLupaPin = false,
+    this.isFromCs = false,
     this.qrisData,
   });
 
@@ -109,6 +111,56 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
           ),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitGantiPin() async {
+    if (pin.length < 6 || confirmPin.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
+      );
+      return;
+    }
+
+    if (pin != confirmPin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await BankingService.changePin(newPin: pin, newPinConfirm: confirmPin);
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PIN Berhasil Diperbarui! Silakan Lanjut Bayar'),
+        ),
+      );
+
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -417,6 +469,8 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
                                           ? () {
                                               if (widget.isLupaPin) {
                                                 _submitLupaPin();
+                                              } else if (widget.isFromCs) {
+                                                _submitGantiPin();
                                               } else {
                                                 _submitRegistration();
                                               }

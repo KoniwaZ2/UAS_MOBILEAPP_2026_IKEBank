@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:ikebank/api/auth.dart';
+import 'package:ikebank/api/cs.dart';
 import '../../../core/colors.dart';
 import '../../../models/register_flow_data.dart';
 import 'login_page.dart';
@@ -358,9 +359,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       // Arahkan ke BuatPinScreen, lalu jika sukses kembali ke CS
       final result = await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => BuatPinScreen(isLupaPin: true),
-        ),
+        MaterialPageRoute(builder: (context) => BuatPinScreen(isFromCs: true)),
       );
       if (result == true) {
         Navigator.pop(context, true); // Kembali ke CS dengan status sukses
@@ -431,6 +430,60 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
 
+    if (widget.isFromCS && widget.intent == "HACK_ACCOUNT") {
+      setState(() {
+        _isUploadingFace = true;
+      });
+      try {
+        if (controller == null || !controller.value.isInitialized) {
+          throw Exception('Kamera belum siap untuk mengambil selfie.');
+        }
+        final image = await controller.takePicture();
+        await CsService.checkFaceReport(File(image.path));
+        if (mounted) {
+          Navigator.pop(context, true); // Kembali ke CS dengan status sukses
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Verifikasi wajah gagal: $e")));
+        }
+      }
+      return;
+    }
+
+    if (widget.isFromCS && widget.intent == "CHANGE_PIN") {
+      setState(() {
+        _isUploadingFace = true;
+      });
+
+      try {
+        if (controller == null || !controller.value.isInitialized) {
+          throw Exception('Kamera belum siap untuk mengambil selfie.');
+        }
+
+        final image = await controller.takePicture();
+        await CsService.checkFaceReport(File(image.path));
+        if (mounted) {
+          await _routeAfterFaceVerified();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Verifikasi wajah gagal: $e")));
+          setState(() {
+            _isUploadingFace = false;
+          });
+        }
+        _hasNavigated = false;
+        if (controller != null && !controller.value.isStreamingImages) {
+          _startFaceDetectionStream();
+        }
+      }
+      return;
+    }
     // Jika dari lupa password, langsung proses reset password setelah face match
     if (widget.isFromLupaPassword &&
         widget.newPassword != null &&
@@ -445,6 +498,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         }
 
         final image = await controller.takePicture();
+
         await AuthService.checkFaceLogin(
           File(image.path),
           reference: widget.reference?.trim(),

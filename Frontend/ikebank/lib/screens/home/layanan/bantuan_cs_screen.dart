@@ -25,9 +25,16 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
   }
 
   Future<void> _mulaiVerifikasi() async {
+    // Ambil intent dari pesan terakhir yang membutuhkan verifikasi
+    String? intent;
+    if (_messages.isNotEmpty) {
+      intent = _messages.last.intent;
+    }
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const FaceRecogScreen(isFromCS: true)),
+      MaterialPageRoute(
+        builder: (_) => FaceRecogScreen(isFromCS: true, intent: intent),
+      ),
     );
     if (result == true && mounted) {
       // Generate ID laporan dan kirim ke backend
@@ -38,8 +45,18 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
         setState(() {
           _isVerified = true;
           _reportId = reportId;
-          _reportSubmitted =
-              true; // Hanya set true jika submit berhasil (return 200)
+          _reportSubmitted = true;
+          // Jika intent CHANGE_PIN, tambahkan chat bubble sukses
+          if (intent == 'CHANGE_PIN') {
+            _messages.add(
+              _ChatMessage(
+                text: 'PIN berhasil diubah',
+                sender: 'Jacob',
+                isMe: false,
+                timestamp: DateTime.now().toIso8601String(),
+              ),
+            );
+          }
         });
       } catch (e) {
         if (mounted) {
@@ -57,7 +74,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
   final List<_ChatMessage> _messages = [
     _ChatMessage(
       text: "Hai, apa yang dapat kami bantu?",
-      sender: "Menu",
+      sender: "Jacob",
       isMe: false,
       timestamp: DateTime.now().toIso8601String(),
     ),
@@ -78,7 +95,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       _messages.add(
         _ChatMessage(
           text: text,
-          sender: "Saya",
+          sender: "Me",
           isMe: true,
           timestamp: DateTime.now().toIso8601String(),
         ),
@@ -98,7 +115,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
           _messages.add(
             _ChatMessage(
               text: reply,
-              sender: "AI Agent",
+              sender: "Jacob",
               isMe: false,
               timestamp: replyTimestamp,
               customAction: Align(
@@ -140,7 +157,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
           _messages.add(
             _ChatMessage(
               text: reply,
-              sender: "CS",
+              sender: "Jacob",
               isMe: false,
               timestamp: replyTimestamp,
               intent: intent,
@@ -273,7 +290,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                   if (idx == _messages.length) {
                     return ChatBubble(
                       text: "Mengirim Data",
-                      sender: "Jacob",
+                      sender: "Me",
                       isMe: true,
                       isActionOnly: true,
                       customAction: Container(
@@ -309,18 +326,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                     return ChatBubble(
                       text:
                           "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
-                      sender: "AI Agent",
-                      isMe: false,
-                    );
-                  } else if (idx == _messages.length + 1 &&
-                      _messages.isNotEmpty &&
-                      _messages.last.intent != 'CHANGE_PIN' &&
-                      _isVerified &&
-                      _reportSubmitted) {
-                    return ChatBubble(
-                      text:
-                          "Terima kasih, kamu akan diarahkan ke halaman ganti PIN. Silahkan ikuti perintah selanjutnya. ID Laporan ${_reportId ?? '-'} .",
-                      sender: "AI Agent",
+                      sender: "Jacob",
                       isMe: false,
                     );
                   }

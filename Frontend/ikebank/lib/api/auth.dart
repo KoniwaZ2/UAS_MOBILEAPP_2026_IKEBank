@@ -58,7 +58,7 @@ class AuthService {
     }
 
     _lastActivityRefreshAttempt = now;
-    await _refreshAccessTokenIfNeeded();
+    await refreshAccessTokenIfNeeded();
   }
 
   static Future<bool> hasAccessToken() async {
@@ -99,14 +99,14 @@ class AuthService {
     Uri url, {
     Map<String, String>? headers,
   }) async {
-    await _refreshAccessTokenIfNeeded();
+    await refreshAccessTokenIfNeeded();
 
     final authHeaders = await buildAuthHeaders(includeJsonContentType: false);
     final mergedHeaders = <String, String>{...authHeaders, ...?headers};
     var response = await http.get(url, headers: mergedHeaders);
 
     if (response.statusCode == 401) {
-      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      final refreshed = await refreshAccessTokenIfNeeded(force: true);
       if (refreshed) {
         final retryHeaders = await buildAuthHeaders(
           includeJsonContentType: false,
@@ -126,14 +126,14 @@ class AuthService {
     Map<String, String>? headers,
     Object? body,
   }) async {
-    await _refreshAccessTokenIfNeeded();
+    await refreshAccessTokenIfNeeded();
 
     final authHeaders = await buildAuthHeaders(includeJsonContentType: true);
     final mergedHeaders = <String, String>{...authHeaders, ...?headers};
     var response = await http.post(url, headers: mergedHeaders, body: body);
 
     if (response.statusCode == 401) {
-      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      final refreshed = await refreshAccessTokenIfNeeded(force: true);
       if (refreshed) {
         final retryHeaders = await buildAuthHeaders(
           includeJsonContentType: true,
@@ -154,14 +154,14 @@ class AuthService {
     Map<String, String>? headers,
     Object? body,
   }) async {
-    await _refreshAccessTokenIfNeeded();
+    await refreshAccessTokenIfNeeded();
 
     final authHeaders = await buildAuthHeaders(includeJsonContentType: true);
     final mergedHeaders = <String, String>{...authHeaders, ...?headers};
     var response = await http.patch(url, headers: mergedHeaders, body: body);
 
     if (response.statusCode == 401) {
-      final refreshed = await _refreshAccessTokenIfNeeded(force: true);
+      final refreshed = await refreshAccessTokenIfNeeded(force: true);
       if (refreshed) {
         final retryHeaders = await buildAuthHeaders(
           includeJsonContentType: true,
@@ -177,7 +177,7 @@ class AuthService {
     return response;
   }
 
-  static Future<bool> _refreshAccessTokenIfNeeded({bool force = false}) async {
+  static Future<bool> refreshAccessTokenIfNeeded({bool force = false}) async {
     final accessToken = await getAccessToken();
     final needsRefresh =
         force ||

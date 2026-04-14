@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'auth.dart';
+import 'dart:io';
+import 'auth.dart';
 
 class CsService {
   static const String baseUrl = 'http://10.10.161.245:8000/api/cs';
@@ -73,6 +75,31 @@ class CsService {
           'Gagal mengambil riwayat chat dengan CS',
         ),
       );
+    }
+  }
+
+  static Future<void> checkFaceReport(File imageFile) async {
+    final url = Uri.parse('$baseUrl/face-verification/');
+
+    // Refresh token dulu kalau mau ikutin pola AuthService
+    await AuthService.refreshAccessTokenIfNeeded(); // kalau beda file, buat method public
+
+    final request = http.MultipartRequest('POST', url);
+    request.files.add(
+      await http.MultipartFile.fromPath('face', imageFile.path),
+    );
+
+    // ✅ Harus await karena getAccessToken() adalah async
+    final token = await AuthService.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200) {
+      throw Exception("Upload gagal: ${response.body}");
     }
   }
 }

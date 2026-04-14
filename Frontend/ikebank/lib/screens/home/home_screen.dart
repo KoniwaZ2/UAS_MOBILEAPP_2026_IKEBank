@@ -79,22 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
               : null;
         });
       }
-
-      if (widget.entrySource == HomeEntrySource.register) {
-        if (!mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Akun berhasil dibuat!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        if (!mounted) {
-          return;
-        }
-      }
     } catch (e) {
       if (!mounted) {
         return;
@@ -691,6 +675,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-
 }

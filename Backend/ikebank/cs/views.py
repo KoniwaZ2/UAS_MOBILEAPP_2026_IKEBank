@@ -7,6 +7,9 @@ from .service import get_intent
 from rest_framework import generics, permissions, status
 from .serializers import FaceVerificationSerializer, ReportSerializer
 from .models import ChatSession, ChatMessage, Report
+from user.models import User, extract_face_encoding
+import math
+from django.conf import settings
 
 def get_user_bank_account(user):
     return BankAccount.objects.filter(user=user).first()
@@ -88,25 +91,25 @@ class FaceVerificationView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 
-        account = get_user_bank_account(request.user)
+        user = User.objects.filter(id=request.user.id).first()
 
-        if not account.face_encoding and not account.face_image:
+        if not user.face_encoding and not user.face_image:
             return Response(
                 {'detail': 'User has no registered face data. Please complete registration first.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        probe_encoding = user_models.extract_face_encoding(validated_data['face'])
+        probe_encoding = extract_face_encoding(validated_data['face'])
         if not probe_encoding:
             return Response({'detail': 'Failed to extract face features from uploaded image.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Prefer recomputing encoding from persisted face image to avoid stale/legacy vectors.
         stored_encoding = None
-        if account.face_image:
-            stored_encoding = user_models.extract_face_encoding(account.face_image)
+        if user.face_image:
+            stored_encoding = extract_face_encoding(user.face_image)
 
         if not stored_encoding:
-            stored_encoding = account.face_encoding
+            stored_encoding = user.face_encoding
 
         if not stored_encoding:
             return Response(
@@ -155,9 +158,9 @@ class FaceVerificationView(generics.GenericAPIView):
                 'message': 'Face verified successfully.',
                 'verified': True,
                 'user': {
-                    'phone_number': account.user.phone_number,
-                    'email': account.user.email,
-                    'name': account.user.name,
+                    'phone_number': user.phone_number,
+                    'email': user.email,
+                    'name': user.name,
                 },
                 'distance': round(rms_distance, 6),
                 'cosine_similarity': round(cosine_similarity, 6),
