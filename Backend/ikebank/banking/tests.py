@@ -1,6 +1,7 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.utils import timezone
 
 from user.models import User, hash_pin
 
@@ -82,3 +83,40 @@ class QrisLimitTests(APITestCase):
 		self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 		self.assertEqual(response.data['detail'], 'QRIS daily limit exceeded.')
 		self.assertEqual(Transaction.objects.filter(category='payment', qris=self.qris).count(), 1)
+
+
+class NabungAiAutoIsiCountdownTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            phone_number='081234567891',
+            email='nabungai@example.com',
+            password='password321',
+            name='User NabungAI',
+            born_place='Bandung',
+            born_date='1996-02-02',
+            gender='MALE',
+            address='Jl. NabungAI',
+            religion='ISLAM',
+            mother_name='Ibu Nabung',
+            pin=hash_pin('654321'),
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_nabung_ai_autoisi_countdown_2_menit(self):
+        # Set cooldown ke 2 menit ke depan
+        self.user.nabung_ai_auto_isi = True
+        self.user.nabung_ai_cooldown_until = timezone.now() + timezone.timedelta(minutes=2)
+        self.user.save()
+
+        # Simulasikan trigger nabung AI (misal endpoint /api/trigger-nabung-ai/)
+        # Di sini kita asumsikan response mengandung key 'nabung_dijalankan'
+        response = self.client.post('/api/trigger-nabung-ai/', {})
+        self.assertIn('nabung_dijalankan', response.data)
+        self.assertFalse(response.data['nabung_dijalankan'])
+
+        # Set cooldown ke masa lalu (2 menit lalu)
+        self.user.nabung_ai_cooldown_until = timezone.now() - timezone.timedelta(minutes=2)
+        self.user.save()
+        response = self.client.post('/api/trigger-nabung-ai/', {})
+        self.assertIn('nabung_dijalankan', response.data)
+        self.assertTrue(response.data['nabung_dijalankan'])

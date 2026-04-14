@@ -253,11 +253,12 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
   }
 
   void _startNabungCooldown() {
-    _nextNabungAt = DateTime.now().add(const Duration(days: 7));
-    print('🚀 Starting 7-day countdown until: $_nextNabungAt');
+    // _nextNabungAt = DateTime.now().add(const Duration(days: 7));
+    // print('🚀 Starting 1-minute countdown until: $_nextNabungAt');
     hasAddedFund = true;
     _saveCooldownState();
     _startCooldownTimer();
+    _nextNabungAt = DateTime.now().add(const Duration(minutes: 1));
   }
 
   Future<void> _handleCooldownFinished() async {
@@ -1236,7 +1237,6 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                         // ==========================================
                         const SizedBox(height: 16),
 
-
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -1826,16 +1826,16 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
       ]);
       final isIncome = _isTransactionIncome(tx);
       final isExpense = !isIncome;
-        final sourceFunds = _readString(tx, const [
+      final sourceFunds = _readString(tx, const [
         'source_funds',
         'merchant_name',
-        ]);
-        final referenceNumber = _readString(tx, const ['transaction_id']);
-        final currentSakuInfo = _celenganName;
-        final fromInfo = isIncome
+      ]);
+      final referenceNumber = _readString(tx, const ['transaction_id']);
+      final currentSakuInfo = _celenganName;
+      final fromInfo = isIncome
           ? (sourceFunds.isEmpty ? '-' : sourceFunds)
           : currentSakuInfo;
-        final toInfo = isIncome
+      final toInfo = isIncome
           ? currentSakuInfo
           : (sourceFunds.isEmpty ? '-' : sourceFunds);
       final formattedAmount = amount.isEmpty

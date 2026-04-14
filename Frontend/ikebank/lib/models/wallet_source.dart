@@ -117,10 +117,10 @@ class WalletSource {
       return 'assets/images/IKEHome.png';
     }
     if (category == WalletCategory.nabung) {
-      return 'assets/images/celengan.png';
+      return 'assets/images/nabung.png';
     }
     if (category == WalletCategory.transaksi) {
-      return 'assets/images/celengan.png';
+      return 'assets/images/transaksi.png';
     }
     return 'assets/images/celengan.png';
   }

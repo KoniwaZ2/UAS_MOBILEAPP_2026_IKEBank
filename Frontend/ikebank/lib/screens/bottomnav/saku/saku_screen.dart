@@ -611,7 +611,8 @@ class _SakuScreenState extends State<SakuScreen> {
 
         if (!context.mounted) return;
 
-        await _refreshIfChanged(result);
+        // Auto-refresh jika kembali dari TambahSakuScreen (berapapun hasilnya)
+        await _loadSakuList();
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
