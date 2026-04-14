@@ -5,8 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  static const String baseUrl = 'http://10.10.161.245:8000/api/auth';
-  // static const String baseUrl = 'http://192.168.1.12:8000/api/auth';
+  //static const String baseUrl = 'http://10.10.161.245:8000/api/auth';
+  static const String baseUrl = 'http://192.168.1.12:8000/api/auth';
 
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _accessTokenKey = 'auth_access_token';
@@ -724,6 +724,64 @@ class AuthService {
       throw Exception(
         _extractErrorMessage(response, 'Failed to fetch profile'),
       );
+    }
+  }
+
+  static Future<dynamic> biometricToogle(bool enable) async {
+    final url = Uri.parse('$baseUrl/biometric-login-edit/');
+    final response = await authorizedPatch(
+      url,
+      body: jsonEncode({'biometric_login': enable}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        _extractErrorMessage(response, 'Failed to toggle biometric setting'),
+      );
+    }
+  }
+
+  static Future<dynamic> biometricCheck({required String email}) async {
+    final url = Uri.parse('$baseUrl/biometric-login-check/');
+    final response = await authorizedPost(
+      url,
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+        _extractErrorMessage(response, 'Failed to toggle biometric setting'),
+      );
+    }
+  }
+
+  static Future<dynamic> biometricLogin({required String email}) async {
+    final url = Uri.parse('$baseUrl/biometric-login/');
+    final response = await authorizedPost(
+      url,
+      body: jsonEncode({'email': email}),
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw Exception('Invalid login response format');
+      }
+
+      final tokens = _extractTokens(decoded);
+      if (tokens != null) {
+        await saveTokens(
+          accessToken: tokens['access']!,
+          refreshToken: tokens['refresh']!,
+        );
+      }
+      await saveLastEmail(decoded['email']?.toString() ?? '');
+      return decoded;
+    } else {
+      throw Exception("Biometric login failed: $response");
     }
   }
 }

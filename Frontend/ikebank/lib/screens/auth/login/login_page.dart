@@ -5,6 +5,7 @@ import 'package:ikebank/screens/home/home_screen.dart';
 import '../../../core/colors.dart';
 import 'lupa_password_screen.dart';
 import '../../../api/banking.dart';
+import 'package:local_auth/local_auth.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
@@ -27,12 +28,77 @@ class _LoginPageState extends State<LoginPage> {
   bool _isSubmitting = false;
   late final TextEditingController _emailController;
   final TextEditingController _passwordController = TextEditingController();
+  final LocalAuthentication _auth = LocalAuthentication();
+  bool _isBiometric = false;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.prefilledEmail ?? '');
     _loadLastEmailIfNeeded();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final hasToken = await AuthService.hasAccessToken();
+    if (hasToken) {
+      try {
+        final resp = await AuthService.biometricCheck(
+          email: await AuthService.getLastEmail() ?? '',
+        );
+        final enabled = resp is Map && resp['biometric_login'] == true;
+        setState(() {
+          _isBiometric = enabled;
+        });
+      } catch (_) {
+        setState(() {
+          _isBiometric = false;
+        });
+      }
+    } else {
+      setState(() {
+        _isBiometric = false;
+      });
+    }
+  }
+
+  Future<void> _loginWithBiometric() async {
+    // 2. scan biometrik
+    bool success = await _auth.authenticate(
+      localizedReason: 'Login menggunakan biometrik',
+      options: const AuthenticationOptions(
+        biometricOnly: true,
+        stickyAuth: true,
+      ),
+    );
+
+    if (!success) return;
+
+    // 🔥 3. REFRESH TOKEN (INI KUNCI)
+    final refreshed = await AuthService.refreshAccessTokenIfNeeded();
+
+    if (!refreshed) {
+      // refresh token juga expired
+      await AuthService.clearTokens();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session habis, silakan login ulang')),
+      );
+      return;
+    }
+
+    // 4. masuk app
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainTabScreen(
+          homeEntrySource: widget.isAfterRegister
+              ? HomeEntrySource.register
+              : HomeEntrySource.login,
+        ),
+      ),
+      (Route<dynamic> route) => false,
+    );
   }
 
   Future<void> _loadLastEmailIfNeeded() async {
@@ -331,7 +397,9 @@ class _LoginPageState extends State<LoginPage> {
                         height: 60,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryOrange,
+                          color: _isBiometric
+                              ? AppColors.primaryOrange
+                              : Colors.grey.shade400,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
@@ -341,15 +409,18 @@ class _LoginPageState extends State<LoginPage> {
                             size: 32,
                           ),
                           onPressed: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MainTabScreen(
-                                  homeEntrySource: HomeEntrySource.login,
+                            if (_isBiometric) {
+                              _loginWithBiometric();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Silahkan login menggunakan email dan password',
+                                  ),
+                                  backgroundColor: Colors.red,
                                 ),
-                              ),
-                              (Route<dynamic> route) => false,
-                            );
+                              );
+                            }
                           },
                         ),
                       ),

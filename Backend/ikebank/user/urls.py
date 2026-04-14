@@ -17,6 +17,8 @@ from .views import (
     ForgotPinView,
     UserDetailsView,
     FacePinResetView,
+    BiometricLoginCheckView,
+    BiometricLoginEditView,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -39,5 +41,8 @@ urlpatterns = [
     path('forgot-pin/', ForgotPinView.as_view(), name='forgot-pin'),
     path('user-details/', UserDetailsView.as_view(), name='user-details'),
     path('face/reset-pin/', FacePinResetView.as_view(), name='face-reset-pin'),
+    path('biometric-login-check/', BiometricLoginCheckView.as_view(), name='biometric-login-check'),
+    path('biometric-login-edit/', BiometricLoginEditView.as_view(), name='biometric-login-toggle'),
+    # path('biometric-login/', BiometricLoginView.as_view(), name='biometric-login'),
 ]
 

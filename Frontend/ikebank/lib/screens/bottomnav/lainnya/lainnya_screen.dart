@@ -97,8 +97,6 @@ class LainnyaScreen extends StatelessWidget {
               icon: Icons.person,
               title: "Ganti akun",
               onTap: () async {
-                final lastEmail = await AuthService.getLastEmail();
-
                 try {
                   await AuthService.logout();
                 } catch (_) {
@@ -112,9 +110,8 @@ class LainnyaScreen extends StatelessWidget {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LoginPage(
+                    builder: (context) => SignIn(
                       key: UniqueKey(),
-                      prefilledEmail: lastEmail,
                     ),
                   ),
                   (Route<dynamic> route) => false,
@@ -125,10 +122,11 @@ class LainnyaScreen extends StatelessWidget {
             _buildMenuItem(
               icon: Icons.logout,
               title: "Keluar dari akun",
-              onTap: () {
+              onTap: () async {
+                final lastEmail = await AuthService.getLastEmail();
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => SignIn()),
+                  MaterialPageRoute(builder: (context) => LoginPage(key: UniqueKey(), prefilledEmail: lastEmail,)),
                   (Route<dynamic> route) => false,
                 );
               },

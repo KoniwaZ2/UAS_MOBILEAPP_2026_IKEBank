@@ -3,6 +3,8 @@ import 'pengaturan_batas_transaksi_screen.dart';
 import 'ubah_password_screen.dart';
 import 'ubah_pin_screen.dart';
 import 'informasi_pribadi_screen.dart';
+import 'package:local_auth/local_auth.dart';
+import '../../../api/auth.dart';
 
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
@@ -12,7 +14,64 @@ class PengaturanScreen extends StatefulWidget {
 }
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
-  bool _isBiometricEnabled = true;
+  bool _isBiometricEnabled = false;
+  bool _isLoadingBiometric = true;
+  @override
+  void initState() {
+    super.initState();
+    _fetchBiometricStatus();
+  }
+
+  Future<void> _fetchBiometricStatus() async {
+    setState(() {
+      _isLoadingBiometric = true;
+    });
+    try {
+      final resp = await AuthService.biometricCheck(
+        email: await AuthService.getLastEmail() ?? '',
+      );
+      // Asumsi response: { "biometric_login": true/false, ... }
+      final enabled = resp is Map && resp['biometric_login'] == true;
+      setState(() {
+        _isBiometricEnabled = enabled;
+        _isLoadingBiometric = false;
+      });
+    } catch (_) {
+      setState(() {
+        _isBiometricEnabled = false;
+        _isLoadingBiometric = false;
+      });
+    }
+  }
+
+  Future<bool> _authenticateBiometric() async {
+    try {
+      final LocalAuthentication auth = LocalAuthentication();
+
+      bool canCheckBiometrics = await auth.canCheckBiometrics;
+      bool isSupported = await auth.isDeviceSupported();
+
+      if (!canCheckBiometrics || !isSupported) {
+        return false;
+      }
+
+      final availableBiometrics = await auth.getAvailableBiometrics();
+
+      if (availableBiometrics.isEmpty) {
+        return false;
+      }
+
+      return await auth.authenticate(
+        localizedReason: 'Silakan autentikasi untuk mengaktifkan biometrik',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+    } catch (e) {
+      return false;
+    }
+  }
 
   final TextStyle alumniSansBold = const TextStyle(
     fontWeight: FontWeight.w800,
@@ -94,15 +153,58 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 );
               },
             ),
-            _buildToggleItem(
-              title: "Aktifkan login biometrik",
-              value: _isBiometricEnabled,
-              onChanged: (val) {
-                setState(() {
-                  _isBiometricEnabled = val;
-                });
-              },
-            ),
+            _isLoadingBiometric
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : _buildToggleItem(
+                    title: "Aktifkan login biometrik",
+                    value: _isBiometricEnabled,
+                    onChanged: (val) async {
+                      setState(() {
+                        _isLoadingBiometric = true;
+                      });
+
+                      // kalau user mau AKTIFKAN biometrik
+                      if (val) {
+                        bool success = await _authenticateBiometric();
+
+                        if (!success) {
+                          // gagal autentikasi → balikkan toggle
+                          setState(() {
+                            _isBiometricEnabled = false;
+                            _isLoadingBiometric = false;
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Autentikasi biometrik gagal'),
+                            ),
+                          );
+                          return;
+                        }
+                      }
+
+                      // kalau sukses / atau user matikan
+                      try {
+                        await AuthService.biometricToogle(val);
+
+                        setState(() {
+                          _isBiometricEnabled = val;
+                        });
+                      } catch (e) {
+                        // rollback kalau gagal API
+                        setState(() {
+                          _isBiometricEnabled = !val;
+                        });
+                      } finally {
+                        setState(() {
+                          _isLoadingBiometric = false;
+                        });
+                      }
+                    },
+                  ),
 
             const SizedBox(height: 4),
             const Padding(
@@ -181,7 +283,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             scale: 0.75,
             child: Switch(
               value: value,
-              onChanged: onChanged,
+              onChanged: _isLoadingBiometric ? null : onChanged,
               activeThumbColor: Colors.white,
               activeTrackColor: const Color(0xFFFFC085),
               inactiveThumbColor: Colors.white,

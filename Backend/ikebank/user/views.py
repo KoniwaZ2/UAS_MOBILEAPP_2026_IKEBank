@@ -539,9 +539,10 @@ class ForgotPasswordView(generics.GenericAPIView):
         )
 
 class LogoutView(generics.GenericAPIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
+        user = request.user
         refresh_token = request.data.get('refresh') or request.data.get('refresh_token') or request.data.get('token')
 
         if not refresh_token:
@@ -604,7 +605,7 @@ class ChangePinView(generics.GenericAPIView):
         new_pin_confirm = validated_data.get('new_pin_confirmation')
 
         stored_pin = getattr(user, 'pin', '') or ''
-        is_old_pin_valid = stored_pin == old_pin or check_password(old_pin, stored_pin)
+        is_old_pin_valid = check_password(old_pin, stored_pin)
         if not is_old_pin_valid:
             return Response({'detail': 'Old PIN is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -729,3 +730,47 @@ class FacePinResetView(generics.GenericAPIView):
         user.save(update_fields=['pin', 'updated_at'])
 
         return Response({'message': 'PIN berhasil direset dengan verifikasi wajah.', 'verified': True}, status=status.HTTP_200_OK)
+
+class BiometricLoginCheckView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email').lower().strip()
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        biometric_data = getattr(user, 'biometric_login', None)
+        return Response({'biometric_login': biometric_data}, status=status.HTTP_200_OK)
+
+class BiometricLoginEditView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        biometric_login = request.data.get('biometric_login')
+        if biometric_login is not None:
+            user.biometric_login = biometric_login
+            user.save(update_fields=['biometric_login', 'updated_at'])
+        return Response({'biometric_login': bool(user.biometric_login)}, status=status.HTTP_200_OK)
+    
+# class BiometricLoginView(generics.GenericAPIView):
+#     permission_classes = (permissions.IsAuthenticated,)
+
+#     def post(self, request, *args, **kwargs):
+#         user = request.user
+
+#         if not user.biometric_login:
+#             return Response(
+#                 {'detail': 'Biometric login is not enabled.'},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         refresh = RefreshToken.for_user(user)
+
+#         return Response({
+#             "access": str(refresh.access_token),
+#             "refresh": str(refresh),
+#             "email": user.email,
+#             "name": user.name,
+#             "phone_number": user.phone_number,
+#         }, status=status.HTTP_200_OK)
