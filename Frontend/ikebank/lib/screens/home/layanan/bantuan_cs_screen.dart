@@ -308,7 +308,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                       _reportSubmitted) {
                     return ChatBubble(
                       text:
-                          "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan \\${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
+                          "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
                       sender: "AI Agent",
                       isMe: false,
                     );
