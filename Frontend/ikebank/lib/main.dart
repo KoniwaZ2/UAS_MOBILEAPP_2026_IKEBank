@@ -8,11 +8,16 @@ import 'package:ikebank/screens/auth/register/buat_pass_screen.dart';
 import 'core/colors.dart';
 import 'screens/auth/signin.dart';
 import 'api/auth.dart';
+import 'package:ikebank/services/notif_service.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await NotifService().initNotification();
+
   GoogleFonts.config.allowRuntimeFetching = true;
   await initializeDateFormatting('id_ID', null);
+  
   runApp(const MyApp());
 }
 
@@ -35,10 +40,12 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _checkLoginStatus() async {
     final hasToken = await AuthService.hasValidAccessToken();
-    setState(() {
-      _isLoggedIn = hasToken;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = hasToken;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -53,7 +60,7 @@ class _MyAppState extends State<MyApp> {
       ),
       home: _isLoading
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-          : (_isLoggedIn ? const LoginPage() : const SignIn()),
+          : (_isLoggedIn ? const MainTabScreen() : const SignIn()),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/buat_password': (context) => const BuatPassScreen(),
