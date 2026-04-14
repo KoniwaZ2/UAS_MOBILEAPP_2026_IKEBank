@@ -928,4 +928,23 @@ class BankingService {
       }
     });
   }
+
+  static Future<dynamic> checkRekening({
+    required String accountNumber,
+    String bankName = 'IKE Bank',
+  }) {
+    final url = Uri.parse("$baseUrl/check-rekening/");
+    return AuthService.authorizedPost(
+      url,
+      body: {'account_number': accountNumber, 'bank_name': bankName},
+    ).then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Failed to check rekening (HTTP ${response.statusCode}): ${response.body}',
+        );
+      }
+    });
+  }
 }

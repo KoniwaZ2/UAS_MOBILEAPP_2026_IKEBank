@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import BankAccount, Beneficiaries, CardBlacklist, CardDetails, Deposito, Qris, Saku, Transaction, DepositoAccount
-from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, ForgotPinSerializer, QRISCheckSerializer, QrisLimitSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
+from .serializers import CashFlowCalculateSerializer, CashFlowSerializer, CheckRekeningSerializer, ForgotPinSerializer, QRISCheckSerializer, QrisLimitSerializer, RegisterBankAccountSerializer, TambahDanaSerializer, TransactionCreateSerializer, InternalTransferSerializer, TambahSakuSerializer, SakuDetailSerializer, TambahRekeningSerializer, CardRequestSerializer, CardEditSerializer, DepositoSerializer, DepositoAccountCreateSerializer, DepositoEstimateSerializer, DepositoEditSerializer, CardDetailsSerializer
 from .services import get_cashflow_highlights, get_weekly_savings_recommendation, upsert_cashflow_for_account
 
 
@@ -1158,6 +1158,35 @@ class RekeningListView(APIView):
                 'added_at': beneficiary.added_at,
             })
         return Response(data, status=status.HTTP_200_OK)
+    
+class CheckRekeningView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = CheckRekeningSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        account_number = validated_data['account_number'].strip()
+
+        if not account_number:
+            return Response(
+                {'detail': 'account_number is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        destination_account = BankAccount.objects.filter(account_number=account_number).first()
+        if destination_account is None:
+            return Response(
+                {'detail': 'Destination account not found in BankAccount.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response({
+            'account_number': destination_account.account_number,
+            'bank_name': 'IKE Bank',
+            'account_holder_name': destination_account.user.name,
+        }, status=status.HTTP_200_OK)
 
 class TambahRekeningView(APIView):
     permission_classes = [permissions.IsAuthenticated]

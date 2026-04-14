@@ -96,6 +96,10 @@ class QRISCheckSerializer(serializers.Serializer):
 class SakuDetailSerializer(serializers.ModelSerializer):
     saku_id = serializers.IntegerField(source='id')
 
+class CheckRekeningSerializer(serializers.Serializer):
+    account_number = serializers.CharField(required=True)
+    bank_name = serializers.CharField(required=False, default='IKE Bank')
+
 class TambahRekeningSerializer(serializers.Serializer):
     account_number = serializers.CharField(required=True)
     bank_name = serializers.CharField(required=False, default='IKE Bank')

@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, NabungAIStateView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView, DepositoEditView, CardDailyLimitView, QrisDailyLimitView, ForgotPinView, BlockAccountView
+from .views import CashFlowCalculateView, RegisterBankAccountView, AccountDetailsView, TransactionCreateView, TambahDanaView, InternalTransferView, TambahSakuView, QrisCheckView, HistoryTransactionView, SakuView, SakuDetailView, TambahRekeningView, RekeningListView, CardDetailsView, CardRequestView, CardEditView, SavingsRecommendationView, NabungAIStateView, DepositoListView, DepositoEstimateView, DepositoCreateView, DepositoUserView, DepositoDetailsView, DepositoEditView, CardDailyLimitView, QrisDailyLimitView, ForgotPinView, BlockAccountView, CheckRekeningView
 
 
 urlpatterns = [
@@ -18,6 +18,7 @@ urlpatterns = [
     path('qris-check/', QrisCheckView.as_view(), name='qris-check'),
     path('qris-limit/', QrisDailyLimitView.as_view(), name='qris-limit'),
     path('transactions-history/', HistoryTransactionView.as_view(), name='transactions-history'),
+    path('check-rekening', CheckRekeningView.as_view(), name='check-rekening'),
     path('tambah-rekening/', TambahRekeningView.as_view(), name='tambah-rekening'),
     path('rekening-list/', RekeningListView.as_view(), name='rekening-list'),
     path('card-request/', CardRequestView.as_view(), name='card-request'),
