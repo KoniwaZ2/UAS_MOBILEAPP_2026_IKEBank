@@ -97,12 +97,12 @@ class _UbahPasswordScreenState extends State<UbahPasswordScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Password berhasil diubah')));
+      ).showSnackBar(const SnackBar(content: Text('Password berhasil diubah'), backgroundColor: Colors.green));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text('Password lama salah'), backgroundColor: Colors.red),
       );
     } finally {
       if (!mounted) return;

@@ -29,7 +29,7 @@ class HistoryTransaksiScreen extends StatefulWidget {
 class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
   String _sakuTitle = 'Saku';
   String _currentAmount = 'Rp 0';
-  String _sakuImageAsset = 'assets/images/celengan.png';
+  String _sakuImageAsset = 'assets/images/tabung.png';
   bool _isSvg = false;
 
   String _accountNumber = '-';
@@ -402,7 +402,7 @@ class _HistoryTransaksiScreenState extends State<HistoryTransaksiScreen> {
     }
     if (normalizedName.contains('celengan') ||
         normalizedCategory.contains('nabung')) {
-      return 'assets/images/celengan.png';
+      return 'assets/images/tabung.png';
     }
 
     return fallbackAsset;

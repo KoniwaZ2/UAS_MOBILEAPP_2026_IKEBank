@@ -59,7 +59,7 @@ class _QrisScreenState extends State<QrisScreen> {
     final qrisValue = value?.trim() ?? '';
     if (qrisValue.isEmpty || _isHandlingScan || !mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('QR tidak valid. Coba lagi.')),
+        const SnackBar(content: Text('QR tidak valid. Coba lagi.'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -84,7 +84,7 @@ class _QrisScreenState extends State<QrisScreen> {
       qrisDetail = await BankingService.checkQris(qrisNumber: qrisValue);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memproses QRIS. Coba lagi.')),
+        const SnackBar(content: Text('Gagal memproses QRIS. Coba lagi.'), backgroundColor: Colors.red),
       );
       _isHandlingScan = false;
       if (wasScannerActive) {
@@ -152,7 +152,7 @@ class _QrisScreenState extends State<QrisScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Gagal memproses gambar: $e')));
+      ).showSnackBar(SnackBar(content: Text('Gagal memproses gambar: $e'), backgroundColor: Colors.red));
       return;
     } finally {
       try {
@@ -168,6 +168,7 @@ class _QrisScreenState extends State<QrisScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('QR tidak ditemukan pada foto yang dipilih.'),
+          backgroundColor: Colors.red,
         ),
       );
       return;

@@ -67,14 +67,14 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   Future<void> _submitLupaPin() async {
     if (pin.length < 6 || confirmPin.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
+        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!'), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (pin != confirmPin) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
+        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -93,6 +93,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('PIN Berhasil Diperbarui! Silakan Lanjut Bayar'),
+          backgroundColor: Colors.green,
         ),
       );
 
@@ -181,14 +182,14 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   Future<void> _submitRegistration() async {
     if (pin.length < 6 || confirmPin.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
+        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!'), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (pin != confirmPin) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
+        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -201,6 +202,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Data registrasi belum lengkap. Ulangi dari awal.'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -231,7 +233,7 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registrasi Berhasil! Silakan Login')),
+        const SnackBar(content: Text('Registrasi Berhasil! Silakan Login'), backgroundColor: Colors.green),
       );
 
       Navigator.pushAndRemoveUntil(

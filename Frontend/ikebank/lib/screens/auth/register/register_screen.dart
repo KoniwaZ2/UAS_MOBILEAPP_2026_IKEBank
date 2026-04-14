@@ -123,14 +123,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
                         _buildInputField(
                           hintText: "Email",
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
                         _buildInputField(
                           hintText: "Kode referral (opsional)",
@@ -347,8 +347,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           contentPadding: const EdgeInsets.only(
             left: 20,
             right: 20,
-            top: 12,
-            bottom: 24,
+            top: 16,
+            bottom:16,
           ),
         ),
       ),

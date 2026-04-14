@@ -45,7 +45,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
 
     if (password1.isEmpty || password2.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password tidak boleh kosong")),
+        const SnackBar(content: Text("Password tidak boleh kosong"), backgroundColor: Colors.red),
       );
       return;
     }
@@ -53,7 +53,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
     if (password1 != password2) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Password tidak cocok")));
+      ).showSnackBar(const SnackBar(content: Text("Password tidak cocok"), backgroundColor: Colors.red));
       return;
     }
 
@@ -80,7 +80,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
+      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e"), backgroundColor: Colors.red));
     } finally {
       if (mounted) {
         setState(() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'buat_saku_form_screen.dart';
+import '../../home/saku_deposito/saku_deposito_screen.dart';
 
 class TambahSakuScreen extends StatelessWidget {
   const TambahSakuScreen({super.key});
@@ -62,7 +63,20 @@ class TambahSakuScreen extends StatelessWidget {
                   "Wujudkan impianmu\ndengan Deposito sebesar\n8.8% p.a.!",
               imagePath: 'assets/images/deposito.png',
               isPopOut: false,
-              onTap: null,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SakuDepositoScreen(),
+                  ),
+                );
+
+                if (!context.mounted) return;
+
+                if (result != null) {
+                  Navigator.pop(context, result);
+                }
+              },
             ),
 
             _buildSakuOptionCard(

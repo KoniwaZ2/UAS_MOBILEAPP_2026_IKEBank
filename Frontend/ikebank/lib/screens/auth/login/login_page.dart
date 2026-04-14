@@ -145,14 +145,14 @@ class _LoginPageState extends State<LoginPage> {
     if (email.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Email wajib diisi.')));
+      ).showSnackBar(const SnackBar(content: Text('Email wajib diisi.'), backgroundColor: Colors.red));
       return;
     }
 
     if (password.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Password wajib diisi.')));
+      ).showSnackBar(const SnackBar(content: Text('Password wajib diisi.'), backgroundColor: Colors.red));
       return;
     }
 
