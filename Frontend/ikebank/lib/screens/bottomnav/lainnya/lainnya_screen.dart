@@ -45,9 +45,6 @@ class LainnyaScreen extends StatelessWidget {
                     builder: (context) => const LaporanKeuanganScreen(),
                   ),
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Menu Laporan Keuangan")),
-                );
               },
             ),
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'notification_screen.dart';
 import 'tambah_dana_screen.dart';
 import 'tips_info_screen.dart';
 import 'saku_utama/saku_utama_screen.dart';
@@ -11,6 +10,7 @@ import 'saku_deposito/saku_deposito_screen.dart';
 import 'layanan/cash_flow_screen.dart';
 import 'layanan/beli_bayar_screen.dart';
 import 'layanan/bantuan_cs_screen.dart';
+import 'promo_screen.dart';
 import '../../api/banking.dart';
 import '../../models/account_detail.dart';
 
@@ -241,32 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ],
-                              ),
-                            ],
-                          ),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: () async {
-                                  await _openAndRefresh(() {
-                                    return Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const NotificationScreen(),
-                                      ),
-                                    );
-                                  });
-                                },
-                                child: SvgPicture.asset(
-                                  'assets/images/notif.svg',
-                                  height: 26,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
                               ),
                             ],
                           ),
@@ -536,6 +510,51 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
 
                     const SizedBox(height: 4),
+                    Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Promo buat kamu 👀",
+                          style: alumniSansBold.copyWith(
+                            fontSize: 18,
+                            color: Colors.black,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PromoScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Lihat Semua",
+                            style: TextStyle(
+                              color: AppColors.primaryOrange,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 90,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 2,
+                      itemBuilder: (context, index) {
+                        return _buildPromoCard();
+                      },
+                    ),
+                  ),
+
                     const SizedBox(height: 14),
 
                     Padding(
@@ -692,5 +711,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
+  Widget _buildPromoCard() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PromoScreen()),
+        );
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(
+          'assets/images/promo.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(color: Colors.grey.shade300);
+          },
+        ),
+      ),
+    );
+  }
 }

@@ -958,51 +958,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 45,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              child: const TextField(
-                                decoration: InputDecoration(
-                                  hintText: "Cari transaksi",
-                                  hintStyle: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 16,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: Colors.black87,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          GestureDetector(
-                            onTap: () {
-                              _showFilterBottomSheet(context);
-                            },
-                            child: SvgPicture.asset(
-                              'assets/images/history.svg',
-                              height: 28,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // dummy history transaksi
+                    
                       Expanded(
                         child: _isLoadingTransactions
                             ? const Center(

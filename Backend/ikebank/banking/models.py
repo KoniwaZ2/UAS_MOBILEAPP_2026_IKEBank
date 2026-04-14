@@ -4,7 +4,7 @@ import uuid
 class BankAccount(models.Model):
     user = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='bank_accounts')
     account_number = models.CharField(max_length=20, unique=True, null=False, blank=False)
-    card_number = models.CharField(max_length=20, unique=True, null=False, blank=True)
+    card_number = models.CharField(max_length=20, unique=False, null=False, blank=True)
     balance = models.IntegerField(default=0)
     block = models.BooleanField(default=False)
     qris_limit = models.IntegerField(default=10000000)

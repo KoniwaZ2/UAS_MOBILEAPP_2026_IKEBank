@@ -46,7 +46,7 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
 
     if (pin.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit')),
+        const SnackBar(content: Text('PIN harus terdiri dari 6 digit'), backgroundColor: Colors.red),
       );
       return null;
     }
@@ -77,7 +77,7 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
         return null;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memproses pembayaran')),
+        const SnackBar(content: Text('Gagal memproses pembayaran'), backgroundColor: Colors.red),
       );
       return null;
     } finally {

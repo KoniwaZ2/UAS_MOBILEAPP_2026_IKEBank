@@ -1451,7 +1451,7 @@ class CardEditView(APIView):
             update_fields.extend(['block_temporary', 'card_status'])
 
         elif action == CardEditSerializer.ACTION_BLOCK_PERMANENT:
-            if card_details.card_status != 'active':
+            if card_details.card_status == 'requested':
                 return Response(
                     {'detail': 'Only active card can be blocked permanently.'},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -1560,7 +1560,7 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if target_status == 'blocked' and card_details.card_status != 'active':
+            if target_status == 'blocked' :
                 return Response(
                     {'detail': 'Only active card can be changed to blocked status.'},
                     status=status.HTTP_400_BAD_REQUEST,

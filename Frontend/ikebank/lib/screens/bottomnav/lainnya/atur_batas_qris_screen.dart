@@ -84,7 +84,7 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
             content: Text(
               "Batas transaksi QRIS berhasil disimpan: Rp${_formatRupiah(amount)}",
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: Colors.green,
           ),
         );
         Navigator.pop(context);

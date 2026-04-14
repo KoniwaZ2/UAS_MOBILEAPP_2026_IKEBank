@@ -157,7 +157,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
 
     if (oldPin.length != 6 || newPin.length != 6 || confirmPin.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit.')),
+        const SnackBar(content: Text('PIN harus terdiri dari 6 digit.'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -166,6 +166,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('PIN baru tidak boleh sama dengan PIN lama.'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -173,7 +174,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
 
     if (newPin != confirmPin) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok.')),
+        const SnackBar(content: Text('Konfirmasi PIN tidak cocok.'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -195,7 +196,7 @@ class _UbahPinScreenState extends State<UbahPinScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('PIN berhasil diubah!')));
+      ).showSnackBar(const SnackBar(content: Text('PIN berhasil diubah!'), backgroundColor: Colors.green));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) {

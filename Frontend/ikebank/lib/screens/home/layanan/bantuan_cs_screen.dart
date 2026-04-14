@@ -333,15 +333,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  SvgPicture.asset(
-                    'assets/images/share.svg',
-                    width: 28,
-                    height: 28,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFFFF7F00),
-                      BlendMode.srcIn,
-                    ),
-                  ),
+                  
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
