@@ -46,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
         final resp = await AuthService.biometricCheck(
           email: await AuthService.getLastEmail() ?? '',
         );
-        final enabled = resp is Map && resp['biometric_login'] == true;
+        final enabled = resp is Map && resp['biometric_login'] == true;        git pull --no-rebase origin revisi-2
         setState(() {
           _isBiometric = enabled;
         });
