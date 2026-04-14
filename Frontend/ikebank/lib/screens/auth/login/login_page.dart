@@ -151,16 +151,22 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Email wajib diisi.'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email wajib diisi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     if (password.length < 8) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Password minimal 8 karakter.'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password minimal 8 karakter.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -225,7 +231,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
 
-    final bool isInputValid = _emailController.text.trim().isNotEmpty &&
+    final bool isInputValid =
+        _emailController.text.trim().isNotEmpty &&
         _passwordController.text.length >= 8;
 
     return Scaffold(
@@ -389,8 +396,8 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isInputValid 
-                                ? AppColors.primaryOrange 
+                            backgroundColor: isInputValid
+                                ? AppColors.primaryOrange
                                 : const Color(0xFFCDCDCD),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 18),
@@ -403,7 +410,7 @@ class _LoginPageState extends State<LoginPage> {
                               return;
                             }
                             if (!isInputValid) {
-                               return;
+                              return;
                             }
                             _submitLogin();
                           },
