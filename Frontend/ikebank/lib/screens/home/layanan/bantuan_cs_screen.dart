@@ -312,6 +312,17 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                       sender: "AI Agent",
                       isMe: false,
                     );
+                  } else if (idx == _messages.length + 1 &&
+                      _messages.isNotEmpty &&
+                      _messages.last.intent != 'CHANGE_PIN' &&
+                      _isVerified &&
+                      _reportSubmitted) {
+                    return ChatBubble(
+                      text:
+                          "Terima kasih, kamu akan diarahkan ke halaman ganti PIN. Silahkan ikuti perintah selanjutnya. ID Laporan ${_reportId ?? '-'} .",
+                      sender: "AI Agent",
+                      isMe: false,
+                    );
                   }
                 },
               ),

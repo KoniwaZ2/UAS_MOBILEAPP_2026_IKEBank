@@ -22,6 +22,7 @@ class FaceRecogScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
+  final String? intent;
 
   // Tambahan untuk reset password
   final String? newPassword;
@@ -39,6 +40,7 @@ class FaceRecogScreen extends StatefulWidget {
     this.qrisData,
     this.newPassword,
     this.newPasswordConfirmation,
+    this.intent,
   });
 
   @override
@@ -349,8 +351,20 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   Future<void> _routeAfterFaceVerified() async {
     if (!mounted) return;
 
-    if (widget.isFromCS) {
+    if (widget.isFromCS && widget.intent == "HACK_ACCOUNT") {
       Navigator.pop(context, true);
+      return;
+    } else if (widget.isFromCS && widget.intent == "CHANGE_PIN") {
+      // Arahkan ke BuatPinScreen, lalu jika sukses kembali ke CS
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BuatPinScreen(isLupaPin: true),
+        ),
+      );
+      if (result == true) {
+        Navigator.pop(context, true); // Kembali ke CS dengan status sukses
+      }
       return;
     }
 
@@ -364,7 +378,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       return;
     }
 
-    if (widget.isLupaPin) {
+    if (widget.isLupaPin && widget.qrisData != null) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
