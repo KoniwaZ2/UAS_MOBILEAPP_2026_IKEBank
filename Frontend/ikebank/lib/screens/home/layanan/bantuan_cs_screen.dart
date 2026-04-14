@@ -15,6 +15,8 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
   bool _isVerified = false;
   bool _reportSubmitted = false;
   String? _reportId;
+  String?
+  actions; // Menyimpan action dari respons CS untuk menentukan step selanjutnya
 
   String _generateReportId() {
     // Generate ID laporan dari timestamp + random number
@@ -88,6 +90,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       final response = await CsService.sendMessage(text);
       final reply = response['message']?.toString() ?? 'CS tidak merespon.';
       final action = response['action']?.toString() ?? '';
+      final intent = response['intent']?.toString() ?? '';
       final replyTimestamp =
           response['timestamp']?.toString() ?? DateTime.now().toIso8601String();
       if (action == 'FACE_VERIFICATION') {
@@ -128,6 +131,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                   ),
                 ),
               ),
+              intent: intent,
             ),
           );
         });
@@ -139,6 +143,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
               sender: "CS",
               isMe: false,
               timestamp: replyTimestamp,
+              intent: intent,
             ),
           );
         });
@@ -254,6 +259,15 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                 itemBuilder: (context, idx) {
                   if (idx < _messages.length) {
                     final msg = _messages[idx];
+                    // Jika intent HACK_ACCOUNT, render bubble khusus
+                    if (msg.intent == 'HACK_ACCOUNT' && _isVerified && _reportSubmitted) {
+                      return ChatBubble(
+                        text:
+                            "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
+                        sender: "AI Agent",
+                        isMe: false,
+                      );
+                    }
                     return ChatBubble(
                       text: msg.text,
                       sender: msg.sender,
@@ -296,12 +310,12 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                     );
                   }
                   // Bubble balasan AI Agent
-                  return ChatBubble(
-                    text:
-                        "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
-                    sender: "AI Agent",
-                    isMe: false,
-                  );
+                    // return ChatBubble(
+                    //   text:
+                    //       "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
+                    //   sender: "AI Agent",
+                    //   isMe: false,
+                    // );
                 },
               ),
             ),
@@ -385,11 +399,13 @@ class _ChatMessage {
   final bool isMe;
   final String? timestamp;
   final Widget? customAction;
+  final String? intent;
   _ChatMessage({
     required this.text,
     required this.sender,
     required this.isMe,
     this.timestamp,
     this.customAction,
+    this.intent,
   });
 }

@@ -52,8 +52,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   );
 
   CameraController? _controller;
-  CameraDescription?
-  _frontCamera; // FIX: simpan referensi kamera untuk baca sensorOrientation
+  CameraDescription? _frontCamera;
   late FaceDetector _faceDetector;
   bool _isCameraReady = false;
   bool _isProcessing = false;
@@ -100,7 +99,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         orElse: () => cameras.first,
       );
 
-      // FIX: simpan referensi kamera
       _frontCamera = frontCamera;
 
       final controller = CameraController(
@@ -125,7 +123,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
   }
 
-  // FIX: hitung rotasi secara dinamis berdasarkan sensorOrientation kamera
   InputImageRotation _getImageRotation() {
     final camera = _frontCamera;
     if (camera == null) return InputImageRotation.rotation0deg;
@@ -145,7 +142,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       }
     }
 
-    // iOS selalu 0
     return InputImageRotation.rotation0deg;
   }
 
@@ -249,33 +245,60 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
   }
 
-  // FIX: format gambar disesuaikan per platform + rotasi dinamis
+  // FIX: konversi NV21 manual untuk Android agar ML Kit bisa baca wajah
   InputImage _inputImageFromCameraImage(CameraImage image) {
-    final Uint8List bytes;
-    final InputImageFormat inputImageFormat;
-
     if (Platform.isAndroid) {
-      // Android: NV21 — gabungkan semua planes
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
+      final yPlane = image.planes[0];
+      final uPlane = image.planes[1];
+      final vPlane = image.planes[2];
+
+      final int width = image.width;
+      final int height = image.height;
+
+      final int ySize = yPlane.bytes.length;
+      final int uvRowStride = uPlane.bytesPerRow;
+      final int uvPixelStride = uPlane.bytesPerPixel ?? 1;
+
+      // Build NV21: Y plane + interleaved VU chroma
+      final nv21 = Uint8List(ySize + (width * height ~/ 2));
+
+      // Copy Y plane langsung
+      nv21.setRange(0, ySize, yPlane.bytes);
+
+      // Interleave V dan U untuk chroma (NV21 = Y + VU)
+      int uvIndex = ySize;
+      for (int row = 0; row < height ~/ 2; row++) {
+        for (int col = 0; col < width ~/ 2; col++) {
+          final int uvOffset = row * uvRowStride + col * uvPixelStride;
+          if (uvOffset < vPlane.bytes.length &&
+              uvOffset < uPlane.bytes.length) {
+            nv21[uvIndex++] = vPlane.bytes[uvOffset]; // V
+            nv21[uvIndex++] = uPlane.bytes[uvOffset]; // U
+          }
+        }
       }
-      bytes = allBytes.done().buffer.asUint8List();
-      inputImageFormat = InputImageFormat.nv21;
-    } else {
-      // iOS: BGRA8888 — gabungkan semua planes
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
-      }
-      bytes = allBytes.done().buffer.asUint8List();
-      inputImageFormat = InputImageFormat.bgra8888;
+
+      final metadata = InputImageMetadata(
+        size: Size(width.toDouble(), height.toDouble()),
+        rotation: _getImageRotation(),
+        format: InputImageFormat.nv21,
+        bytesPerRow: yPlane.bytesPerRow,
+      );
+
+      return InputImage.fromBytes(bytes: nv21, metadata: metadata);
     }
+
+    // iOS: BGRA8888
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final Plane plane in image.planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    final bytes = allBytes.done().buffer.asUint8List();
 
     final metadata = InputImageMetadata(
       size: Size(image.width.toDouble(), image.height.toDouble()),
-      rotation: _getImageRotation(), // FIX: pakai rotasi dinamis
-      format: inputImageFormat,
+      rotation: _getImageRotation(),
+      format: InputImageFormat.bgra8888,
       bytesPerRow: image.planes.first.bytesPerRow,
     );
 
@@ -330,11 +353,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
               BuatPinScreen(isLupaPin: true, qrisData: widget.qrisData),
         ),
       );
-      return;
-    }
-
-    if (widget.isFromCS) {
-      Navigator.pop(context, true);
       return;
     }
 

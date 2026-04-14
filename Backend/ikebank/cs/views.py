@@ -76,6 +76,7 @@ def send_message(request):
         "message": ai_message,
         "action": "FACE_VERIFICATION",
         "timestamp": session.messages.last().timestamp,
+        "intent": intent,
         "face_verification_url": "/api/cs/face-verification/"
     })
 
