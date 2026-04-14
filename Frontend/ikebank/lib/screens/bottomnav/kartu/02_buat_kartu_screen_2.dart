@@ -486,6 +486,7 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(30),
                     onTap: () {
+                      // 1. Cek Alamat
                       if (alamatUser == 'Belum diisi' ||
                           alamatUser.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -496,10 +497,29 @@ class _BuatKartuScreen2State extends State<BuatKartuScreen2> {
                             backgroundColor: Colors.red,
                           ),
                         );
-                        return; // Hentikan, jangan biarkan pindah ke PinScreen
+                        return; // Hentikan
                       }
 
-                      // Jika aman, baru boleh lanjut buat PIN
+                      // FUNGSI BARU: Cek Saldo
+                      // Bersihkan string 'Rp 3.000.000' menjadi angka 3000000
+                      final numericSaldo = saldo.replaceAll(RegExp(r'[^0-9]'), '');
+                      final int saldoAngka = int.tryParse(numericSaldo) ?? 0;
+
+                      // Misalnya biaya buat kartu adalah Rp 50.000
+                      final int biayaBuatKartu = 50000; 
+
+                      if (saldoAngka < biayaBuatKartu) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Saldo Anda tidak cukup untuk melakukan pembuatan kartu. Minimal saldo: Rp 50.000.",
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return; 
+                      }
+
                       print(
                         'Navigating to PinScreen with sourceFundsId: $_sourceFundsId',
                       );

@@ -13,6 +13,7 @@ import 'layanan/bantuan_cs_screen.dart';
 import 'promo_screen.dart';
 import '../../api/banking.dart';
 import '../../models/account_detail.dart';
+import '../../services/notif_service.dart';
 
 enum HomeEntrySource { register, login }
 
@@ -113,6 +114,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFFF7F00),
+        onPressed: () {
+          NotifService().showNotification(
+            title: "IKE Bank Notif 🔔",
+            body: "Halo Kapten! Tes notifikasi lokal berhasil!",
+          );
+        },
+        child: const Icon(Icons.notifications_active, color: Colors.white),
+      ),
+      
 
       body: RefreshIndicator(
         onRefresh: _runInitialHomeApi,
