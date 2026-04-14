@@ -149,10 +149,10 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    if (password.isEmpty) {
+    if (password.length < 8) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Password wajib diisi.'), backgroundColor: Colors.red));
+      ).showSnackBar(const SnackBar(content: Text('Password minimal 8 karakter.'), backgroundColor: Colors.red));
       return;
     }
 
@@ -217,6 +217,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(fontWeight: FontWeight.w700);
+
+    final bool isInputValid = _emailController.text.trim().isNotEmpty &&
+        _passwordController.text.length >= 8;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -290,6 +293,9 @@ class _LoginPageState extends State<LoginPage> {
                           vertical: 18,
                         ),
                       ),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
                     ),
                   ),
 
@@ -327,6 +333,9 @@ class _LoginPageState extends State<LoginPage> {
                           },
                         ),
                       ),
+                      onChanged: (value) {
+                        setState(() {});
+                      },
                     ),
                   ),
 
@@ -369,7 +378,9 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFCDCDCD),
+                            backgroundColor: isInputValid 
+                                ? AppColors.primaryOrange 
+                                : const Color(0xFFCDCDCD),
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
@@ -379,6 +390,9 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             if (_isSubmitting) {
                               return;
+                            }
+                            if (!isInputValid) {
+                               return;
                             }
                             _submitLogin();
                           },
