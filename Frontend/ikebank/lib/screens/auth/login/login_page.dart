@@ -30,11 +30,18 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final LocalAuthentication _auth = LocalAuthentication();
   bool _isBiometric = false;
+  
+  bool _isEmailLocked = false;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.prefilledEmail ?? '');
+    
+    if (_emailController.text.isNotEmpty) {
+      _isEmailLocked = true;
+    }
+    
     _loadLastEmailIfNeeded();
     _checkBiometric();
   }
@@ -46,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
         final resp = await AuthService.biometricCheck(
           email: await AuthService.getLastEmail() ?? '',
         );
-        final enabled = resp is Map && resp['biometric_login'] == true;        git pull --no-rebase origin revisi-2
+        final enabled = resp is Map && resp['biometric_login'] == true;
         setState(() {
           _isBiometric = enabled;
         });
@@ -63,7 +70,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginWithBiometric() async {
-    // 2. scan biometrik
     bool success = await _auth.authenticate(
       localizedReason: 'Login menggunakan biometrik',
       options: const AuthenticationOptions(
@@ -74,11 +80,9 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!success) return;
 
-    // 🔥 3. REFRESH TOKEN (INI KUNCI)
     final refreshed = await AuthService.refreshAccessTokenIfNeeded();
 
     if (!refreshed) {
-      // refresh token juga expired
       await AuthService.clearTokens();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +91,6 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // 4. masuk app
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -116,6 +119,7 @@ class _LoginPageState extends State<LoginPage> {
       _emailController.selection = TextSelection.collapsed(
         offset: savedEmail.length,
       );
+      _isEmailLocked = true; 
     });
   }
 
@@ -128,6 +132,10 @@ class _LoginPageState extends State<LoginPage> {
         ..selection = TextSelection.collapsed(
           offset: (widget.prefilledEmail ?? '').length,
         );
+      
+      setState(() {
+        _isEmailLocked = (widget.prefilledEmail ?? '').isNotEmpty;
+      });
     }
   }
 
@@ -167,7 +175,6 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // Cek apakah user sudah punya bank account
       bool needsRegisterAccount = false;
       try {
         final accounts = await BankingService.fetchAccountDetails();
@@ -282,8 +289,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     child: TextField(
                       controller: _emailController,
+                      readOnly: _isEmailLocked, 
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(fontSize: 18),
+                      style: TextStyle(
+                        fontSize: 18, 
+                        color: _isEmailLocked ? Colors.grey.shade700 : Colors.black,
+                      ),
                       decoration: const InputDecoration(
                         hintText: "Email",
                         hintStyle: TextStyle(color: Colors.black, fontSize: 16),

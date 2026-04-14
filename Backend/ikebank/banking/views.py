@@ -1589,11 +1589,7 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-<<<<<<< HEAD
-            if target_status == 'blocked':
-=======
             if target_status == 'blocked' :
->>>>>>> 1f9378309f5629d78577d76cdc1b322a0b805cf6
                 return Response(
                     {'detail': 'Only active card can be changed to blocked status.'},
                     status=status.HTTP_400_BAD_REQUEST,
