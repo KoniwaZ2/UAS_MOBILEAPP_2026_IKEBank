@@ -13,7 +13,6 @@ import 'layanan/bantuan_cs_screen.dart';
 import 'promo_screen.dart';
 import '../../api/banking.dart';
 import '../../models/account_detail.dart';
-import '../../widgets/';
 
 enum HomeEntrySource { register, login }
 
@@ -692,6 +691,30 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(fontSize: 14, color: Colors.black87),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPromoCard() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PromoScreen()),
+        );
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(
+          'assets/images/promo.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(color: Colors.grey.shade300);
+          },
+        ),
       ),
     );
   }
