@@ -108,11 +108,14 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
       final message = e
           .toString()
           .replaceFirst('Exception: ', '')
-          .replaceFirst(RegExp(r'^Failed to transfer out \(HTTP \d+\):\s*'), '');
+          .replaceFirst(
+            RegExp(r'^Failed to transfer out \(HTTP \d+\):\s*'),
+            '',
+          );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message.isEmpty ? 'Transfer gagal' : message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal melakukan transfer.")));
 
       setState(() {
         _pin = '';

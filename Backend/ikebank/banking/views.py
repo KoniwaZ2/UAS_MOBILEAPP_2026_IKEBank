@@ -187,6 +187,8 @@ class AccountDetailsView(APIView):
                 'card_number': account.card_number,
                 'balance': str(account.balance),
                 'qris_limit': account.qris_limit,
+                'block': account.block,
+                'created_at': account.created_at,
             })
         return Response(data, status=status.HTTP_200_OK)
 

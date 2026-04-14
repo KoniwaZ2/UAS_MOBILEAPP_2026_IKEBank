@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Untuk share.svg dan send.svg
+import 'package:ikebank/api/auth.dart';
+import 'package:ikebank/api/banking.dart';
 import '../../../widgets/chat_bubble.dart';
 import '../../auth/login/face_recog_screen.dart';
 import '../../../api/cs.dart';
@@ -42,6 +44,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       try {
         // Kirim ID laporan ke backend via CsService
         await CsService.submitReport(reportId: reportId);
+        await BankingService.fetchAccountDetails();
         setState(() {
           _isVerified = true;
           _reportId = reportId;
@@ -339,7 +342,6 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(

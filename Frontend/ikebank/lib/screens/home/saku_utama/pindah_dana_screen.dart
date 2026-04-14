@@ -48,8 +48,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       _sourceSakuName = initialSourceName;
     }
 
-    final initialSourceBalance =
-        widget.initialSourceSakuBalance?.trim() ?? '';
+    final initialSourceBalance = widget.initialSourceSakuBalance?.trim() ?? '';
     if (initialSourceBalance.isNotEmpty) {
       _sourceSakuSaldo = _formatRupiah(initialSourceBalance);
     }
@@ -97,23 +96,24 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       Map<String, dynamic>? selectedSourceSaku;
       if (_sourceSakuId.isNotEmpty) {
         selectedSourceSaku = sakus
-            .where((s) => _readString(s, const ['id', 'saku_id']) == _sourceSakuId)
+            .where(
+              (s) => _readString(s, const ['id', 'saku_id']) == _sourceSakuId,
+            )
             .cast<Map<String, dynamic>?>()
             .firstWhere((_) => true, orElse: () => null);
       }
 
       selectedSourceSaku ??= sakus
-          .where(
-            (s) => _readBool(s, 'is_primary'),
-          )
+          .where((s) => _readBool(s, 'is_primary'))
           .cast<Map<String, dynamic>?>()
           .firstWhere((_) => true, orElse: () => null);
 
       selectedSourceSaku ??= sakus
           .where(
-            (s) => _readString(s, const ['saku_name', 'name'])
-                .toLowerCase()
-                .contains('utama'),
+            (s) => _readString(s, const [
+              'saku_name',
+              'name',
+            ]).toLowerCase().contains('utama'),
           )
           .cast<Map<String, dynamic>?>()
           .firstWhere((_) => true, orElse: () => null);
@@ -121,10 +121,10 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       selectedSourceSaku ??= sakus.first;
 
       var mergedSourceSaku = selectedSourceSaku;
-      final sourceSakuId = _readString(
-        mergedSourceSaku,
-        const ['id', 'saku_id'],
-      );
+      final sourceSakuId = _readString(mergedSourceSaku, const [
+        'id',
+        'saku_id',
+      ]);
       if (sourceSakuId.isNotEmpty) {
         try {
           final detail = await BankingService.sakuDetail(sakuId: sourceSakuId);
@@ -136,9 +136,16 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
 
       final destinationSakus = sakus.where((saku) {
         final sakuId = _readString(saku, const ['id', 'saku_id']);
-        final sakuName = _readString(saku, const ['saku_name', 'name']).toLowerCase();
-        final category = _readString(saku, const ['category_name', 'category']).toLowerCase();
-        final isDeposito = category.contains('deposito') || sakuName.contains('deposito');
+        final sakuName = _readString(saku, const [
+          'saku_name',
+          'name',
+        ]).toLowerCase();
+        final category = _readString(saku, const [
+          'category_name',
+          'category',
+        ]).toLowerCase();
+        final isDeposito =
+            category.contains('deposito') || sakuName.contains('deposito');
         final isSameAsSource = sakuId == sourceSakuId;
         return !isDeposito && !isSameAsSource;
       }).toList();
@@ -146,18 +153,28 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       Map<String, dynamic>? selectedDestination;
       if (_selectedTujuanId.isNotEmpty) {
         selectedDestination = destinationSakus
-            .where((s) => _readString(s, const ['id', 'saku_id']) == _selectedTujuanId)
+            .where(
+              (s) =>
+                  _readString(s, const ['id', 'saku_id']) == _selectedTujuanId,
+            )
             .cast<Map<String, dynamic>?>()
             .firstWhere((_) => true, orElse: () => null);
       }
-      selectedDestination ??= destinationSakus.isNotEmpty ? destinationSakus.first : null;
+      selectedDestination ??= destinationSakus.isNotEmpty
+          ? destinationSakus.first
+          : null;
 
       var mergedDestinationSaku = selectedDestination;
       if (mergedDestinationSaku != null) {
-        final destinationSakuId = _readString(mergedDestinationSaku, const ['id', 'saku_id']);
+        final destinationSakuId = _readString(mergedDestinationSaku, const [
+          'id',
+          'saku_id',
+        ]);
         if (destinationSakuId.isNotEmpty) {
           try {
-            final detail = await BankingService.sakuDetail(sakuId: destinationSakuId);
+            final detail = await BankingService.sakuDetail(
+              sakuId: destinationSakuId,
+            );
             mergedDestinationSaku = {...mergedDestinationSaku, ...detail};
           } catch (_) {
             // gunakan data dari saku-list jika detail tidak tersedia
@@ -171,10 +188,13 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
 
       setState(() {
         _sourceSakuId = sourceSakuId;
-        _sourceSakuName = _readString(mergedSourceSaku, const ['saku_name', 'name']).isEmpty
+        _sourceSakuName =
+            _readString(mergedSourceSaku, const ['saku_name', 'name']).isEmpty
             ? 'Saku Utama'
             : _readString(mergedSourceSaku, const ['saku_name', 'name']);
-        _sourceSakuSaldo = _formatRupiah(_readString(mergedSourceSaku, const ['balance']));
+        _sourceSakuSaldo = _formatRupiah(
+          _readString(mergedSourceSaku, const ['balance']),
+        );
         _destinationSakus = destinationSakus;
         _selectedTujuanId = mergedDestinationSaku == null
             ? ''
@@ -184,7 +204,9 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
             : _readString(mergedDestinationSaku, const ['saku_name', 'name']);
         _selectedTujuanSaldo = mergedDestinationSaku == null
             ? 'Rp 0'
-            : _formatRupiah(_readString(mergedDestinationSaku, const ['balance']));
+            : _formatRupiah(
+                _readString(mergedDestinationSaku, const ['balance']),
+              );
       });
     } catch (_) {
       // keep fallback UI
@@ -240,23 +262,34 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
 
   Future<void> _submitInternalTransfer() async {
     final amountDigits = _extractAmountDigits(_amountController.text);
-    if (amountDigits.isEmpty || int.tryParse(amountDigits) == null || int.parse(amountDigits) <= 0) {
+    if (amountDigits.isEmpty ||
+        int.tryParse(amountDigits) == null ||
+        int.parse(amountDigits) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal transfer harus lebih dari 0'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Nominal transfer harus lebih dari 0'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_sourceSakuId.isEmpty || _selectedTujuanId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Sumber atau tujuan saku belum valid'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_sourceSakuId == _selectedTujuanId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber dan tujuan saku tidak boleh sama'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Sumber dan tujuan saku tidak boleh sama'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -280,7 +313,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tambah Dana Berhasil!'),
-          backgroundColor: Color(0xFF00C853), 
+          backgroundColor: Color(0xFF00C853),
         ),
       );
 
@@ -291,7 +324,10 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text("Gagal memindahkan dana. Silakan coba lagi."),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
@@ -305,7 +341,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), 
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -334,7 +370,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                   children: [
                     Container(
                       width: double.infinity,
-                      clipBehavior: Clip.antiAlias, 
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -348,34 +384,61 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text("Pindahkan ke", style: TextStyle(fontSize: 16, color: Colors.black)),
+                                const Text(
+                                  "Pindahkan ke",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black,
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Row(
                                       children: [
                                         Container(
-                                          width: 45, height: 50,
+                                          width: 45,
+                                          height: 50,
                                           decoration: const BoxDecoration(
                                             color: Color(0xFFD6CFFF),
-                                            borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+                                            borderRadius: BorderRadius.vertical(
+                                              bottom: Radius.circular(25),
+                                            ),
                                           ),
                                           alignment: Alignment.center,
                                           child: SvgPicture.asset(
-                                            'assets/images/bag.svg', 
+                                            'assets/images/bag.svg',
                                             height: 24,
-                                            colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn),
+                                            colorFilter: const ColorFilter.mode(
+                                              Color(0xFFFF7F00),
+                                              BlendMode.srcIn,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Text(_selectedTujuan, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                                            Text(
+                                              _selectedTujuan,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
                                             const SizedBox(height: 2),
-                                            Text(_selectedTujuanSaldo, style: const TextStyle(fontSize: 14, color: Colors.black)),
+                                            Text(
+                                              _selectedTujuanSaldo,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.black,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ],
@@ -384,58 +447,81 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                                       onTap: () {
                                         _showPilihTujuanBottomSheet(context);
                                       },
-                                      child: const Text("Ganti", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFF7F00))),
+                                      child: const Text(
+                                        "Ganti",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFFF7F00),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          
+
                           Divider(height: 0.1, color: Colors.grey.shade200),
-                          
+
                           Container(
                             width: double.infinity,
-                            color: const Color(0x1AFFCA96), 
+                            color: const Color(0x1AFFCA96),
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text("Jumlah", style: TextStyle(fontSize: 14, color: Colors.black)),
+                                const Text(
+                                  "Jumlah",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                  ),
+                                ),
                                 Row(
                                   children: [
                                     Text(
                                       "Rp ",
                                       style: TextStyle(
-                                        fontFamily: 'AlumniSans', 
-                                        fontSize: 32, 
-                                        fontWeight: FontWeight.w900, 
-                                        color: _amountController.text.isEmpty ? Colors.grey.shade400 : const Color(0xFFFF7F00)
+                                        fontFamily: 'AlumniSans',
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w900,
+                                        color: _amountController.text.isEmpty
+                                            ? Colors.grey.shade400
+                                            : const Color(0xFFFF7F00),
                                       ),
                                     ),
                                     Expanded(
                                       child: TextField(
                                         controller: _amountController,
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(fontFamily: 'AlumniSans', fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFFFF7F00)),
+                                        style: const TextStyle(
+                                          fontFamily: 'AlumniSans',
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFFF7F00),
+                                        ),
                                         decoration: InputDecoration(
                                           border: InputBorder.none,
                                           isDense: true,
                                           contentPadding: EdgeInsets.zero,
                                           hintText: "100.000",
                                           hintStyle: TextStyle(
-                                            fontFamily: 'AlumniSans', 
-                                            fontSize: 32, 
-                                            fontWeight: FontWeight.w900, 
-                                            color: Colors.grey.shade400
-                                          )
+                                            fontFamily: 'AlumniSans',
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.grey.shade400,
+                                          ),
                                         ),
                                         inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly, 
-                                          _CurrencyInputFormatter(maxAmount: 50000000),
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          _CurrencyInputFormatter(
+                                            maxAmount: 50000000,
+                                          ),
                                         ],
                                         onChanged: (value) {
-                                          setState(() {}); 
+                                          setState(() {});
                                         },
                                       ),
                                     ),
@@ -461,11 +547,26 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Dari", style: TextStyle(fontSize: 12, color: Colors.black)),
+                          const Text(
+                            "Dari",
+                            style: TextStyle(fontSize: 12, color: Colors.black),
+                          ),
                           const SizedBox(height: 4),
-                          Text(_sourceSakuName, style: const TextStyle(fontSize: 16, color: Colors.black)),
+                          Text(
+                            _sourceSakuName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(_sourceSakuSaldo, style: const TextStyle(fontSize: 14, color: Colors.black)),
+                          Text(
+                            _sourceSakuSaldo,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -473,7 +574,7 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                 ),
               ),
             ),
-            
+
             Container(
               padding: const EdgeInsets.all(24.0),
               decoration: const BoxDecoration(color: Colors.transparent),
@@ -484,7 +585,9 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                   onPressed: _isSubmitting ? null : _submitInternalTransfer,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF7F00),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
                   child: Row(
@@ -492,11 +595,19 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                     children: [
                       Text(
                         _isSubmitting ? 'Memindahkan...' : 'Pindah Dana',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       Text(
-                        "Rp ${_amountController.text.isEmpty ? '0' : _amountController.text}", 
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)
+                        "Rp ${_amountController.text.isEmpty ? '0' : _amountController.text}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -525,30 +636,57 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
       backgroundColor: Colors.white,
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 32.0),
+          padding: const EdgeInsets.only(
+            left: 24.0,
+            right: 24.0,
+            top: 16.0,
+            bottom: 32.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
                 child: Container(
-                  width: 50, height: 5,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
               const Text(
                 "Pindahkan ke",
-                style: TextStyle(fontFamily: 'AlumniSans', fontSize: 28, fontWeight: FontWeight.w800, color: Colors.black),
+                style: TextStyle(
+                  fontFamily: 'AlumniSans',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 20),
               ..._destinationSakus.map((saku) {
-                final destinationId = _readString(saku, const ['id', 'saku_id']);
-                final destinationName = _readString(saku, const ['saku_name', 'name']);
-                final destinationBalance = _formatRupiah(_readString(saku, const ['balance']));
+                final destinationId = _readString(saku, const [
+                  'id',
+                  'saku_id',
+                ]);
+                final destinationName = _readString(saku, const [
+                  'saku_name',
+                  'name',
+                ]);
+                final destinationBalance = _formatRupiah(
+                  _readString(saku, const ['balance']),
+                );
                 final isSelected = _selectedTujuanId == destinationId;
-                final category = _readString(saku, const ['category_name', 'category']).toLowerCase();
-                final isUtama = _readBool(saku, 'is_primary') || destinationName.toLowerCase().contains('utama');
+                final category = _readString(saku, const [
+                  'category_name',
+                  'category',
+                ]).toLowerCase();
+                final isUtama =
+                    _readBool(saku, 'is_primary') ||
+                    destinationName.toLowerCase().contains('utama');
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -570,7 +708,9 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                             color: const Color(0xFFFFF8F0),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSelected ? const Color(0xFFFF7F00) : const Color(0xFFFFDBB7),
+                              color: isSelected
+                                  ? const Color(0xFFFF7F00)
+                                  : const Color(0xFFFFDBB7),
                               width: 1.5,
                             ),
                           ),
@@ -581,13 +721,18 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                                 height: 55,
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFD6CFFF),
-                                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
+                                  borderRadius: BorderRadius.vertical(
+                                    bottom: Radius.circular(25),
+                                  ),
                                 ),
                                 alignment: Alignment.center,
                                 child: SvgPicture.asset(
                                   'assets/images/bag.svg',
                                   height: 24,
-                                  colorFilter: const ColorFilter.mode(Color(0xFFFF7F00), BlendMode.srcIn),
+                                  colorFilter: const ColorFilter.mode(
+                                    Color(0xFFFF7F00),
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -596,18 +741,28 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                                 children: [
                                   Text(
                                     destinationName,
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     destinationBalance,
-                                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
                                   ),
                                   if (category.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       category,
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -620,14 +775,24 @@ class _PindahDanaScreenState extends State<PindahDanaScreen> {
                             top: 0,
                             right: 0,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
                               decoration: const BoxDecoration(
                                 color: Color(0xFFFF7F00),
-                                borderRadius: BorderRadius.only(topRight: Radius.circular(14), bottomLeft: Radius.circular(12)),
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(12),
+                                ),
                               ),
                               child: const Text(
                                 "Utama",
-                                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
@@ -649,19 +814,31 @@ class _CurrencyInputFormatter extends TextInputFormatter {
   _CurrencyInputFormatter({required this.maxAmount});
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.isEmpty) return newValue;
     String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanText.isEmpty) return newValue.copyWith(text: '');
     int value = int.parse(cleanText);
-    if (value > maxAmount) { value = maxAmount; cleanText = maxAmount.toString(); }
+    if (value > maxAmount) {
+      value = maxAmount;
+      cleanText = maxAmount.toString();
+    }
     String formatted = '';
     int count = 0;
     for (int i = cleanText.length - 1; i >= 0; i--) {
-      if (count == 3) { formatted = '.$formatted'; count = 0; }
+      if (count == 3) {
+        formatted = '.$formatted';
+        count = 0;
+      }
       formatted = cleanText[i] + formatted;
       count++;
     }
-    return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }

@@ -5,6 +5,8 @@ class AccountDetail {
   final String accountnumber;
   final String? cardnumber;
   final String balance;
+  final bool isBlocked;
+  final DateTime createdAt;
 
   AccountDetail({
     required this.id,
@@ -13,6 +15,8 @@ class AccountDetail {
     required this.accountnumber,
     required this.cardnumber,
     required this.balance,
+    this.isBlocked = false,
+    required this.createdAt,
   });
 
   factory AccountDetail.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class AccountDetail {
       accountnumber: _readString(json, ['account_number']),
       cardnumber: _readNullableString(json, ['card_number']),
       balance: (json['balance'] ?? '0').toString(),
+      isBlocked: json['block'] == false || json['is_blocked'] == 'false',
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 

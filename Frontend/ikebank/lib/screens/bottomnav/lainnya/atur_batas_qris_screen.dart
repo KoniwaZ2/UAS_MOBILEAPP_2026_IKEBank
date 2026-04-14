@@ -14,6 +14,7 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
+  bool _isBlocked = false;
 
   @override
   void initState() {
@@ -34,7 +35,8 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
       }
       _amountController.text = _formatRupiah(limit);
     } catch (e) {
-      _error = 'Gagal memuat limit QRIS';
+      _error = 'Gagal memuat limit QRIS.';
+      _isBlocked = true;
     } finally {
       setState(() {
         _isLoading = false;
@@ -232,24 +234,28 @@ class _AturBatasQrisScreenState extends State<AturBatasQrisScreen> {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: _isSaving ? null : _saveLimit,
+                        onPressed: (_isSaving || _isBlocked)
+                            ? null
+                            : _saveLimit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF7F00),
+                          backgroundColor: _isBlocked
+                              ? Colors.grey.shade400
+                              : const Color(0xFFFF7F00),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
                           elevation: 0,
                         ),
                         child: _isSaving
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: _isBlocked ? Colors.red : Colors.white,
                                   strokeWidth: 2.5,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 "Simpan",
                                 style: TextStyle(
                                   color: Colors.white,

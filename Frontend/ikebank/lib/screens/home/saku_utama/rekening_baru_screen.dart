@@ -160,12 +160,13 @@ class _RekeningBaruScreenState extends State<RekeningBaruScreen> {
                         final result = await BankingService.checkRekening(
                           accountNumber: _rekController.text,
                         );
-                        if (result != null && result['nama'] != null) {
+                        if (result != null &&
+                            result['account_holder_name'] != null) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => TransferRiwayatScreen(
-                                namaPenerima: result['nama'],
+                                namaPenerima: result['account_holder_name'],
                                 nomorRekening: _rekController.text,
                               ),
                             ),
@@ -181,7 +182,9 @@ class _RekeningBaruScreenState extends State<RekeningBaruScreen> {
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text("Gagal cek rekening: $e"),
+                            content: Text(
+                              "Gagal cek rekening. Rekening tidak terdaftar!",
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );

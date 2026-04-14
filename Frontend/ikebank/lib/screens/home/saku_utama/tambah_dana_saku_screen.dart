@@ -245,14 +245,20 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
         int.tryParse(amountDigits) == null ||
         int.parse(amountDigits) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal transfer harus lebih dari 0'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Nominal transfer harus lebih dari 0'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_selectedSumberDanaId.isEmpty || _targetSakuId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Sumber atau tujuan saku belum valid'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -287,7 +293,7 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tambah Dana Berhasil!'),
-          backgroundColor: Color(0xFF00C853), 
+          backgroundColor: Color(0xFF00C853),
         ),
       );
 
@@ -297,12 +303,9 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
         return;
       }
 
-      String errorMessage = _parseErrorMessage(e.toString());
+      String errorMessage = "Gagal menambahkan dana. Silakan coba lagi.";
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red, 
-        ),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -648,13 +651,16 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
                     child: Column(
                       children: _sourceSakus.map((saku) {
-                        final sourceId = _readString(saku, const ['id', 'saku_id']);
+                        final sourceId = _readString(saku, const [
+                          'id',
+                          'saku_id',
+                        ]);
                         final sourceName = _readString(saku, const [
                           'saku_name',
                           'name',
@@ -714,7 +720,8 @@ class _TambahDanaSakuScreenState extends State<TambahDanaSakuScreen> {
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               sourceName,
