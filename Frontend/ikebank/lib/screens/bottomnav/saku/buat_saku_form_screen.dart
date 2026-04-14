@@ -180,7 +180,7 @@ class _BuatSakuFormScreenState extends State<BuatSakuFormScreen> {
                           await _submitBuatSaku();
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF7F00),
+                    backgroundColor: const Color(0xFFFFC085),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),

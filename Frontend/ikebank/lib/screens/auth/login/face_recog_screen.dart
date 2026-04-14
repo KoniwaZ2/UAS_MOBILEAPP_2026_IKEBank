@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:ikebank/api/auth.dart';
@@ -108,6 +107,10 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
+        // 🔥 FIX KAMERA KITA YANG TERTINDIH: Paksa format NV21 dari awal!
+        imageFormatGroup: Platform.isAndroid 
+            ? ImageFormatGroup.nv21 
+            : ImageFormatGroup.bgra8888,
       );
 
       await controller.initialize();
@@ -157,33 +160,20 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       _isProcessing = true;
       try {
         final inputImage = _inputImageFromCameraImage(image);
-        final faces = await _faceDetector.processImage(inputImage);
+        
+        if (inputImage != null) {
+          final faces = await _faceDetector.processImage(inputImage);
 
-        // DEBUG - hapus setelah fix
-        debugPrint('=== FACE DEBUG ===');
-        debugPrint('Image size: ${image.width}x${image.height}');
-        debugPrint('Format raw: ${image.format.raw}');
-        debugPrint('Planes count: ${image.planes.length}');
-        debugPrint('sensorOrientation: ${_frontCamera?.sensorOrientation}');
-        debugPrint('rotation used: ${_getImageRotation()}');
-        debugPrint('Faces detected: ${faces.length}');
-        if (faces.isNotEmpty) {
-          final f = faces.first;
-          debugPrint('headY: ${f.headEulerAngleY}');
-          debugPrint('smile: ${f.smilingProbability}');
-          debugPrint('leftEye: ${f.leftEyeOpenProbability}');
-          debugPrint('rightEye: ${f.rightEyeOpenProbability}');
-        }
-
-        final detected = faces.isNotEmpty;
-        if (mounted && detected != _faceDetected) {
-          setState(() => _faceDetected = detected);
-        }
-        if (faces.isNotEmpty) {
-          _processLiveness(faces.first);
+          final detected = faces.isNotEmpty;
+          if (mounted && detected != _faceDetected) {
+            setState(() => _faceDetected = detected);
+          }
+          if (faces.isNotEmpty) {
+            _processLiveness(faces.first);
+          }
         }
       } catch (e) {
-        debugPrint('ERROR face detection: $e'); // DEBUG
+        debugPrint('ERROR face detection: $e'); 
       }
       _isProcessing = false;
     });
@@ -267,60 +257,29 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
   }
 
-  // FIX: konversi NV21 manual untuk Android agar ML Kit bisa baca wajah
-  InputImage _inputImageFromCameraImage(CameraImage image) {
-    if (Platform.isAndroid) {
-      final yPlane = image.planes[0];
-      final uPlane = image.planes[1];
-      final vPlane = image.planes[2];
+  // 🔥 FIX KAMERA KITA YANG TERTINDIH: Konversi ringan tanpa for-loop berat!
+  InputImage? _inputImageFromCameraImage(CameraImage image) {
+    final camera = _frontCamera;
+    if (camera == null) return null;
 
-      final int width = image.width;
-      final int height = image.height;
-
-      final int ySize = yPlane.bytes.length;
-      final int uvRowStride = uPlane.bytesPerRow;
-      final int uvPixelStride = uPlane.bytesPerPixel ?? 1;
-
-      // Build NV21: Y plane + interleaved VU chroma
-      final nv21 = Uint8List(ySize + (width * height ~/ 2));
-
-      // Copy Y plane langsung
-      nv21.setRange(0, ySize, yPlane.bytes);
-
-      // Interleave V dan U untuk chroma (NV21 = Y + VU)
-      int uvIndex = ySize;
-      for (int row = 0; row < height ~/ 2; row++) {
-        for (int col = 0; col < width ~/ 2; col++) {
-          final int uvOffset = row * uvRowStride + col * uvPixelStride;
-          if (uvOffset < vPlane.bytes.length &&
-              uvOffset < uPlane.bytes.length) {
-            nv21[uvIndex++] = vPlane.bytes[uvOffset]; // V
-            nv21[uvIndex++] = uPlane.bytes[uvOffset]; // U
-          }
-        }
-      }
-
-      final metadata = InputImageMetadata(
-        size: Size(width.toDouble(), height.toDouble()),
-        rotation: _getImageRotation(),
-        format: InputImageFormat.nv21,
-        bytesPerRow: yPlane.bytesPerRow,
-      );
-
-      return InputImage.fromBytes(bytes: nv21, metadata: metadata);
-    }
-
-    // iOS: BGRA8888
     final WriteBuffer allBytes = WriteBuffer();
     for (final Plane plane in image.planes) {
       allBytes.putUint8List(plane.bytes);
     }
     final bytes = allBytes.done().buffer.asUint8List();
 
+    final Size imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    final InputImageRotation imageRotation = _getImageRotation();
+
+    final InputImageFormat? inputImageFormat =
+        InputImageFormatValue.fromRawValue(image.format.raw);
+
+    if (inputImageFormat == null) return null;
+
     final metadata = InputImageMetadata(
-      size: Size(image.width.toDouble(), image.height.toDouble()),
-      rotation: _getImageRotation(),
-      format: InputImageFormat.bgra8888,
+      size: imageSize,
+      rotation: imageRotation,
+      format: inputImageFormat,
       bytesPerRow: image.planes.first.bytesPerRow,
     );
 
@@ -352,17 +311,17 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   Future<void> _routeAfterFaceVerified() async {
     if (!mounted) return;
 
+    // 🔥 LOGIKA BARU VICTOR TETAP AMAN DI SINI
     if (widget.isFromCS && widget.intent == "HACK_ACCOUNT") {
       Navigator.pop(context, true);
       return;
     } else if (widget.isFromCS && widget.intent == "CHANGE_PIN") {
-      // Arahkan ke BuatPinScreen, lalu jika sukses kembali ke CS
       final result = await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => BuatPinScreen(isFromCs: true)),
       );
       if (result == true) {
-        Navigator.pop(context, true); // Kembali ke CS dengan status sukses
+        Navigator.pop(context, true); 
       }
       return;
     }
@@ -430,6 +389,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
 
+    // 🔥 LOGIKA BARU VICTOR TETAP AMAN DI SINI
     if (widget.isFromCS && widget.intent == "HACK_ACCOUNT") {
       setState(() {
         _isUploadingFace = true;
@@ -441,7 +401,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         final image = await controller.takePicture();
         await CsService.checkFaceReport(File(image.path));
         if (mounted) {
-          Navigator.pop(context, true); // Kembali ke CS dengan status sukses
+          Navigator.pop(context, true); 
         }
       } catch (e) {
         if (mounted) {
@@ -484,7 +444,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       }
       return;
     }
-    // Jika dari lupa password, langsung proses reset password setelah face match
+    
     if (widget.isFromLupaPassword &&
         widget.newPassword != null &&
         widget.newPasswordConfirmation != null) {
@@ -505,7 +465,6 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           purpose: 'login',
         );
 
-        // Jika face match, langsung reset password
         await AuthService.forgotPassword(
           email: widget.email ?? '',
           otpReference: widget.reference ?? '',
