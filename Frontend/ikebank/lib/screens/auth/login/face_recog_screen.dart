@@ -155,6 +155,23 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       try {
         final inputImage = _inputImageFromCameraImage(image);
         final faces = await _faceDetector.processImage(inputImage);
+
+        // DEBUG - hapus setelah fix
+        debugPrint('=== FACE DEBUG ===');
+        debugPrint('Image size: ${image.width}x${image.height}');
+        debugPrint('Format raw: ${image.format.raw}');
+        debugPrint('Planes count: ${image.planes.length}');
+        debugPrint('sensorOrientation: ${_frontCamera?.sensorOrientation}');
+        debugPrint('rotation used: ${_getImageRotation()}');
+        debugPrint('Faces detected: ${faces.length}');
+        if (faces.isNotEmpty) {
+          final f = faces.first;
+          debugPrint('headY: ${f.headEulerAngleY}');
+          debugPrint('smile: ${f.smilingProbability}');
+          debugPrint('leftEye: ${f.leftEyeOpenProbability}');
+          debugPrint('rightEye: ${f.rightEyeOpenProbability}');
+        }
+
         final detected = faces.isNotEmpty;
         if (mounted && detected != _faceDetected) {
           setState(() => _faceDetected = detected);
@@ -162,7 +179,9 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         if (faces.isNotEmpty) {
           _processLiveness(faces.first);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('ERROR face detection: $e'); // DEBUG
+      }
       _isProcessing = false;
     });
   }
