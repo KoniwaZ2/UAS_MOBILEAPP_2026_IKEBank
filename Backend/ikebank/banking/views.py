@@ -1436,6 +1436,7 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             card_details.block_temporary = True
+            card_details.block_permanent = False
             card_details.card_status = 'blocked_temporary'
             update_fields.extend(['block_temporary', 'card_status'])
 
@@ -1456,6 +1457,7 @@ class CardEditView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             card_details.block_permanent = True
+            card_details.block_temporary = False
             card_details.card_status = 'blocked'
             account.card_number = ''
             update_fields.extend(['block_permanent', 'block_temporary', 'card_status'])

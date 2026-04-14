@@ -77,7 +77,6 @@ def send_message(request):
         "action": "FACE_VERIFICATION",
         "timestamp": session.messages.last().timestamp,
         "intent": intent,
-        "face_verification_url": "/api/cs/face-verification/"
     })
 
 class FaceVerificationView(generics.GenericAPIView):

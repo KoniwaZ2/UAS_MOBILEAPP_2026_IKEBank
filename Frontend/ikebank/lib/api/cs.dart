@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'auth.dart';
 
 class CsService {
-  // static const String baseUrl = 'http://10.10.161.245:8000/api/cs';
-  static const String baseUrl = 'http://192.168.1.12:8000/api/cs';
+  static const String baseUrl = 'http://10.10.161.245:8000/api/cs';
+  // static const String baseUrl = 'http://192.168.1.12:8000/api/cs';
 
   /// Kirim pesan ke CS dan dapatkan respons
   static Future<Map<String, dynamic>> sendMessage(String message) async {

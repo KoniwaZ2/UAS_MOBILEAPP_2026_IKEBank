@@ -259,15 +259,6 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                 itemBuilder: (context, idx) {
                   if (idx < _messages.length) {
                     final msg = _messages[idx];
-                    // Jika intent HACK_ACCOUNT, render bubble khusus
-                    if (msg.intent == 'HACK_ACCOUNT' && _isVerified && _reportSubmitted) {
-                      return ChatBubble(
-                        text:
-                            "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
-                        sender: "AI Agent",
-                        isMe: false,
-                      );
-                    }
                     return ChatBubble(
                       text: msg.text,
                       sender: msg.sender,
@@ -309,13 +300,19 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                       ),
                     );
                   }
-                  // Bubble balasan AI Agent
-                    // return ChatBubble(
-                    //   text:
-                    //       "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan ${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
-                    //   sender: "AI Agent",
-                    //   isMe: false,
-                    // );
+                  // Bubble "Terima kasih..." setelah "Mengirim Data"
+                  if (idx == _messages.length + 1 &&
+                      _messages.isNotEmpty &&
+                      _messages.last.intent == 'HACK_ACCOUNT' &&
+                      _isVerified &&
+                      _reportSubmitted) {
+                    return ChatBubble(
+                      text:
+                          "Terima kasih, tim kami akan meninjau laporanmu, ID Laporan \\${_reportId ?? '-'} . Akunmu tidak dapat bertransaksi sementara waktu untuk keamananmu.",
+                      sender: "AI Agent",
+                      isMe: false,
+                    );
+                  }
                 },
               ),
             ),
