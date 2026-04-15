@@ -8,12 +8,12 @@ import 'package:ikebank/screens/auth/register/buat_pass_screen.dart';
 import 'core/colors.dart';
 import 'screens/auth/signin.dart';
 import 'api/auth.dart';
-import 'package:ikebank/services/notif_service.dart'; 
+// import 'package:ikebank/services/notif_service.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await NotifService().initNotification();
+  // await NotifService().initNotification();
 
   GoogleFonts.config.allowRuntimeFetching = true;
   await initializeDateFormatting('id_ID', null);
