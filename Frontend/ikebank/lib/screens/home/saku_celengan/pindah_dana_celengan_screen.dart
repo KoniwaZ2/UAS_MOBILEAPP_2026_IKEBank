@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart';
 import '../../../api/banking.dart';
-import '../../../notif_service.dart';
 
 class _LifecycleObserver extends WidgetsBindingObserver {
   final Function() onResume;
@@ -374,11 +373,11 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
       body = "${_formatRupiah1(amount)} di $merchant";
     }
 
-    await NotifService().showNotification(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: title,
-      body: body,
-    );
+    // await NotifService().showNotification(
+    //   id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    //   title: title,
+    //   body: body,
+    // );
   }
 
   Future<void> _submitInternalTransfer() async {

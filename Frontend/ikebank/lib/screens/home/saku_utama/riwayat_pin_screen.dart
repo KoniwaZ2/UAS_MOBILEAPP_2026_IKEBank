@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'riwayat_berhasil.dart';
 import '../../../api/banking.dart';
-import '../../../notif_service.dart';
 
 class RiwayatPinScreen extends StatefulWidget {
   final String namaPenerima;

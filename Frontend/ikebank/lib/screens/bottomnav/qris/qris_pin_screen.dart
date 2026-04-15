@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'qris_sukses_screen.dart';
 import '../../auth/login/verifikasi_wajah_screen.dart';
 import '../../../api/banking.dart';
-import '../../../notif_service.dart';
 
 class QrisPinScreen extends StatefulWidget {
   final String qrisNumber;
