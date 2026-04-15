@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart';
 import '../../../api/banking.dart';
+import '../../../notif_service.dart';
 
 class _LifecycleObserver extends WidgetsBindingObserver {
   final Function() onResume;
@@ -67,12 +69,14 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
     _selectedIconPath = widget.destIconPath;
     _isSvg = widget.isSvg;
 
-    _lifecycleObserver = _LifecycleObserver(onResume: () {
-      if (mounted) {
-        setState(() => _isLoadingData = true);
-        _loadSakuData();
-      }
-    });
+    _lifecycleObserver = _LifecycleObserver(
+      onResume: () {
+        if (mounted) {
+          setState(() => _isLoadingData = true);
+          _loadSakuData();
+        }
+      },
+    );
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
 
     _loadSakuData();
@@ -150,22 +154,28 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
 
   bool _isDepositoSaku(Map<String, dynamic> saku) {
     final name = _readString(saku, const ['saku_name', 'name']).toLowerCase();
-    final category = _readString(saku, const ['category_name', 'category'])
-        .toLowerCase();
+    final category = _readString(saku, const [
+      'category_name',
+      'category',
+    ]).toLowerCase();
     return name.contains('deposito') || category.contains('deposito');
   }
 
   bool _isCelenganSaku(Map<String, dynamic> saku) {
     final name = _readString(saku, const ['saku_name', 'name']).toLowerCase();
-    final category = _readString(saku, const ['category_name', 'category'])
-        .toLowerCase();
+    final category = _readString(saku, const [
+      'category_name',
+      'category',
+    ]).toLowerCase();
     return name.contains('celengan') || category.contains('celengan');
   }
 
   String _resolveSakuIcon(Map<String, dynamic> saku) {
     final name = _readString(saku, const ['saku_name', 'name']).toLowerCase();
-    final category = _readString(saku, const ['category_name', 'category'])
-        .toLowerCase();
+    final category = _readString(saku, const [
+      'category_name',
+      'category',
+    ]).toLowerCase();
 
     if (_readBool(saku, 'is_primary') || name.contains('utama')) {
       return 'assets/images/IKEHome.png';
@@ -225,7 +235,8 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
       if (_selectedTujuanId.isNotEmpty) {
         selectedDestination = sakus
             .where(
-              (s) => _readString(s, const ['id', 'saku_id']) == _selectedTujuanId,
+              (s) =>
+                  _readString(s, const ['id', 'saku_id']) == _selectedTujuanId,
             )
             .cast<Map<String, dynamic>?>()
             .firstWhere((_) => true, orElse: () => null);
@@ -233,7 +244,8 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
 
       selectedDestination ??= sakus
           .where(
-            (s) => _readString(s, const ['saku_name', 'name']).toLowerCase() ==
+            (s) =>
+                _readString(s, const ['saku_name', 'name']).toLowerCase() ==
                 _selectedTujuan.toLowerCase(),
           )
           .cast<Map<String, dynamic>?>()
@@ -246,7 +258,10 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
 
       selectedDestination ??= sakus.first;
 
-      _selectedTujuanId = _readString(selectedDestination, const ['id', 'saku_id']);
+      _selectedTujuanId = _readString(selectedDestination, const [
+        'id',
+        'saku_id',
+      ]);
 
       final sourceCandidates = _buildSourceSakus(_selectedTujuanId);
       if (sourceCandidates.isEmpty) {
@@ -278,7 +293,10 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
 
       selectedSource ??= sourceCandidates.first;
 
-      final selectedSourceId = _readString(selectedSource, const ['id', 'saku_id']);
+      final selectedSourceId = _readString(selectedSource, const [
+        'id',
+        'saku_id',
+      ]);
       final destinationCandidates = _buildDestinationSakus(selectedSourceId);
 
       if (destinationCandidates.isNotEmpty &&
@@ -286,7 +304,10 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
             (s) => _readString(s, const ['id', 'saku_id']) == _selectedTujuanId,
           )) {
         selectedDestination = destinationCandidates.first;
-        _selectedTujuanId = _readString(selectedDestination, const ['id', 'saku_id']);
+        _selectedTujuanId = _readString(selectedDestination, const [
+          'id',
+          'saku_id',
+        ]);
       }
 
       if (!mounted) {
@@ -295,13 +316,20 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
 
       setState(() {
         _sourceSakuId = selectedSourceId;
-        _sourceSakuName = _readString(selectedSource!, const ['saku_name', 'name']);
-        _sourceSakuSaldo = _formatRupiah(_readString(selectedSource, const ['balance']));
+        _sourceSakuName = _readString(selectedSource!, const [
+          'saku_name',
+          'name',
+        ]);
+        _sourceSakuSaldo = _formatRupiah(
+          _readString(selectedSource, const ['balance']),
+        );
 
         final destination = selectedDestination!;
         _selectedTujuanId = _readString(destination, const ['id', 'saku_id']);
         _selectedTujuan = _readString(destination, const ['saku_name', 'name']);
-        _selectedTujuanSaldo = _formatRupiah(_readString(destination, const ['balance']));
+        _selectedTujuanSaldo = _formatRupiah(
+          _readString(destination, const ['balance']),
+        );
         _selectedIconPath = _resolveSakuIcon(destination);
         _isSvg = _selectedIconPath.toLowerCase().endsWith('.svg');
 
@@ -316,27 +344,73 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
     }
   }
 
+  String _formatRupiah1(dynamic amount) {
+    final value = int.tryParse(amount.toString()) ?? 0;
+
+    return "Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => "${match[1]}.")}";
+  }
+
+  Future<void> _showTransactionNotification(Map data) async {
+    final category = data['category'] ?? '';
+    final merchant =
+        (data['destination_saku'] != null &&
+            data['destination_saku'] is Map &&
+            data['destination_saku']['name'] != null)
+        ? data['destination_saku']['name']
+        : (data['recipient_account_name'] ?? 'Penerima');
+    final amount = data['amount_transferred'] ?? data['amount'] ?? 0;
+
+    String title;
+    String body;
+
+    if (category == 'payment') {
+      title = "Pembayaran Berhasil";
+      body = "${_formatRupiah1(amount)} di $merchant";
+    } else if (category == 'transfer') {
+      title = "Transfer Berhasil";
+      body = "${_formatRupiah1(amount)} ke $merchant";
+    } else {
+      title = "Transaksi Berhasil";
+      body = "${_formatRupiah1(amount)} di $merchant";
+    }
+
+    await NotifService().showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body,
+    );
+  }
+
   Future<void> _submitInternalTransfer() async {
     final amountDigits = _extractAmountDigits(_amountController.text);
     if (amountDigits.isEmpty ||
         int.tryParse(amountDigits) == null ||
         int.parse(amountDigits) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nominal transfer harus lebih dari 0'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Nominal transfer harus lebih dari 0'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_sourceSakuId.isEmpty || _selectedTujuanId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber atau tujuan saku belum valid'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Sumber atau tujuan saku belum valid'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (_sourceSakuId == _selectedTujuanId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sumber dan tujuan saku tidak boleh sama'), backgroundColor: Colors.red,),
+        const SnackBar(
+          content: Text('Sumber dan tujuan saku tidak boleh sama'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -356,7 +430,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
       if (!mounted) {
         return;
       }
-      
+
+      // await _showTransactionNotification(response);
+
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) {
@@ -485,10 +561,14 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              _isLoadingData ? 'Memuat...' : _selectedTujuanSaldo,
+                                              _isLoadingData
+                                                  ? 'Memuat...'
+                                                  : _selectedTujuanSaldo,
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: _isLoadingData ? Colors.grey : Colors.black87,
+                                                color: _isLoadingData
+                                                    ? Colors.grey
+                                                    : Colors.black87,
                                               ),
                                             ),
                                           ],
@@ -564,7 +644,8 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                                           ),
                                         ),
                                         inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly,
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
                                           _CurrencyInputFormatter(
                                             maxAmount: 50000000,
                                           ),
@@ -624,7 +705,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                             _isLoadingData ? 'Memuat...' : _sourceSakuName,
                             style: TextStyle(
                               fontSize: 16,
-                              color: _isLoadingData ? Colors.grey : Colors.black,
+                              color: _isLoadingData
+                                  ? Colors.grey
+                                  : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -632,7 +715,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                             _isLoadingData ? 'Memuat...' : _sourceSakuSaldo,
                             style: TextStyle(
                               fontSize: 14,
-                              color: _isLoadingData ? Colors.grey : Colors.black,
+                              color: _isLoadingData
+                                  ? Colors.grey
+                                  : Colors.black,
                             ),
                           ),
                         ],
@@ -649,7 +734,10 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: (_isSubmitting || _isLoadingData) ? null : _submitInternalTransfer,
+                  onPressed: (_isSubmitting || _isLoadingData)
+                      ? null
+                      : _submitInternalTransfer,
+
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFF7F00),
                     shape: RoundedRectangleBorder(
@@ -661,7 +749,11 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _isLoadingData ? 'Memuat...' : (_isSubmitting ? 'Memindahkan...' : 'Pindah Dana'),
+                        _isLoadingData
+                            ? 'Memuat...'
+                            : (_isSubmitting
+                                  ? 'Memindahkan...'
+                                  : 'Pindah Dana'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -735,8 +827,14 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
               ),
               const SizedBox(height: 20),
               ..._destinationSakus.map((saku) {
-                final destinationId = _readString(saku, const ['id', 'saku_id']);
-                final destinationName = _readString(saku, const ['saku_name', 'name']);
+                final destinationId = _readString(saku, const [
+                  'id',
+                  'saku_id',
+                ]);
+                final destinationName = _readString(saku, const [
+                  'saku_name',
+                  'name',
+                ]);
                 final destinationBalance = _formatRupiah(
                   _readString(saku, const ['balance']),
                 );
@@ -756,7 +854,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                       if (nextSourceSakus.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Tidak ada saku sumber untuk tujuan ini'),
+                            content: Text(
+                              'Tidak ada saku sumber untuk tujuan ini',
+                            ),
                           ),
                         );
                         return;
@@ -772,14 +872,14 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                             _sourceSakuId,
                       )) {
                         final fallbackSource = nextSourceSakus.first;
-                        nextSourceId = _readString(
-                          fallbackSource,
-                          const ['id', 'saku_id'],
-                        );
-                        nextSourceName = _readString(
-                          fallbackSource,
-                          const ['saku_name', 'name'],
-                        );
+                        nextSourceId = _readString(fallbackSource, const [
+                          'id',
+                          'saku_id',
+                        ]);
+                        nextSourceName = _readString(fallbackSource, const [
+                          'saku_name',
+                          'name',
+                        ]);
                         nextSourceSaldo = _formatRupiah(
                           _readString(fallbackSource, const ['balance']),
                         );
@@ -956,7 +1056,10 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
               const SizedBox(height: 20),
               ..._sourceSakus.map((saku) {
                 final sourceId = _readString(saku, const ['id', 'saku_id']);
-                final sourceName = _readString(saku, const ['saku_name', 'name']);
+                final sourceName = _readString(saku, const [
+                  'saku_name',
+                  'name',
+                ]);
                 final sourceBalance = _formatRupiah(
                   _readString(saku, const ['balance']),
                 );
@@ -965,11 +1068,15 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: GestureDetector(
                     onTap: () {
-                      final nextDestinationSakus = _buildDestinationSakus(sourceId);
+                      final nextDestinationSakus = _buildDestinationSakus(
+                        sourceId,
+                      );
                       if (nextDestinationSakus.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Tidak ada saku tujuan untuk sumber ini'),
+                            content: Text(
+                              'Tidak ada saku tujuan untuk sumber ini',
+                            ),
                           ),
                         );
                         return;
@@ -1012,8 +1119,9 @@ class _PindahDanaCelenganScreenState extends State<PindahDanaCelenganScreen> {
                         _selectedTujuan = nextDestinationName;
                         _selectedTujuanSaldo = nextDestinationSaldo;
                         _selectedIconPath = nextDestinationIconPath;
-                        _isSvg =
-                            nextDestinationIconPath.toLowerCase().endsWith('.svg');
+                        _isSvg = nextDestinationIconPath.toLowerCase().endsWith(
+                          '.svg',
+                        );
                       });
 
                       Navigator.pop(context);

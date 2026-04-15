@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'qris_sukses_screen.dart';
 import '../../auth/login/verifikasi_wajah_screen.dart';
 import '../../../api/banking.dart';
+import '../../../notif_service.dart';
 
 class QrisPinScreen extends StatefulWidget {
   final String qrisNumber;
@@ -46,7 +48,10 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
 
     if (pin.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('PIN harus terdiri dari 6 digit'),
+          backgroundColor: Colors.red,
+        ),
       );
       return null;
     }
@@ -77,7 +82,10 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
         return null;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memproses pembayaran'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Gagal memproses pembayaran'),
+          backgroundColor: Colors.red,
+        ),
       );
       return null;
     } finally {
@@ -87,6 +95,38 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
         });
       }
     }
+  }
+
+  String _formatRupiah(dynamic amount) {
+    final value = int.tryParse(amount.toString()) ?? 0;
+
+    return "Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => "${match[1]}.")}";
+  }
+
+  Future<void> _showTransactionNotification(Map data) async {
+    final category = data['category'] ?? '';
+    final merchant = data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
+    final amount = data['amount'] ?? 0;
+
+    String title;
+    String body;
+
+    if (category == 'payment') {
+      title = "Pembayaran Berhasil";
+      body = "${_formatRupiah(amount)} di $merchant";
+    } else if (category == 'transfer') {
+      title = "Transfer Berhasil";
+      body = "${_formatRupiah(amount)} ke $merchant";
+    } else {
+      title = "Transaksi Berhasil";
+      body = "${_formatRupiah(amount)} di $merchant";
+    }
+
+    await NotifService().showNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body,
+    );
   }
 
   @override
@@ -143,14 +183,15 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                       onChanged: (value) async {
                         setState(() {});
 
-                        if (value.length != 6 || _isProcessing) {
-                          return;
-                        }
+                        if (value.length != 6 || _isProcessing) return;
+
+                        FocusScope.of(context).unfocus(); // 🔥 penting
 
                         final paymentResponse = await _processPayment();
                         if (paymentResponse == null || !context.mounted) {
                           return;
                         }
+                        await _showTransactionNotification(paymentResponse);
 
                         Navigator.pushReplacement(
                           context,

@@ -253,12 +253,10 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
   }
 
   void _startNabungCooldown() {
-    // _nextNabungAt = DateTime.now().add(const Duration(days: 7));
-    // print('🚀 Starting 1-minute countdown until: $_nextNabungAt');
+    _nextNabungAt = DateTime.now().add(const Duration(days: 7));
     hasAddedFund = true;
     _saveCooldownState();
     _startCooldownTimer();
-    _nextNabungAt = DateTime.now().add(const Duration(minutes: 1));
   }
 
   Future<void> _handleCooldownFinished() async {
