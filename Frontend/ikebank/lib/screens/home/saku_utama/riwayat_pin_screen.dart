@@ -90,7 +90,7 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
         return;
       }
 
-      await _showTransactionNotification(response);
+      // await _showTransactionNotification(response);
 
       Navigator.pushReplacement(
         context,
@@ -140,32 +140,32 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
     return "Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => "${match[1]}.")}";
   }
 
-  Future<void> _showTransactionNotification(Map data) async {
-    final category = data['category'] ?? '';
-    final merchant =
-        data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
-    final amount = data['amount'] ?? 0;
+  // Future<void> _showTransactionNotification(Map data) async {
+  //   final category = data['category'] ?? '';
+  //   final merchant =
+  //       data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
+  //   final amount = data['amount'] ?? 0;
 
-    String title;
-    String body;
+  //   String title;
+  //   String body;
 
-    if (category == 'payment') {
-      title = "Pembayaran Berhasil";
-      body = "${_formatRupiah(amount)} di $merchant";
-    } else if (category == 'Transfer Out') {
-      title = "Transfer Berhasil";
-      body = "${_formatRupiah(amount)} ke $merchant";
-    } else {
-      title = "Transaksi Berhasil";
-      body = "${_formatRupiah(amount)} di $merchant";
-    }
+  //   if (category == 'payment') {
+  //     title = "Pembayaran Berhasil";
+  //     body = "${_formatRupiah(amount)} ke $merchant";
+  //   } else if (category == 'Transfer Out') {
+  //     title = "Transfer Berhasil";
+  //     body = "${_formatRupiah(amount)} ke $merchant";
+  //   } else {
+  //     title = "Transaksi Berhasil";
+  //     body = "${_formatRupiah(amount)} ke $merchant";
+  //   }
 
-    await NotifService().showNotification(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: title,
-      body: body,
-    );
-  }
+  //   await NotifService().showNotification(
+  //     id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  //     title: title,
+  //     body: body,
+  //   );
+  // }
 
   @override
   void dispose() {

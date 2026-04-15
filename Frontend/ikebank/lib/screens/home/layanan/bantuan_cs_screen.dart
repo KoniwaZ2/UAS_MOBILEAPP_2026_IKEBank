@@ -19,6 +19,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
   String? _reportId;
   String?
   actions; // Menyimpan action dari respons CS untuk menentukan step selanjutnya
+  String? userName;
 
   String _generateReportId() {
     // Generate ID laporan dari timestamp + random number
@@ -44,7 +45,7 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
       try {
         // Kirim ID laporan ke backend via CsService
         await CsService.submitReport(reportId: reportId);
-        await BankingService.fetchAccountDetails();
+        final response = await BankingService.fetchAccountDetails();
         setState(() {
           _isVerified = true;
           _reportId = reportId;
@@ -244,18 +245,18 @@ class _BantuanCsScreenState extends State<BantuanCsScreen> {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        "Halo JACOB",
-                        style: TextStyle(
+                        "Halo ${userName ?? 'Pengguna'}",
+                        style: const TextStyle(
                           fontFamily: 'AlumniSans',
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         "Selamat datang di layanan chat IKE Bank",
                         style: TextStyle(fontSize: 12, color: Colors.white),
                       ),

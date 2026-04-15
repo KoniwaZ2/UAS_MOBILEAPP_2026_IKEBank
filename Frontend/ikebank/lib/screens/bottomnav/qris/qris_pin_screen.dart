@@ -103,31 +103,31 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
     return "Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => "${match[1]}.")}";
   }
 
-  Future<void> _showTransactionNotification(Map data) async {
-    final category = data['category'] ?? '';
-    final merchant = data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
-    final amount = data['amount'] ?? 0;
+  // Future<void> _showTransactionNotification(Map data) async {
+  //   final category = data['category'] ?? '';
+  //   final merchant = data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
+  //   final amount = data['amount'] ?? 0;
 
-    String title;
-    String body;
+  //   String title;
+  //   String body;
 
-    if (category == 'payment') {
-      title = "Pembayaran Berhasil";
-      body = "${_formatRupiah(amount)} di $merchant";
-    } else if (category == 'transfer') {
-      title = "Transfer Berhasil";
-      body = "${_formatRupiah(amount)} ke $merchant";
-    } else {
-      title = "Transaksi Berhasil";
-      body = "${_formatRupiah(amount)} di $merchant";
-    }
+  //   if (category == 'payment') {
+  //     title = "Pembayaran Berhasil";
+  //     body = "${_formatRupiah(amount)} di $merchant";
+  //   } else if (category == 'transfer') {
+  //     title = "Transfer Berhasil";
+  //     body = "${_formatRupiah(amount)} ke $merchant";
+  //   } else {
+  //     title = "Transaksi Berhasil";
+  //     body = "${_formatRupiah(amount)} di $merchant";
+  //   }
 
-    await NotifService().showNotification(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: title,
-      body: body,
-    );
-  }
+  //   await NotifService().showNotification(
+  //     id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  //     title: title,
+  //     body: body,
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +191,7 @@ class _QrisPinScreenState extends State<QrisPinScreen> {
                         if (paymentResponse == null || !context.mounted) {
                           return;
                         }
-                        await _showTransactionNotification(paymentResponse);
+                        // await _showTransactionNotification(paymentResponse);
 
                         Navigator.pushReplacement(
                           context,
