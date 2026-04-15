@@ -4,7 +4,6 @@ class TransactionCard extends StatelessWidget {
   final String title;
   final String subTitle;
   final String amount;
-  final String time;
   final IconData? icon;
   final String? imageAsset;
   final bool isExpense;
@@ -14,10 +13,9 @@ class TransactionCard extends StatelessWidget {
     required this.title,
     required this.subTitle,
     required this.amount,
-    required this.time,
     this.icon,
     this.imageAsset,
-    this.isExpense = true, 
+    this.isExpense = true,
   });
 
   @override
@@ -30,7 +28,7 @@ class TransactionCard extends StatelessWidget {
             width: 55,
             height: 55,
             decoration: BoxDecoration(
-              color: const Color(0x80F69500), 
+              color: const Color(0x80F69500),
               borderRadius: BorderRadius.circular(16),
             ),
             child: imageAsset != null
@@ -38,17 +36,25 @@ class TransactionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(4.0),
                     child: Image.asset(imageAsset!, fit: BoxFit.contain),
                   )
-                : Icon(icon ?? Icons.arrow_forward, color: const Color(0xFFFF7F00), size: 28),
+                : Icon(
+                    icon ?? Icons.arrow_forward,
+                    color: const Color(0xFFFF7F00),
+                    size: 28,
+                  ),
           ),
           const SizedBox(width: 16),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -58,7 +64,7 @@ class TransactionCard extends StatelessWidget {
               ],
             ),
           ),
-          
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -67,14 +73,10 @@ class TransactionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: isExpense ? Colors.grey : const Color(0xFF00B14F), 
+                  color: isExpense ? Colors.grey : const Color(0xFF00B14F),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                time,
-                style: const TextStyle(fontSize: 14, color: Colors.black),
-              ),
             ],
           ),
         ],

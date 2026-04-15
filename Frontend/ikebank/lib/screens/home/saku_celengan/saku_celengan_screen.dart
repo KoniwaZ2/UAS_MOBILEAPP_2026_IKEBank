@@ -1869,7 +1869,8 @@ class _SakuCelenganScreenState extends State<SakuCelenganScreen>
                   ? 'Saku Celengan'
                   : _formatCategoryLabel(subTitle),
               amount: signedAmount,
-              time: _formatTransactionTime(timestamp),
+              // Hapus tampilan waktu
+              // time: _formatTransactionTime(timestamp),
               imageAsset: 'assets/images/celengan.png',
               isExpense: isExpense,
             ),

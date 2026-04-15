@@ -43,9 +43,12 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
   Future<void> _refreshIfChanged(dynamic result) async {
     if (result == true && mounted) {
       _shouldReturnRefresh = true;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Data saku diperbarui'), backgroundColor: Color(0xFF00C853),));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data saku diperbarui'),
+          backgroundColor: Color(0xFF00C853),
+        ),
+      );
       await _loadSakuUtamaData();
     }
   }
@@ -958,7 +961,6 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                    
                       Expanded(
                         child: _isLoadingTransactions
                             ? const Center(
@@ -1102,10 +1104,6 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
               ],
             ),
           ],
@@ -1410,7 +1408,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, 
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1452,7 +1450,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 Flexible(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -1488,7 +1486,8 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                                     initialSourceSakuBalance: _sakuAmount,
                                     initialDestinationSakuId: destinationId,
                                     initialDestinationSakuName: destinationName,
-                                    initialDestinationSakuBalance: destinationBalance,
+                                    initialDestinationSakuBalance:
+                                        destinationBalance,
                                   ),
                                 ),
                               );
@@ -1531,7 +1530,8 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               destinationName,
@@ -1595,7 +1595,7 @@ class _SakuUtamaScreenState extends State<SakuUtamaScreen> {
                             ),
                           ),
                         );
-                      }).toList(), 
+                      }).toList(),
                     ),
                   ),
                 ),

@@ -108,8 +108,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         ResolutionPreset.medium,
         enableAudio: false,
         // 🔥 FIX KAMERA KITA YANG TERTINDIH: Paksa format NV21 dari awal!
-        imageFormatGroup: Platform.isAndroid 
-            ? ImageFormatGroup.nv21 
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
             : ImageFormatGroup.bgra8888,
       );
 
@@ -160,7 +160,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       _isProcessing = true;
       try {
         final inputImage = _inputImageFromCameraImage(image);
-        
+
         if (inputImage != null) {
           final faces = await _faceDetector.processImage(inputImage);
 
@@ -173,7 +173,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
           }
         }
       } catch (e) {
-        debugPrint('ERROR face detection: $e'); 
+        debugPrint('ERROR face detection: $e');
       }
       _isProcessing = false;
     });
@@ -268,7 +268,10 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     }
     final bytes = allBytes.done().buffer.asUint8List();
 
-    final Size imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    final Size imageSize = Size(
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
     final InputImageRotation imageRotation = _getImageRotation();
 
     final InputImageFormat? inputImageFormat =
@@ -321,7 +324,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         MaterialPageRoute(builder: (context) => BuatPinScreen(isFromCs: true)),
       );
       if (result == true) {
-        Navigator.pop(context, true); 
+        Navigator.pop(context, true);
       }
       return;
     }
@@ -401,7 +404,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         final image = await controller.takePicture();
         await CsService.checkFaceReport(File(image.path));
         if (mounted) {
-          Navigator.pop(context, true); 
+          Navigator.pop(context, true);
         }
       } catch (e) {
         if (mounted) {
@@ -444,7 +447,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
       }
       return;
     }
-    
+
     if (widget.isFromLupaPassword &&
         widget.newPassword != null &&
         widget.newPasswordConfirmation != null) {
@@ -541,7 +544,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              content: Text("Gagal mengunggah selfie"),
               backgroundColor: Colors.red,
             ),
           );
