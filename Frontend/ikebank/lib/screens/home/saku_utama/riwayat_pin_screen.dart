@@ -152,7 +152,7 @@ class _RiwayatPinScreenState extends State<RiwayatPinScreen> {
     if (category == 'payment') {
       title = "Pembayaran Berhasil";
       body = "${_formatRupiah(amount)} di $merchant";
-    } else if (category == 'transfer') {
+    } else if (category == 'Transfer Out') {
       title = "Transfer Berhasil";
       body = "${_formatRupiah(amount)} ke $merchant";
     } else {

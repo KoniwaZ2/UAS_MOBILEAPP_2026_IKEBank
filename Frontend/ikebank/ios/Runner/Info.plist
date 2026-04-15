@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Butuh akses kamera untuk foto KTP</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>We use Face ID to quickly and securely log you into your account.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -47,7 +49,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSFaceIDUsageDescription</key>
-	<string>We use Face ID to quickly and securely log you into your account.</string>
 </dict>
 </plist>
