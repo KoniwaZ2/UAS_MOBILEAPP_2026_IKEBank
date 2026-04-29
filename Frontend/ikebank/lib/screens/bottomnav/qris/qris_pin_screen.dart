@@ -1,0 +1,281 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'qris_sukses_screen.dart';
+import '../../auth/login/verifikasi_wajah_screen.dart';
+import '../../../api/banking.dart';
+
+class QrisPinScreen extends StatefulWidget {
+  final String qrisNumber;
+  final String merchantName;
+  final String amount;
+  final String location;
+  final String aquirer;
+  final String panId;
+  final String walletName;
+  final String walletBalance;
+
+  const QrisPinScreen({
+    super.key,
+    required this.qrisNumber,
+    required this.merchantName,
+    required this.amount,
+    required this.location,
+    required this.aquirer,
+    required this.panId,
+    required this.walletName,
+    required this.walletBalance,
+  });
+
+  @override
+  State<QrisPinScreen> createState() => _QrisPinScreenState();
+}
+
+class _QrisPinScreenState extends State<QrisPinScreen> {
+  final TextEditingController _pinController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _isProcessing = false;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Future<Map<String, dynamic>?> _processPayment() async {
+    final pin = _pinController.text;
+
+    if (pin.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PIN harus terdiri dari 6 digit'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+
+    if (_isProcessing) {
+      return null;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final response = await BankingService.bayarQris(
+        pin: pin,
+        qrisNumber: widget.qrisNumber,
+        amount: widget.amount,
+        category: 'payment',
+        description: 'Pembayaran QRIS ke ${widget.qrisNumber}',
+      );
+
+      if (!mounted) {
+        return null;
+      }
+      return response;
+    } catch (e) {
+      if (!mounted) {
+        return null;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memproses pembayaran'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  String _formatRupiah(dynamic amount) {
+    final value = int.tryParse(amount.toString()) ?? 0;
+
+    return "Rp${value.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => "${match[1]}.")}";
+  }
+
+  // Future<void> _showTransactionNotification(Map data) async {
+  //   final category = data['category'] ?? '';
+  //   final merchant = data['merchant_name'] ?? (data['recipient_account_name'] ?? 'Penerima');
+  //   final amount = data['amount'] ?? 0;
+
+  //   String title;
+  //   String body;
+
+  //   if (category == 'payment') {
+  //     title = "Pembayaran Berhasil";
+  //     body = "${_formatRupiah(amount)} di $merchant";
+  //   } else if (category == 'transfer') {
+  //     title = "Transfer Berhasil";
+  //     body = "${_formatRupiah(amount)} ke $merchant";
+  //   } else {
+  //     title = "Transaksi Berhasil";
+  //     body = "${_formatRupiah(amount)} di $merchant";
+  //   }
+
+  //   await NotifService().showNotification(
+  //     id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  //     title: title,
+  //     body: body,
+  //   );
+  // }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFF9F2),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "QRIS",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w900,
+            fontSize: 24,
+            fontFamily: 'AlumniSans',
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 50),
+
+            const Text(
+              "Masukkan PIN Keamananmu",
+              style: TextStyle(
+                fontFamily: 'AlumniSans',
+                fontWeight: FontWeight.w800,
+                fontSize: 24,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 40),
+
+            GestureDetector(
+              onTap: () => _focusNode.requestFocus(),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(
+                    opacity: 0.0,
+                    child: TextField(
+                      controller: _pinController,
+                      focusNode: _focusNode,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      autofocus: true,
+                      onChanged: (value) async {
+                        setState(() {});
+
+                        if (value.length != 6 || _isProcessing) return;
+
+                        FocusScope.of(context).unfocus(); // 🔥 penting
+
+                        final paymentResponse = await _processPayment();
+                        if (paymentResponse == null || !context.mounted) {
+                          return;
+                        }
+                        // await _showTransactionNotification(paymentResponse);
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => QrisSuksesScreen(
+                              paymentResponse: paymentResponse,
+                              qrisNumber: widget.qrisNumber,
+                              merchantName: widget.merchantName,
+                              amount: widget.amount,
+                              location: widget.location,
+                              aquirer: widget.aquirer,
+                              panId: widget.panId,
+                              walletName: widget.walletName,
+                              walletBalance: widget.walletBalance,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(6, (index) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEBEBEB),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: _pinController.text.length > index
+                            ? Container(
+                                width: 16,
+                                height: 16,
+                                decoration: const BoxDecoration(
+                                  color: Colors.black,
+                                  shape: BoxShape.circle,
+                                ),
+                              )
+                            : null,
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VerifikasiWajahScreen(
+                      isLupaPin: true,
+                      qrisData: {
+                        'qrisNumber': widget.qrisNumber,
+                        'merchantName': widget.merchantName,
+                        'amount': widget.amount,
+                        'location': widget.location,
+                        'aquirer': widget.aquirer,
+                        'panId': widget.panId,
+                        'walletName': widget.walletName,
+                        'walletBalance': widget.walletBalance,
+                      },
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                "Lupa PIN?",
+                style: TextStyle(
+                  color: Color(0xFFFF7F00),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

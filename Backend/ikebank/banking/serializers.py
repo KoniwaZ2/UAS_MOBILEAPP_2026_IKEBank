@@ -1,0 +1,233 @@
+from rest_framework import serializers
+
+from .models import BankAccount, CardDetails, CashFlow, Deposito, Saku, Transaction
+
+
+class RegisterBankAccountSerializer(serializers.Serializer):
+    pass
+
+
+class CashFlowCalculateSerializer(serializers.Serializer):
+    month = serializers.IntegerField(min_value=1, max_value=12, required=True)
+    year = serializers.IntegerField(min_value=2000, max_value=2100, required=True)
+
+
+class CashFlowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CashFlow
+        fields = [
+            'id',
+            'account_id',
+            'total_income',
+            'total_expense',
+            'month',
+            'year',
+            'status',
+        ]
+
+
+class DepositoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Deposito
+        fields = [
+            'deposito_id',
+            'interest_rate',
+            'quota',
+            'duratuion_months',
+            'status',
+            'isSpecial',
+        ]
+
+
+class QrisLimitSerializer(serializers.Serializer):
+    qris_limit = serializers.IntegerField(required=True, min_value=0)
+    # pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+
+    # def validate(self, attrs):
+
+    #     if not attrs.get('pin'):
+    #         raise serializers.ValidationError({'pin': 'pin is required for card request.'})
+
+    #     return attrs
+
+class TransactionCreateSerializer(serializers.Serializer):
+    pin = serializers.CharField(required=True)
+    category = serializers.ChoiceField(choices=Transaction.CATEGORY_CHOICES, required=True)
+    amount = serializers.IntegerField(required=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    destination_account = serializers.CharField(required=False, allow_blank=True)  # For transfer_out
+    merchant_qris = serializers.CharField(required=False, allow_blank=True)  # For payment
+
+    def validate(self, attrs):
+        category = attrs.get('category')
+        destination_account = attrs.get('destination_account')
+        merchant_qris = attrs.get('merchant_qris')
+
+        if category == 'transfer_out' and not destination_account:
+            raise serializers.ValidationError({'destination_account': 'Wajib diisi untuk transfer_out.'})
+
+        if category == 'payment' and not merchant_qris:
+            raise serializers.ValidationError({'merchant_qris': 'Wajib diisi untuk payment.'})
+
+        return attrs
+
+class TambahDanaSerializer(serializers.Serializer):
+    """External deposits to primary Saku Utama (ATM, incoming transfer)"""
+    amount = serializers.IntegerField(required=True)
+    description = serializers.CharField(required=False, allow_blank=True) # For source description, e.g. "Transfer from BCA", "Deposit via ATM", etc
+    source = serializers.CharField(required=False, allow_blank=True)  # ATM, Transfer In, etc
+
+class InternalTransferSerializer(serializers.Serializer):
+    """Transfer between Sakus - only between Saku Utama and non-deposito Sakus"""
+    source_saku_id = serializers.IntegerField(required=True)  # From Saku
+    destination_saku_id = serializers.IntegerField(required=True)  # To Saku
+    amount = serializers.IntegerField(required=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+
+class TambahSakuSerializer(serializers.Serializer):
+    """Add new Saku to existing Bank Account"""
+    saku_name = serializers.CharField(required=True)
+    category_name = serializers.ChoiceField(choices=Saku.CATEGORY_CHOICES, required=True)
+    is_primary = serializers.BooleanField(required=False, default=False)
+
+class QRISCheckSerializer(serializers.Serializer):
+    qris_number = serializers.CharField(required=True)
+
+class SakuDetailSerializer(serializers.ModelSerializer):
+    saku_id = serializers.IntegerField(source='id')
+
+class CheckRekeningSerializer(serializers.Serializer):
+    account_number = serializers.CharField(required=True)
+    bank_name = serializers.CharField(required=False, default='IKE Bank')
+
+class TambahRekeningSerializer(serializers.Serializer):
+    account_number = serializers.CharField(required=True)
+    bank_name = serializers.CharField(required=False, default='IKE Bank')
+
+class CardRequestSerializer(serializers.Serializer):
+    pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    source_funds_id = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        pin = attrs.get('pin')
+        source_funds_id = attrs.get('source_funds_id')
+
+        if not pin:
+            raise serializers.ValidationError({'pin': 'pin is required for card request.'})
+
+        if not source_funds_id:
+            raise serializers.ValidationError({'source_funds_id': 'source_funds_id is required for card request.'})
+
+        attrs['pin'] = pin
+        attrs['source_funds_id'] = source_funds_id
+        return attrs
+
+class CardEditSerializer(serializers.Serializer):
+    ACTION_BLOCK_TEMPORARY = 'BLOCK_TEMPORARY'
+    ACTION_UNBLOCK_TEMPORARY = 'UNBLOCK_TEMPORARY'
+    ACTION_BLOCK_PERMANENT = 'BLOCK_PERMANENT'
+    ACTION_SET_DAILY_LIMIT = 'SET_DAILY_LIMIT'
+    ACTION_CHANGE_CARD_PIN = 'CHANGE_CARD_PIN'
+    ACTION_CHANGE_STATUS = 'CHANGE_STATUS'
+    ACTION_VERIFY_CARD = 'VERIFY_CARD'
+    ACTION_ACTIVATE_CARD = 'ACTIVATE_CARD'
+
+    ACTION_CHOICES = [
+        (ACTION_BLOCK_TEMPORARY, ACTION_BLOCK_TEMPORARY),
+        (ACTION_UNBLOCK_TEMPORARY, ACTION_UNBLOCK_TEMPORARY),
+        (ACTION_BLOCK_PERMANENT, ACTION_BLOCK_PERMANENT),
+        (ACTION_SET_DAILY_LIMIT, ACTION_SET_DAILY_LIMIT),
+        (ACTION_CHANGE_CARD_PIN, ACTION_CHANGE_CARD_PIN),
+        (ACTION_CHANGE_STATUS, ACTION_CHANGE_STATUS),
+        (ACTION_VERIFY_CARD, ACTION_VERIFY_CARD),
+        (ACTION_ACTIVATE_CARD, ACTION_ACTIVATE_CARD),
+    ]
+
+    action = serializers.ChoiceField(choices=ACTION_CHOICES, required=True)
+    pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    old_pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    new_pin = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+    daily_withdrawal_limit = serializers.IntegerField(required=False, min_value=0)
+    daily_transaction_limit = serializers.IntegerField(required=False, min_value=0)
+    daily_single_transaction_limit = serializers.IntegerField(required=False, min_value=0)
+    status = serializers.ChoiceField(choices=CardDetails.CARD_STATUS_CHOICES, required=False)
+    card_last6_digits = serializers.CharField(max_length=6, min_length=6, required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        action = attrs.get('action')
+
+        if action == self.ACTION_CHANGE_CARD_PIN:
+            if not attrs.get('old_pin') or not attrs.get('new_pin'):
+                raise serializers.ValidationError({'detail': 'old_pin and new_pin are required for CHANGE_CARD_PIN.'})
+
+        if action in {
+            self.ACTION_BLOCK_TEMPORARY,
+            self.ACTION_UNBLOCK_TEMPORARY,
+            self.ACTION_BLOCK_PERMANENT,
+        } and not attrs.get('pin'):
+            raise serializers.ValidationError({'detail': 'pin is required for block/unblock action.'})
+
+        if action == self.ACTION_SET_DAILY_LIMIT:
+            if not attrs.get('pin'):
+                raise serializers.ValidationError({'detail': 'pin is required for SET_DAILY_LIMIT.'})
+
+            has_any_limit = any(
+                key in attrs
+                for key in ('daily_withdrawal_limit', 'daily_transaction_limit', 'daily_single_transaction_limit')
+            )
+            if not has_any_limit:
+                raise serializers.ValidationError({'detail': 'At least one limit value is required for SET_DAILY_LIMIT.'})
+
+        if action == self.ACTION_CHANGE_STATUS and not attrs.get('status'):
+            raise serializers.ValidationError({'detail': 'status is required for CHANGE_STATUS.'})
+
+        if action == self.ACTION_VERIFY_CARD and not attrs.get('card_last6_digits'):
+            raise serializers.ValidationError({'detail': 'card_last6_digits is required for VERIFY_CARD.'})
+
+        if action == self.ACTION_ACTIVATE_CARD:
+            if not attrs.get('card_last6_digits'):
+                raise serializers.ValidationError({'detail': 'card_last6_digits is required for ACTIVATE_CARD.'})
+            if not attrs.get('new_pin'):
+                raise serializers.ValidationError({'detail': 'new_pin is required for ACTIVATE_CARD.'})
+
+        return attrs
+    
+class CardDetailsSerializer(serializers.Serializer):
+    pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+    
+
+class DepositoAccountCreateSerializer(serializers.Serializer):
+    deposito_id = serializers.IntegerField(required=True)
+    source_saku_id = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(min_value=1000000, required=True)
+
+
+class DepositoEstimateSerializer(serializers.Serializer):
+    deposito_id = serializers.IntegerField(required=True)
+    source_saku_id = serializers.IntegerField(required=True)
+    amount = serializers.IntegerField(min_value=1000000, required=True)
+    
+class DepositoEditSerializer(serializers.Serializer):
+    deposito_account_id = serializers.UUIDField(required=False)
+    deposito_id = serializers.IntegerField(required=False)
+    nama_deposito = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs.get('deposito_account_id') and not attrs.get('deposito_id'):
+            raise serializers.ValidationError({'detail': 'deposito_account_id or deposito_id is required.'})
+
+        return attrs
+    
+class ForgotPinSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+    new_pin = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+    new_pin_confirm = serializers.CharField(max_length=6, min_length=6, required=True, allow_blank=False)
+
+    def validate(self, attrs):
+        new_pin = attrs.get('new_pin')
+        new_pin_confirm = attrs.get('new_pin_confirm')
+
+        if new_pin != new_pin_confirm:
+            raise serializers.ValidationError({'new_pin_confirm': 'new_pin_confirm must match new_pin.'})
+
+        return attrs

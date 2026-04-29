@@ -1,0 +1,15 @@
+$kind: http-request
+url: http://localhost:8000/api/auth/login/
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"email\":\"Victormarlinosekolah@gmail.com\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc1MDY0ODE2LCJpYXQiOjE3NzUwNjQ1MTYsImp0aSI6ImYyZDFjYjJiZTYwMDRmZjlhNGY2OTcxNDUxZGI5M2RlIiwidXNlcl9pZCI6IjIwIiwicGhvbmVfbnVtYmVyIjoiMDg1MjE4NDM3MDc3IiwiZW1haWwiOiJ2aWN0b3JtYXJsaW5vc2Vrb2xhaEBnbWFpbC5jb20iLCJuYW1lIjoiVmljdG9yIn0.ZwoAZOvyGv74gIY4w_wqYi-vaDvO-E3XzxFKE2ZhAy0
+order: 4165763199679821
