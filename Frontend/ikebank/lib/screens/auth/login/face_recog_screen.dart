@@ -10,8 +10,7 @@ import '../../../models/register_flow_data.dart';
 import 'login_page.dart';
 import '../register/buat_pin_screen.dart';
 import '../register/buat_pass_screen.dart';
-
-enum LivenessStep { lookLeft, lookRight, smile, blink, done }
+import '../../../utils/face_liveness_rules.dart';
 
 class FaceRecogScreen extends StatefulWidget {
   final bool isFromRegister;
@@ -23,6 +22,7 @@ class FaceRecogScreen extends StatefulWidget {
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
   final String? intent;
+  final Future<List<CameraDescription>> Function()? availableCamerasOverride;
 
   // Tambahan untuk reset password
   final String? newPassword;
@@ -41,6 +41,7 @@ class FaceRecogScreen extends StatefulWidget {
     this.newPassword,
     this.newPasswordConfirmation,
     this.intent,
+    this.availableCamerasOverride,
   });
 
   @override
@@ -89,7 +90,8 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
   Future<void> _initCamera() async {
     try {
-      final cameras = await availableCameras();
+      final cameras =
+          await (widget.availableCamerasOverride?.call() ?? availableCameras());
       if (cameras.isEmpty) {
         if (!mounted) return;
         setState(() => _errorMessage = 'Kamera tidak tersedia');
@@ -189,24 +191,14 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
     final rightEyeOpen = face.rightEyeOpenProbability ?? 1;
     final smileProbability = face.smilingProbability ?? 0;
 
-    bool passed = false;
-    switch (_currentStep) {
-      case LivenessStep.lookLeft:
-        passed = headY < -_yawThreshold;
-        break;
-      case LivenessStep.lookRight:
-        passed = headY > _yawThreshold;
-        break;
-      case LivenessStep.smile:
-        passed = smileProbability > 0.55;
-        break;
-      case LivenessStep.blink:
-        passed = leftEyeOpen < 0.4 && rightEyeOpen < 0.4;
-        break;
-      case LivenessStep.done:
-        passed = false;
-        break;
-    }
+    final passed = shouldAdvanceLivenessStep(
+      _currentStep,
+      headY: headY,
+      leftEyeOpen: leftEyeOpen,
+      rightEyeOpen: rightEyeOpen,
+      smileProbability: smileProbability,
+      yawThreshold: _yawThreshold,
+    );
 
     if (!passed) return;
 
@@ -219,22 +211,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
 
     if (!mounted) return;
     setState(() {
-      switch (_currentStep) {
-        case LivenessStep.lookLeft:
-          _currentStep = LivenessStep.lookRight;
-          break;
-        case LivenessStep.lookRight:
-          _currentStep = LivenessStep.smile;
-          break;
-        case LivenessStep.smile:
-          _currentStep = LivenessStep.blink;
-          break;
-        case LivenessStep.blink:
-          _currentStep = LivenessStep.done;
-          break;
-        case LivenessStep.done:
-          break;
-      }
+      _currentStep = nextLivenessStep(_currentStep);
     });
 
     if (_currentStep == LivenessStep.done) {
@@ -243,18 +220,7 @@ class _FaceRecogScreenState extends State<FaceRecogScreen> {
   }
 
   String _instructionText() {
-    switch (_currentStep) {
-      case LivenessStep.lookLeft:
-        return 'Hadap Kiri';
-      case LivenessStep.lookRight:
-        return 'Hadap Kanan';
-      case LivenessStep.smile:
-        return 'Senyum';
-      case LivenessStep.blink:
-        return 'Kedipkan Mata';
-      case LivenessStep.done:
-        return 'Verifikasi Selesai';
-    }
+    return livenessInstructionText(_currentStep);
   }
 
   // 🔥 FIX KAMERA KITA YANG TERTINDIH: Konversi ringan tanpa for-loop berat!

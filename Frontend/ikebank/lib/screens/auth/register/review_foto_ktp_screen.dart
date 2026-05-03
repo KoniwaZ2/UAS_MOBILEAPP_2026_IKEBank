@@ -9,6 +9,8 @@ class ReviewFotoKtpScreen extends StatelessWidget {
   final String phone;
   final String email;
   final String? reference;
+  final Future<Map<String, dynamic>> Function(File imageFile, String reference)?
+  uploadKtpOverride;
 
   const ReviewFotoKtpScreen({
     super.key,
@@ -16,6 +18,7 @@ class ReviewFotoKtpScreen extends StatelessWidget {
     required this.phone,
     required this.email,
     this.reference,
+    this.uploadKtpOverride,
   });
 
   @override
@@ -187,10 +190,12 @@ class ReviewFotoKtpScreen extends StatelessWidget {
                     }
 
                     try {
-                      final result = await AuthService.uploadKTP(
-                        imageFile: imageFile!,
-                        reference: reference!,
-                      );
+                      final result = uploadKtpOverride != null
+                          ? await uploadKtpOverride!(imageFile!, reference!)
+                          : await AuthService.uploadKTP(
+                              imageFile: imageFile!,
+                              reference: reference!,
+                            );
 
                       if (!context.mounted) {
                         return;

@@ -4,7 +4,6 @@ import 'auth.dart';
 import '../models/account_detail.dart';
 import '../models/beneficial_account.dart';
 import '../models/wallet_source.dart';
-import 'package:http/http.dart' as http;
 
 class BankingService {
   // static const String baseUrl = 'http://192.168.0.113:8000/api/banking';

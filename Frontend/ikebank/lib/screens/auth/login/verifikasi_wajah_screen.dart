@@ -10,6 +10,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
   final RegisterFlowData? flowData;
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
+  final VoidCallback? onOpenFaceRecog;
 
   const VerifikasiWajahScreen({
     super.key,
@@ -19,13 +20,14 @@ class VerifikasiWajahScreen extends StatelessWidget {
     this.flowData,
     this.isLupaPin = false,
     this.qrisData,
+    this.onOpenFaceRecog,
   });
 
   @override
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(
       fontWeight: FontWeight.w700,
-      fontFamily: 'AlumniSans', 
+      fontFamily: 'AlumniSans',
     );
 
     return Scaffold(
@@ -147,6 +149,11 @@ class VerifikasiWajahScreen extends StatelessWidget {
                               ),
                             ),
                             onPressed: () {
+                              if (onOpenFaceRecog != null) {
+                                onOpenFaceRecog!();
+                                return;
+                              }
+
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(

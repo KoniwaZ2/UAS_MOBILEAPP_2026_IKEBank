@@ -6,6 +6,7 @@ import '../../../models/register_flow_data.dart';
 import '../login/login_page.dart';
 import '../../../api/banking.dart';
 import '../../bottomnav/qris/qris_pin_screen.dart';
+import '../../../utils/pin_rules.dart';
 
 class BuatPinScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
@@ -65,16 +66,10 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   }
 
   Future<void> _submitLupaPin() async {
-    if (pin.length < 6 || confirmPin.length < 6) {
+    final validationMessage = validatePinEntry(pin, confirmPin);
+    if (validationMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    if (pin != confirmPin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!'), backgroundColor: Colors.red),
+        SnackBar(content: Text(validationMessage), backgroundColor: Colors.red),
       );
       return;
     }
@@ -130,17 +125,11 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   }
 
   Future<void> _submitGantiPin() async {
-    if (pin.length < 6 || confirmPin.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!')),
-      );
-      return;
-    }
-
-    if (pin != confirmPin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!')),
-      );
+    final validationMessage = validatePinEntry(pin, confirmPin);
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
       return;
     }
 
@@ -180,33 +169,27 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
   }
 
   Future<void> _submitRegistration() async {
-    if (pin.length < 6 || confirmPin.length < 6) {
+    final validationMessage = validatePinEntry(pin, confirmPin);
+    if (validationMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN harus terdiri dari 6 digit angka!'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    if (pin != confirmPin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi PIN tidak cocok!'), backgroundColor: Colors.red),
+        SnackBar(content: Text(validationMessage), backgroundColor: Colors.red),
       );
       return;
     }
 
     final flowData = widget.flowData;
-    if (flowData == null ||
-        flowData.ktpFile == null ||
-        (flowData.password ?? '').isEmpty ||
-        (flowData.otpReference).isEmpty) {
+    final flowValidationMessage = validateRegistrationFlowData(flowData);
+    if (flowValidationMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data registrasi belum lengkap. Ulangi dari awal.'),
+        SnackBar(
+          content: Text(flowValidationMessage),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
+
+    final confirmedFlowData = flowData!;
 
     setState(() {
       _isSubmitting = true;
@@ -214,33 +197,38 @@ class _BuatPinScreenState extends State<BuatPinScreen> {
 
     try {
       await AuthService.register(
-        otpReference: flowData.otpReference,
-        phoneNumber: flowData.phoneNumber,
-        email: flowData.email,
-        password: flowData.password!,
-        name: flowData.name ?? '',
-        nik: flowData.nik ?? '',
-        bornPlace: flowData.bornPlace ?? '-',
-        bornDate: flowData.bornDate ?? '',
-        gender: flowData.gender ?? 'Other',
-        address: flowData.address ?? '',
-        religion: flowData.religion ?? '',
-        motherName: flowData.motherName ?? '',
+        otpReference: confirmedFlowData.otpReference,
+        phoneNumber: confirmedFlowData.phoneNumber,
+        email: confirmedFlowData.email,
+        password: confirmedFlowData.password!,
+        name: confirmedFlowData.name ?? '',
+        nik: confirmedFlowData.nik ?? '',
+        bornPlace: confirmedFlowData.bornPlace ?? '-',
+        bornDate: confirmedFlowData.bornDate ?? '',
+        gender: confirmedFlowData.gender ?? 'Other',
+        address: confirmedFlowData.address ?? '',
+        religion: confirmedFlowData.religion ?? '',
+        motherName: confirmedFlowData.motherName ?? '',
         pin: pin,
-        ktpFile: flowData.ktpFile!,
+        ktpFile: confirmedFlowData.ktpFile!,
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registrasi Berhasil! Silakan Login'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Registrasi Berhasil! Silakan Login'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) =>
-              LoginPage(prefilledEmail: flowData.email, isAfterRegister: true),
+          builder: (context) => LoginPage(
+            prefilledEmail: confirmedFlowData.email,
+            isAfterRegister: true,
+          ),
         ),
         (Route<dynamic> route) => false,
       );
