@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import '02_buat_kartu_screen_2.dart';
-import '05_kartu_berhasil_screen.dart';
 import '../../../api/banking.dart';
 
 enum PinEntrySource { buatKartu, kartuTab, other }

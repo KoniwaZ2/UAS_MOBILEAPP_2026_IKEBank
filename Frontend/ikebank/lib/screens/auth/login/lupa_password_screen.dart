@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import 'face_recog_screen.dart';
-import '../../../api/auth.dart';
-import 'login_page.dart';
 
 class LupaPasswordScreen extends StatefulWidget {
   final String email;
@@ -45,15 +43,21 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
 
     if (password1.isEmpty || password2.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password tidak boleh kosong"), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text("Password tidak boleh kosong"),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (password1 != password2) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Password tidak cocok"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password tidak cocok"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -78,9 +82,12 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
       );
       // Tidak perlu lanjut apapun di sini, semua proses di FaceRecogScreen
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Terjadi kesalahan: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {

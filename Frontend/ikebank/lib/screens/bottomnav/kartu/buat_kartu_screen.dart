@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ikebank/screens/bottomnav/kartu/01.1_saldo_rata_rata.dart';
-import '../../../api/banking.dart';
 import '02_buat_kartu_screen_2.dart';
 
 class BuatKartuScreen extends StatelessWidget {

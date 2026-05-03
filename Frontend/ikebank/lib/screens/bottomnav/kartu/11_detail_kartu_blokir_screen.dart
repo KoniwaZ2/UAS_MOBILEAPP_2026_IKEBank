@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '11.1_buka_blokir_sementara_screen.dart';
 import '12_pin_blokir_permanen.dart';
-import '../../../api/banking.dart';
 
 class DetailKartuBlokirScreen extends StatelessWidget {
   const DetailKartuBlokirScreen({super.key});

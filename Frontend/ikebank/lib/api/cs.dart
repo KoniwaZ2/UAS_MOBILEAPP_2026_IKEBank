@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'auth.dart';
 import 'dart:io';
-import 'auth.dart';
 
 class CsService {
   //static const String baseUrl = 'http://192.168.0.113:8000/api/cs';

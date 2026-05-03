@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart';
 import '../../../api/banking.dart';
 
 class _LifecycleObserver extends WidgetsBindingObserver {

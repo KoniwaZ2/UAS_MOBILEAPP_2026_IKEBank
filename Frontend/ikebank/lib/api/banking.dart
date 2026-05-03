@@ -418,7 +418,7 @@ class BankingService {
   }) async {
     final url = Uri.parse('$baseUrl/nabung-ai-state/');
     final payload = <String, dynamic>{
-      if (autoIsi != null) 'auto_isi': autoIsi,
+      'auto_isi': ?autoIsi,
       if (clearCooldown) 'clear_cooldown': true,
       if (!clearCooldown && cooldownUntil != null)
         'cooldown_until': cooldownUntil.toIso8601String(),

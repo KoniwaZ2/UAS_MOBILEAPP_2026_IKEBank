@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart';
 import '../../../api/banking.dart';
 import '../layanan/bantuan_cs_screen.dart';
 
@@ -411,7 +410,6 @@ class _DepositoDetailScreenState extends State<DepositoDetailScreen> {
                       "Tanggal jatuh tempo",
                       widget.tanggalJatuhTempo,
                     ),
-                    
                   ],
                 ),
               ),

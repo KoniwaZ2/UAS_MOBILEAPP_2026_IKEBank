@@ -48,7 +48,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     'CHRISTIANITY',
     'HINDUISM',
     'BUDDHISM',
-    'OTHER'
+    'OTHER',
   ];
 
   @override
@@ -80,7 +80,9 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
     final religionRaw = (data['religion'] ?? '').toString().toUpperCase();
     if (_listAgama.contains(religionRaw)) {
       _agama = religionRaw;
-    } else if (religionRaw == 'KRISTEN' || religionRaw == 'KATHOLIK' || religionRaw == 'KATOLIK') {
+    } else if (religionRaw == 'KRISTEN' ||
+        religionRaw == 'KATHOLIK' ||
+        religionRaw == 'KATOLIK') {
       _agama = 'CHRISTIANITY';
     } else if (religionRaw == 'HINDU') {
       _agama = 'HINDUISM';
@@ -308,7 +310,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                         ),
                                         gender: _toApiGender(_jenisKelamin),
                                         address: _alamatController.text.trim(),
-                                        religion: _agama!, 
+                                        religion: _agama!,
                                         motherName: _ibuController.text.trim(),
                                       ),
                                     ),
@@ -368,12 +370,14 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
             readOnly: readOnly,
             maxLength: maxLength,
             onTap: onTap,
-            validator: validator ?? (value) {
-              if (value == null || value.isEmpty) {
-                return 'Bagian ini harus diisi';
-              }
-              return null;
-            },
+            validator:
+                validator ??
+                (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Bagian ini harus diisi';
+                  }
+                  return null;
+                },
             style: const TextStyle(fontSize: 16, color: Colors.black),
             decoration: InputDecoration(
               isDense: true,
@@ -416,7 +420,7 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
           ),
           DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: value,
+              initialValue: value,
               icon: Icon(
                 Icons.keyboard_arrow_down,
                 color: Colors.grey.shade700,

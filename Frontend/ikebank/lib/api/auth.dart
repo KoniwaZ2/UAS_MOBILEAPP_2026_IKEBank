@@ -71,8 +71,9 @@ class AuthService {
     final accessToken = await getAccessToken();
     if (accessToken == null || accessToken.isEmpty) return false;
     // Anggap token expired jika akan expired dalam 2 menit ke depan
-    if (_isTokenExpiringSoon(accessToken, const Duration(minutes: 2)))
+    if (_isTokenExpiringSoon(accessToken, const Duration(minutes: 2))) {
       return false;
+    }
     return true;
   }
 

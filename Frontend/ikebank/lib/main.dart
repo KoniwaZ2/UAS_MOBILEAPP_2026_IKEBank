@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ikebank/screens/auth/login/login_page.dart';
 import 'package:ikebank/screens/bottomnav/main_tab_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ikebank/screens/home/home_screen.dart';
@@ -8,16 +7,16 @@ import 'package:ikebank/screens/auth/register/buat_pass_screen.dart';
 import 'core/colors.dart';
 import 'screens/auth/signin.dart';
 import 'api/auth.dart';
-// import 'package:ikebank/services/notif_service.dart'; 
+// import 'package:ikebank/services/notif_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // await NotifService().initNotification();
 
   GoogleFonts.config.allowRuntimeFetching = true;
   await initializeDateFormatting('id_ID', null);
-  
+
   runApp(const MyApp());
 }
 
