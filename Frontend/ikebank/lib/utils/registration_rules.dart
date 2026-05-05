@@ -20,10 +20,12 @@ String? validatePassword(String? value) {
   final text = (value ?? '').trim();
   if (text.isEmpty) return 'Password wajib diisi';
   if (text.length < 8) return 'Password minimal 8 karakter';
-  if (!RegExp(r'[A-Z]').hasMatch(text))
+  if (!RegExp(r'[A-Z]').hasMatch(text)) {
     return 'Password harus punya huruf besar';
-  if (!RegExp(r'[a-z]').hasMatch(text))
+  }
+  if (!RegExp(r'[a-z]').hasMatch(text)) {
     return 'Password harus punya huruf kecil';
+  }
   if (!RegExp(r'\d').hasMatch(text)) return 'Password harus punya angka';
   return null;
 }

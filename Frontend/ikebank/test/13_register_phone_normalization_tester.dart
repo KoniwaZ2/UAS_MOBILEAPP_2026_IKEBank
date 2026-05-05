@@ -1,12 +1,5 @@
-// Test 13: Register phone normalization
-// Detail: Phone prefix normalized before API call
-// Class/Method: RegisterScreen _normalizePhone()
-// Programmer: Victor
-
 import 'package:flutter_test/flutter_test.dart';
 
-/// Replicating the _normalizePhone logic from RegisterScreen for unit testing.
-/// The actual method is private, so we replicate the exact same logic here.
 String normalizePhone(String value) {
   var cleaned = value.trim();
   cleaned = cleaned.replaceAll(RegExp(r'[^0-9+]'), '');
