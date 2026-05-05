@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart'; // Untuk share.svg dan send.svg
-import 'package:ikebank/api/auth.dart';
 import 'package:ikebank/api/banking.dart';
 import '../../../widgets/chat_bubble.dart';
 import '../../auth/login/face_recog_screen.dart';

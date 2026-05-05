@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
 import '../../../models/register_flow_data.dart';
 import 'buat_pin_screen.dart';
+import '../../../utils/registration_rules.dart';
 
 class BuatPassScreen extends StatefulWidget {
   final RegisterFlowData? flowData;
@@ -24,29 +25,6 @@ class _BuatPassScreenState extends State<BuatPassScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-
-  bool _hasUppercase(String value) => RegExp(r'[A-Z]').hasMatch(value);
-  bool _hasLowercase(String value) => RegExp(r'[a-z]').hasMatch(value);
-  bool _hasNumber(String value) => RegExp(r'\d').hasMatch(value);
-
-  String? _validatePassword(String? value) {
-    final text = (value ?? '').trim();
-    if (text.isEmpty) return 'Password wajib diisi';
-    if (text.length < 8) return 'Password minimal 8 karakter';
-    if (!_hasUppercase(text)) return 'Password harus punya huruf besar';
-    if (!_hasLowercase(text)) return 'Password harus punya huruf kecil';
-    if (!_hasNumber(text)) return 'Password harus punya angka';
-    return null;
-  }
-
-  String? _validateConfirmPassword(String? value) {
-    final text = (value ?? '').trim();
-    if (text.isEmpty) return 'Konfirmasi password wajib diisi';
-    if (text != _passwordController.text.trim()) {
-      return 'Konfirmasi password tidak sama';
-    }
-    return null;
-  }
 
   @override
   void dispose() {
@@ -158,7 +136,7 @@ class _BuatPassScreenState extends State<BuatPassScreen> {
                               hint: "Masukkan Password",
                               controller: _passwordController,
                               isObscure: _obscurePassword,
-                              validator: _validatePassword,
+                              validator: validatePassword,
                               onToggleVisibility: () {
                                 setState(() {
                                   _obscurePassword = !_obscurePassword;
@@ -171,7 +149,10 @@ class _BuatPassScreenState extends State<BuatPassScreen> {
                               hint: "Konfirmasi password",
                               controller: _confirmPasswordController,
                               isObscure: _obscureConfirmPassword,
-                              validator: _validateConfirmPassword,
+                              validator: (value) => validateConfirmPassword(
+                                value,
+                                _passwordController.text,
+                              ),
                               onToggleVisibility: () {
                                 setState(() {
                                   _obscureConfirmPassword =

@@ -73,6 +73,7 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
           style: alumniSansBold.copyWith(fontSize: 28, color: Colors.black),
         ),
       ),
+      //error
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(

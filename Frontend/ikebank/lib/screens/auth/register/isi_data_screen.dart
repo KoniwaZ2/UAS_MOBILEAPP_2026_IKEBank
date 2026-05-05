@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import '../../../models/register_flow_data.dart';
 import '../login/verifikasi_wajah_screen.dart';
+import '../../../utils/registration_rules.dart';
 
 class IsiDataScreen extends StatefulWidget {
   final String phone;
@@ -11,6 +12,7 @@ class IsiDataScreen extends StatefulWidget {
   final File? ktpImageFile;
   final Map<String, dynamic> prefillIdentity;
   final String? reference;
+  final ValueChanged<RegisterFlowData>? onContinue;
 
   const IsiDataScreen({
     super.key,
@@ -19,6 +21,7 @@ class IsiDataScreen extends StatefulWidget {
     this.ktpImageFile,
     this.prefillIdentity = const <String, dynamic>{},
     this.reference,
+    this.onContinue,
   });
 
   @override
@@ -281,38 +284,44 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
                                   return;
                                 }
 
+                                final flowData = RegisterFlowData(
+                                  phoneNumber: widget.phone,
+                                  email: widget.email,
+                                  otpReference: widget.reference ?? '',
+                                  ktpFile: widget.ktpImageFile,
+                                  name: _namaController.text.trim(),
+                                  nik: _nikController.text.trim(),
+                                  bornPlace:
+                                      (widget.prefillIdentity['born_place']
+                                              ?.toString()
+                                              .trim()
+                                              .isNotEmpty ??
+                                          false)
+                                      ? widget.prefillIdentity['born_place']
+                                            .toString()
+                                            .trim()
+                                      : '-',
+                                  bornDate: toApiDate(
+                                    _ttlController.text.trim(),
+                                  ),
+                                  gender: toApiGender(_jenisKelamin),
+                                  address: _alamatController.text.trim(),
+                                  religion: _agama!,
+                                  motherName: _ibuController.text.trim(),
+                                );
+
+                                if (widget.onContinue != null) {
+                                  widget.onContinue!(flowData);
+                                  return;
+                                }
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => VerifikasiWajahScreen(
                                       isFromRegister: true,
                                       reference: widget.reference,
-                                      flowData: RegisterFlowData(
-                                        phoneNumber: widget.phone,
-                                        email: widget.email,
-                                        otpReference: widget.reference ?? '',
-                                        ktpFile: widget.ktpImageFile,
-                                        name: _namaController.text.trim(),
-                                        nik: _nikController.text.trim(),
-                                        bornPlace:
-                                            (widget.prefillIdentity['born_place']
-                                                    ?.toString()
-                                                    .trim()
-                                                    .isNotEmpty ??
-                                                false)
-                                            ? widget
-                                                  .prefillIdentity['born_place']
-                                                  .toString()
-                                                  .trim()
-                                            : '-',
-                                        bornDate: _toApiDate(
-                                          _ttlController.text.trim(),
-                                        ),
-                                        gender: _toApiGender(_jenisKelamin),
-                                        address: _alamatController.text.trim(),
-                                        religion: _agama!,
-                                        motherName: _ibuController.text.trim(),
-                                      ),
+                                      flowData: flowData,
                                     ),
                                   ),
                                 );
@@ -466,21 +475,5 @@ class _IsiDataScreenState extends State<IsiDataScreen> {
         ),
       ),
     );
-  }
-
-  String _toApiDate(String value) {
-    try {
-      final parsed = DateFormat('dd-MM-yyyy').parseStrict(value);
-      return DateFormat('yyyy-MM-dd').format(parsed);
-    } catch (_) {
-      return value;
-    }
-  }
-
-  String _toApiGender(String? value) {
-    final normalized = (value ?? '').toLowerCase();
-    if (normalized.contains('laki')) return 'MALE';
-    if (normalized.contains('perempuan')) return 'FEMALE';
-    return 'OTHER';
   }
 }
