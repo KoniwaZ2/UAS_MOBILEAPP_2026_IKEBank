@@ -24,10 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('90 - nested token object extraction', () {
     final decoded = <String, dynamic>{
-      'token': {
-        'access': 'access_value',
-        'refresh': 'refresh_value',
-      },
+      'token': {'access': 'access_value', 'refresh': 'refresh_value'},
     };
     final nested = decoded['token'];
     expect(nested, isA<Map<String, dynamic>>());
@@ -87,15 +84,11 @@ void main() {
   });
 
   test('95 - dynamic error from map with detail', () {
-    final decoded = <String, dynamic>{
-      'detail': 'Dynamic error detail',
-    };
+    final decoded = <String, dynamic>{'detail': 'Dynamic error detail'};
     String result = 'fallback';
-    if (decoded is Map<String, dynamic>) {
-      final detail = decoded['detail']?.toString();
-      if (detail != null && detail.isNotEmpty) {
-        result = detail;
-      }
+    final detail = decoded['detail']?.toString();
+    if (detail != null && detail.isNotEmpty) {
+      result = detail;
     }
     expect(result, 'Dynamic error detail');
   });

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ikebank/models/register_flow_data.dart';
-import 'package:ikebank/screens/auth/login/verifikasi_wajah_screen.dart';
 import 'package:ikebank/screens/auth/register/isi_data_screen.dart';
 
 File _createTempFile() {

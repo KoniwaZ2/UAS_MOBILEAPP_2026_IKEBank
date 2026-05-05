@@ -73,11 +73,13 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
           style: alumniSansBold.copyWith(fontSize: 28, color: Colors.black),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      //error, tambahin singlechildscrollview
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -212,8 +214,9 @@ class _TambahDanaScreenState extends State<TambahDanaScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTopUpMethod({required IconData icon, required String title}) {
     final TextStyle alumniSansBold = const TextStyle(

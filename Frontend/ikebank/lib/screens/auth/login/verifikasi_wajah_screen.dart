@@ -10,6 +10,8 @@ class VerifikasiWajahScreen extends StatelessWidget {
   final RegisterFlowData? flowData;
   final bool isLupaPin;
   final Map<String, dynamic>? qrisData;
+
+  /// Override for testing – jika null, navigasi ke FaceRecogScreen seperti biasa.
   final VoidCallback? onOpenFaceRecog;
 
   const VerifikasiWajahScreen({
@@ -27,7 +29,7 @@ class VerifikasiWajahScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const TextStyle alumniSansBold = TextStyle(
       fontWeight: FontWeight.w700,
-      fontFamily: 'AlumniSans',
+      fontFamily: 'AlumniSans', 
     );
 
     return Scaffold(
@@ -151,22 +153,21 @@ class VerifikasiWajahScreen extends StatelessWidget {
                             onPressed: () {
                               if (onOpenFaceRecog != null) {
                                 onOpenFaceRecog!();
-                                return;
-                              }
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FaceRecogScreen(
-                                    isFromRegister: isFromRegister,
-                                    email: email,
-                                    reference: reference,
-                                    flowData: flowData,
-                                    isLupaPin: isLupaPin,
-                                    qrisData: qrisData,
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FaceRecogScreen(
+                                      isFromRegister: isFromRegister,
+                                      email: email,
+                                      reference: reference,
+                                      flowData: flowData,
+                                      isLupaPin: isLupaPin,
+                                      qrisData: qrisData,
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
                             },
                             child: Text(
                               "Ambil selfie",

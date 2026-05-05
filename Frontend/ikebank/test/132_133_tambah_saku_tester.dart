@@ -7,7 +7,6 @@
 // Programmer: Victor
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ikebank/api/banking.dart';
 
 void main() {
   test('132 - category normalization logic', () {

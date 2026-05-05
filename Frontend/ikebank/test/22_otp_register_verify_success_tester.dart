@@ -1,8 +1,3 @@
-// Test 22: OTP register verify success
-// Detail: Verified OTP opens FotoKtpScreen
-// Class/Method: AuthService.otpVerify() purpose registration
-// Programmer: Victor
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ikebank/api/auth.dart';
 
@@ -17,7 +12,8 @@ void main() {
         required String reference,
         required String otpcode,
         required String purpose,
-      }) verifyFn = AuthService.otpVerify;
+      })
+      verifyFn = AuthService.otpVerify;
       expect(verifyFn, isNotNull);
     });
   });
